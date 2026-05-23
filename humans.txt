@@ -1,0 +1,29 @@
+/* TEAM */
+
+Built by:    a human (github.com/b1tank)
+Reading:     The C Programming Language, Kernighan & Ritchie, 2nd ed. (1988)
+Writing:     vim, eyes, fingers
+LLM usage:   only for the WASM C runtime spike. All lesson prose is hand-written.
+
+/* SITE */
+
+Last update: 2026
+Built with:  HTML, CSS, JavaScript, marked, CodeMirror 6, a WebAssembly C compiler
+Hosted on:   GitHub Pages
+Source:      https://github.com/b1tank/learnc
+License:     MIT
+Frameworks:  none
+Trackers:    none
+Cookies:     none
+Servers:     none — pure static, runs in your browser
+
+/* PROMISE */
+
+- No AI-generated lesson prose.
+- No signup.
+- No tracking.
+- No ads.
+- No vendor lock-in.
+- Always free.
+- Always MIT-licensed.
+- Always self-hostable: clone and `python3 -m http.server`.

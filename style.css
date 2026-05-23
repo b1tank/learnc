@@ -1,0 +1,196 @@
+/* learnc — bellard-style minimal CSS. Plain, dense, readable. */
+
+:root {
+  --fg: #111;
+  --bg: #fdfdfd;
+  --link: #0044aa;
+  --link-visited: #6633aa;
+  --muted: #666;
+  --code-bg: #f4f4f4;
+  --code-border: #ddd;
+  --terminal-bg: #000;
+  --terminal-fg: #0f0;
+  --hl: #ffff77;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font: 16px/1.55 Verdana, Geneva, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 74ch;
+  margin: 2rem auto;
+  padding: 0 1rem 4rem;
+}
+
+h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
+h2 { font-size: 1.25rem; margin: 1.8rem 0 0.4rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.3rem; }
+h1, h2, h3 { font-weight: bold; }
+
+p { margin: 0.6rem 0; }
+
+a { color: var(--link); text-decoration: underline; }
+a:visited { color: var(--link-visited); }
+a:hover { background: var(--hl); }
+
+code, pre, kbd, samp {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.95em;
+}
+code { background: var(--code-bg); padding: 1px 4px; border-radius: 2px; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; }
+
+hr { border: 0; border-top: 1px solid #ccc; margin: 1.5rem 0; }
+
+blockquote {
+  border-left: 3px solid #aaa;
+  margin: 0.8rem 0;
+  padding: 0.2rem 0 0.2rem 0.8rem;
+  color: var(--muted);
+}
+
+table { border-collapse: collapse; margin: 0.8rem 0; }
+th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+th { background: #eee; }
+
+ul, ol { padding-left: 1.4rem; }
+li { margin: 0.15rem 0; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.9em; }
+
+/* Header */
+.site-header {
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.6rem;
+}
+.site-header h1 { display: inline; font-size: 1.6rem; }
+.site-header h1 a { color: inherit; text-decoration: none; }
+.site-header nav { float: right; font-size: 0.9rem; margin-top: 0.5rem; }
+.site-header nav a { margin-left: 0.8rem; }
+.site-header::after { content: ""; display: block; clear: both; }
+.tagline { color: var(--muted); font-size: 0.95rem; margin: 0.3rem 0 0; }
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid #ccc;
+  margin-top: 3rem;
+  padding-top: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.site-footer a { color: var(--muted); }
+
+/* Lesson index */
+.chapter { margin-bottom: 1.5rem; }
+.chapter-head { margin: 0 0 0.4rem; font-size: 1.1rem; }
+.lesson-list { list-style: none; padding-left: 0; margin: 0; }
+.lesson-list li { padding: 0.15rem 0; }
+.lesson-list .lbl {
+  display: inline-block;
+  min-width: 4em;
+  color: var(--muted);
+  font-family: "Courier New", monospace;
+}
+.lesson-list .status {
+  font-size: 0.78em;
+  margin-left: 0.4em;
+  color: var(--muted);
+}
+.lesson-list .status.done { color: #096; }
+.lesson-list .status.draft { color: #c80; }
+
+/* Lesson view */
+.crumbs { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+.crumbs a { color: var(--muted); }
+
+.runner {
+  margin: 1rem 0;
+  border: 1px solid #ccc;
+  background: #fafafa;
+}
+.runner-bar {
+  background: #eee;
+  border-bottom: 1px solid #ccc;
+  padding: 0.3rem 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.runner-bar .title {
+  flex: 1;
+  color: var(--muted);
+  font-family: "Courier New", monospace;
+}
+button {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid #999;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+button:hover { background: #e8e8e8; }
+button:active { background: #d8d8d8; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.editor { background: #fff; min-height: 8em; }
+
+.terminal {
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  min-height: 3em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+.terminal-empty { color: #555; font-style: italic; }
+.terminal-error { color: #f66; }
+
+.diff-badge { padding: 0.2rem 0.7rem; font-size: 0.85rem; background: #fafafa; border-top: 1px solid #eee; }
+.diff-ok { color: #0a0; }
+.diff-bad { color: #c00; }
+
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  font-size: 0.95rem;
+}
+.lesson-nav a.disabled { color: #aaa; pointer-events: none; text-decoration: none; }
+
+.stub-notice {
+  background: #fffae0;
+  border: 1px solid #e8d870;
+  padding: 0.8rem 1rem;
+  margin: 1rem 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  body { font-size: 15px; margin: 1rem auto; }
+  h1 { font-size: 1.3rem; }
+  .site-header nav { float: none; display: block; margin-top: 0.4rem; }
+  .site-header nav a:first-child { margin-left: 0; }
+  .lesson-list .lbl { min-width: 3.5em; }
+}
+
+/* CodeMirror tweaks */
+.cm-editor { font-size: 0.9rem; }
+.cm-editor .cm-scroller { font-family: "Courier New", Courier, monospace; line-height: 1.45; }
+.cm-focused { outline: 1px solid #888 !important; }

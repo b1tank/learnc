@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lesson · learnc</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<!--
+  Import map: pin every CodeMirror 6 submodule + its transitive deps so that
+  all packages share the SAME @codemirror/state instance. Without this, multiple
+  copies of @codemirror/state get loaded and instanceof checks fail with
+  "Unrecognized extension value in extension set". The leading "*" on esm.sh
+  URLs marks a package as "external", meaning its imports become bare specifiers
+  that resolve back through this map.
+-->
+<script type="importmap">
+{
+  "imports": {
+    "codemirror":                "https://esm.sh/*codemirror@6.0.1",
+    "@codemirror/state":         "https://esm.sh/@codemirror/state@6.4.1",
+    "@codemirror/view":          "https://esm.sh/*@codemirror/view@6.26.3",
+    "@codemirror/language":      "https://esm.sh/*@codemirror/language@6.10.2",
+    "@codemirror/commands":      "https://esm.sh/*@codemirror/commands@6.5.0",
+    "@codemirror/search":        "https://esm.sh/*@codemirror/search@6.5.6",
+    "@codemirror/autocomplete":  "https://esm.sh/*@codemirror/autocomplete@6.16.0",
+    "@codemirror/lint":          "https://esm.sh/*@codemirror/lint@6.8.0",
+    "@codemirror/lang-cpp":      "https://esm.sh/*@codemirror/lang-cpp@6.0.2",
+    "@lezer/common":             "https://esm.sh/@lezer/common@1.2.1",
+    "@lezer/highlight":          "https://esm.sh/*@lezer/highlight@1.2.0",
+    "@lezer/lr":                 "https://esm.sh/*@lezer/lr@1.4.0",
+    "@lezer/cpp":                "https://esm.sh/*@lezer/cpp@1.1.2",
+    "style-mod":                 "https://esm.sh/style-mod@4.1.2",
+    "w3c-keyname":               "https://esm.sh/w3c-keyname@2.2.8",
+    "crelt":                     "https://esm.sh/crelt@1.0.6"
+  }
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <h1><a href="index.html">learnc</a></h1>
+  <nav>
+    <a href="index.html">lessons</a>
+    <a id="edit-link" href="#" rel="noopener">edit on github</a>
+    <a href="https://github.com/b1tank/learnc">github</a>
+  </nav>
+</header>
+
+<main>
+
+<p class="crumbs"><a href="index.html">lessons</a> / <span id="lesson-label" class="muted"></span></p>
+<h1 id="lesson-title">Loading&hellip;</h1>
+
+<article id="lesson-prose"></article>
+
+<div id="runner-container" class="runner" hidden>
+  <div class="runner-bar">
+    <span class="title">main.c</span>
+    <button id="run-btn" type="button">run</button>
+    <button id="reset-btn" type="button" title="Reset to starter code">reset</button>
+    <button id="share-btn" type="button" title="Copy a shareable URL with your code">share</button>
+  </div>
+  <div id="editor" class="editor"></div>
+  <div id="terminal" class="terminal"><span class="terminal-empty">click "run" to compile and execute</span></div>
+  <div id="diff-badge" class="diff-badge"></div>
+</div>
+
+<nav class="lesson-nav">
+  <a id="prev-link" href="#" class="disabled">&larr; previous</a>
+  <a id="next-link" href="#" class="disabled">next &rarr;</a>
+</nav>
+
+</main>
+
+<footer class="site-footer">
+  <p>learnc &middot; <a href="https://github.com/b1tank/learnc">source</a> &middot; <a href="humans.txt">humans.txt</a> &middot; MIT-licensed &middot; 100% human-written</p>
+</footer>
+
+<script type="module" src="lesson.js"></script>
+</body>
+</html>
