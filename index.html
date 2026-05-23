@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>learnc — interactive K&amp;R C in your browser</title>
 <meta name="description" content="A hand-written, runnable companion to The C Programming Language (Kernighan &amp; Ritchie, 2e). Every example runs in your browser. No signup. No tracking. No AI-generated content.">
+<!-- Register the COOP/COEP service worker on the landing page too so the
+     service worker is already active when the visitor opens a lesson. -->
+<script src="coi-serviceworker.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>

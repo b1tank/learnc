@@ -14,7 +14,7 @@ A learning artifact. I am reading K&R cover-to-cover and writing a short rewrite
 
 - Not an LLM wrapper. **No AI-generated prose.** Every word of every lesson is written by a human reading K&R.
 - Not a SaaS. **No signup. No tracking. No cookies. No analytics.** Your progress and edited code live in `localStorage`. That's it.
-- Not a framework. Plain HTML, plain CSS, plain JS. One `marked.min.js` for markdown, one `codemirror@6` for the editor, one WebAssembly C compiler. Page weight under 1 MB.
+- Not a framework. Plain HTML, plain CSS, plain JS. One `marked.min.js` for markdown, one `codemirror@6` for the editor, [Runno](https://runno.dev) as the WebAssembly C compiler, [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) to enable `SharedArrayBuffer` on static hosts. Page weight: tiny site, ~10–15 MB of clang+libc downloaded lazily on first Run and then cached.
 - Not a startup. **MIT-licensed. Self-hostable. Fork it.**
 
 ## Why K&R in 2026
@@ -25,8 +25,14 @@ K&R is short, dense, and historically grounded. Its progression — `hello, worl
 
 - Lessons live as `.md` files in [`lessons/`](lessons/), one per section or exercise.
 - The site is two HTML files, one CSS file, three JS files.
-- Code runs in your browser via a WebAssembly C compiler. **Compiler integration is the active milestone** — until it lands, the Run button shows a stub message.
+- Code runs in your browser via [Runno](https://runno.dev)'s WebAssembly build of clang + wasi-libc. The first Run lazily downloads ~10–15 MB of WASM blobs from `assets.runno.run`; subsequent runs are instant.
+- [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) registers a service worker that injects `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` response headers so that `SharedArrayBuffer` is available. GitHub Pages cannot set those headers on its own; the SW handles it. First visit auto-reloads once after the SW installs.
 - GitHub Pages hosts the whole thing for free.
+
+## Known limitations
+
+- **Compile-time errors lose their diagnostic text.** Runno's `headlessRunCode` API serializes the prepare-step exception down to `{message, type}` and drops the captured clang stderr. So today a typo gives you a generic "compilation failed" message, not `error: implicit declaration of function 'pirntf'`. Runtime errors (non-zero exit after a successful compile) still show stderr correctly. Fixing this needs either a Runno PR or a switch to a lower-level WASI runtime.
+- **First Run is slow.** ~10–15 MB cold download.
 
 ## Architecture
 
@@ -38,7 +44,8 @@ learnc/
 ├── app.js              index page logic
 ├── lesson.js           lesson loader + runner wiring (ES module)
 ├── editor.js           CodeMirror 6 setup (ES module)
-├── runner.js           WASM C compiler interface (stub today)
+├── runner.js           WebAssembly C compiler (Runno)
+├── coi-serviceworker.js COOP/COEP shim so SAB works on static hosts
 ├── humans.txt          who built it, what's inside, what's not
 ├── .nojekyll           GitHub Pages: serve files literally
 └── lessons/
@@ -60,6 +67,10 @@ That's it. No npm install, no build, no config.
 ## Contributing
 
 There are ~96 numbered exercises and ~77 sections across 8 chapters. Most are stubs. Pick one, write a walkthrough, send a PR. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Inspiration
+
+This project is inspired by [a talk by antirez](https://www.youtube.com/watch?v=LermwGD7msg) (Salvatore Sanfilippo — author of Redis; see [invece.org](http://invece.org/)). The visual style borrows from his site and from [bellard.org](https://bellard.org/) — dense, monospace, no-frills web pages where substance shows through directly.
 
 ## License
 

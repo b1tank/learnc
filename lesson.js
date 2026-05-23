@@ -3,7 +3,7 @@
 // extracts starter/expected code, wires up the editor + Run button.
 
 import { mountEditor } from "./editor.js";
-import { run as runC } from "./runner.js";
+import { run as runC, onProgress as runOnProgress } from "./runner.js";
 
 var GITHUB_EDIT_BASE = "https://github.com/b1tank/learnc/edit/main/lessons/";
 var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
@@ -152,6 +152,9 @@ function setupRunner(starter, expected) {
     term.innerHTML = '<span class="terminal-empty">compiling and running\u2026</span>';
     document.getElementById("diff-badge").textContent = "";
     btn.disabled = true;
+    runOnProgress(function (msg) {
+      term.innerHTML = '<span class="terminal-empty">' + escapeHTML(msg) + "</span>";
+    });
     try {
       var result = await runC(code);
       renderResult(result, expected);
@@ -159,6 +162,7 @@ function setupRunner(starter, expected) {
       term.innerHTML = '<span class="terminal-error">' + escapeHTML(String(e && e.message || e)) + "</span>";
     } finally {
       btn.disabled = false;
+      runOnProgress(null);
     }
   });
 
