@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""bin/dev — learnc dev server with hot reload.
+
+Pure-stdlib HTTP server. Watches the repo for file changes and pushes a
+reload event to every connected browser tab over Server-Sent Events. The
+client-side reload script is injected before </body> on every HTML
+response served by this dev server (so it lives only here — production
+HTML on GitHub Pages stays untouched).
+
+usage:
+  bin/dev                # serve on the first free port from 8000
+  bin/dev 4000           # specific port (fails if taken)
+
+Save any .html / .css / .js / lessons/**.md / lessons/**.json and the
+browser auto-reloads. CodeMirror editor state survives the reload
+because lesson.js persists code to localStorage on every keystroke.
+
+Stop with Ctrl-C.
+"""
+from __future__ import annotations
+
+import http.server
+import os
+import pathlib
+import queue
+import socket
+import socketserver
+import sys
+import threading
+import time
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# Globs whose modification triggers a browser reload. Narrow on purpose:
+# scanning the whole tree on every tick is wasteful when only a handful of
+# files ever change during authoring.
+WATCH_GLOBS = (
+    "*.html",
+    "*.css",
+    "*.js",
+    "lessons/*.md",
+    "lessons/*.json",
+)
+IGNORE_PARTS = {".git", "node_modules", "__pycache__", ".vscode", "dist", "build"}
+
+# A few KiB of client-side code that opens an EventSource and reloads on
+# the "reload" event. Injected before </body>.
+HOT_CLIENT_JS = r"""
+// learnc dev hot reload (injected by bin/dev only)
+(function () {
+  if (window.__learncHotReload) return;
+  window.__learncHotReload = true;
+  function connect() {
+    var es = new EventSource("/__hot/events");
+    es.addEventListener("reload", function () {
+      console.log("[learnc dev] change detected -> reloading");
+      // Tiny delay lets the SSE message land before the page tears down.
+      setTimeout(function () { location.reload(); }, 50);
+    });
+    es.addEventListener("error", function () {
+      // Browser auto-retries the EventSource; nothing to do.
+    });
+  }
+  connect();
+  console.log("[learnc dev] hot reload connected");
+})();
+"""
+
+# Each connected browser tab is one Queue receiving "reload" messages.
+_subscribers_lock = threading.Lock()
+_subscribers: list[queue.Queue] = []
+
+
+def snapshot_mtimes() -> dict[str, float]:
+    mtimes: dict[str, float] = {}
+    for pattern in WATCH_GLOBS:
+        for p in ROOT.glob(pattern):
+            if any(part in IGNORE_PARTS for part in p.parts):
+                continue
+            try:
+                mtimes[str(p)] = p.stat().st_mtime
+            except OSError:
+                pass
+    return mtimes
+
+
+def watcher_loop(interval: float = 0.3) -> None:
+    last = snapshot_mtimes()
+    while True:
+        time.sleep(interval)
+        now = snapshot_mtimes()
+        if now == last:
+            continue
+        changed = []
+        for k, v in now.items():
+            if last.get(k) != v:
+                changed.append(pathlib.Path(k).relative_to(ROOT))
+        for k in last:
+            if k not in now:
+                changed.append(pathlib.Path(k).relative_to(ROOT))
+        last = now
+        names = ", ".join(str(c) for c in changed[:5])
+        if len(changed) > 5:
+            names += f", +{len(changed) - 5} more"
+        print(f"[learnc dev] reload  {names}", flush=True)
+        with _subscribers_lock:
+            queues = list(_subscribers)
+        for q in queues:
+            try:
+                q.put_nowait("reload")
+            except queue.Full:
+                pass
+
+
+class HotReloadHandler(http.server.SimpleHTTPRequestHandler):
+    # Browsers aggressively cache static files; that defeats hot reload.
+    # Disable caching for everything the dev server serves.
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
+    def do_GET(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler convention)
+        if self.path.startswith("/__hot/events"):
+            self._serve_sse()
+            return
+        if self.path == "/__hot/client.js":
+            self._serve_client_js()
+            return
+        self._serve_with_injection()
+
+    def _serve_client_js(self) -> None:
+        body = HOT_CLIENT_JS.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/javascript; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_sse(self) -> None:
+        # Note: do not call self.end_headers() (which we override to add
+        # no-cache headers) until we've explicitly added the SSE headers.
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "keep-alive")
+        # Bypass our injected no-cache header path by calling the base
+        # end_headers via super-super; but actually no-store is fine for SSE.
+        super().end_headers()
+        q: queue.Queue = queue.Queue(maxsize=8)
+        with _subscribers_lock:
+            _subscribers.append(q)
+        try:
+            self.wfile.write(b": connected\n\n")
+            self.wfile.flush()
+            while True:
+                try:
+                    msg = q.get(timeout=15)
+                except queue.Empty:
+                    # Keepalive comment so proxies don't drop us.
+                    self.wfile.write(b": ka\n\n")
+                    self.wfile.flush()
+                    continue
+                self.wfile.write(
+                    b"event: " + msg.encode("utf-8") + b"\ndata: 1\n\n"
+                )
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            with _subscribers_lock:
+                try:
+                    _subscribers.remove(q)
+                except ValueError:
+                    pass
+
+    def _serve_with_injection(self) -> None:
+        path = self.translate_path(self.path)
+        if os.path.isdir(path):
+            index = os.path.join(path, "index.html")
+            if os.path.exists(index):
+                path = index
+            else:
+                super().do_GET()
+                return
+        if not path.endswith(".html"):
+            super().do_GET()
+            return
+        try:
+            with open(path, "rb") as f:
+                content = f.read()
+        except OSError:
+            super().do_GET()
+            return
+        injected = _inject_hot_client(content)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(injected)))
+        self.end_headers()
+        self.wfile.write(injected)
+
+    def log_message(self, fmt: str, *args) -> None:  # noqa: ARG002
+        # Quieter than the default. Hide the boring /__hot/events spam.
+        if args and "/__hot/events" in str(args[0]):
+            return
+        try:
+            method_path = args[0] if args else ""
+            status = args[1] if len(args) > 1 else ""
+            print(f"[learnc dev]   {method_path}  {status}", flush=True)
+        except Exception:
+            print(f"[learnc dev]   {fmt % args}", flush=True)
+
+
+def _inject_hot_client(html_bytes: bytes) -> bytes:
+    tag = b'<script src="/__hot/client.js"></script>\n'
+    idx = html_bytes.lower().rfind(b"</body>")
+    if idx == -1:
+        return html_bytes + b"\n" + tag
+    return html_bytes[:idx] + tag + html_bytes[idx:]
+
+
+class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+def _port_is_free(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+        except OSError:
+            return False
+    return True
+
+
+def _pick_port(requested: int | None) -> int:
+    if requested is not None:
+        if not _port_is_free(requested):
+            sys.exit(f"error: port {requested} is in use")
+        return requested
+    for candidate in range(8000, 8020):
+        if _port_is_free(candidate):
+            return candidate
+    sys.exit("error: no free port in 8000-8019")
+
+
+def main() -> None:
+    requested = int(sys.argv[1]) if len(sys.argv) > 1 else None
+    port = _pick_port(requested)
+    os.chdir(ROOT)
+    print("[learnc dev] starting")
+    print(f"[learnc dev]   root:    {ROOT}")
+    print(f"[learnc dev]   url:     http://127.0.0.1:{port}/")
+    print(f"[learnc dev]   lesson:  http://127.0.0.1:{port}/lesson.html?id=01-01-hello")
+    print(f"[learnc dev]   watch:   {', '.join(WATCH_GLOBS)}")
+    print("[learnc dev]   save any watched file -> browser reloads")
+    print("[learnc dev]   Ctrl-C to stop")
+    print()
+    threading.Thread(target=watcher_loop, daemon=True).start()
+    server = ThreadingServer(("127.0.0.1", port), HotReloadHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n[learnc dev] stopped", flush=True)
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()

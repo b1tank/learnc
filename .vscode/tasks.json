@@ -1,0 +1,48 @@
+{
+  // Run with: Ctrl+Shift+P -> "Tasks: Run Task" -> "learnc: dev"
+  // Or hit Ctrl+Shift+B to run the default build task ("learnc: dev").
+  // No Python extension required — these tasks shell out via a normal terminal.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "learnc: dev",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/dev",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Start the learnc dev server with hot reload on http://127.0.0.1:8000/"
+    },
+    {
+      "label": "learnc: new lesson (next stub)",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/new-lesson",
+      "args": ["next"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "detail": "Scaffold lessons/<id>.md for the next stub in reading order."
+    },
+    {
+      "label": "learnc: list stubs",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/new-lesson",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "detail": "Show progress and the next stub in reading order."
+    }
+  ]
+}

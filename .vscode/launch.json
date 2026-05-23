@@ -1,0 +1,31 @@
+{
+  // VS Code launch configurations. Hit F5 (or click "Run and Debug" in the
+  // sidebar) with one of these selected.
+  //
+  // The "learnc: dev server (hot reload)" entry requires the Microsoft
+  // Python extension (ms-python.python), which ships the debugpy backend.
+  // If you don't have it installed, use the Tasks instead:
+  //   Ctrl+Shift+P -> Tasks: Run Task -> "learnc: dev"
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "learnc: dev server (hot reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/dev",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "learnc: dev server on :4000",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/dev",
+      "args": ["4000"],
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

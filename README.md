@@ -48,9 +48,11 @@ learnc/
 ├── coi-serviceworker.js COOP/COEP shim so SAB works on static hosts
 ├── humans.txt          who built it, what's inside, what's not
 ├── .nojekyll           GitHub Pages: serve files literally
+├── .vscode/             launch + tasks for the dev server (optional)
 ├── bin/
-│   ├── new-lesson      scaffold the next lesson from the manifest
-│   └── serve           local dev server with a friendly banner
+│   ├── dev               dev server with hot reload (recommended)
+│   ├── new-lesson        scaffold the next lesson from the manifest
+│   └── serve             quiet static server (no injection)
 └── lessons/
     ├── manifest.json   the full spine (all chapters, all exercises)
     ├── _template.md    skeleton for new lessons
@@ -61,10 +63,18 @@ learnc/
 ## Running locally
 
 ```sh
-bin/serve
+bin/dev                  # hot-reload dev server (recommended)
+# or: bin/serve          # quiet static server, no injection
 # or: python3 -m http.server 8000
-# then open http://localhost:8000/
 ```
+
+`bin/dev` watches every `.html`, `.css`, `.js`, and `lessons/*.md` file and
+auto-reloads the browser when any of them change. Pure Python stdlib — no npm,
+no watcher daemon. Pick the first free port from 8000.
+
+In VS Code, hit **F5** and pick **"learnc: dev server (hot reload)"**, or run
+**Tasks: Run Task → learnc: dev** from the command palette. The `.vscode/`
+folder is committed to the repo so this works out of the box.
 
 That's it. No npm install, no build, no config.
 

@@ -50,13 +50,21 @@ Then:
 ## Running locally
 
 ```sh
-bin/serve                # python3 -m http.server with a friendly banner
-# or:
-python3 -m http.server 8000
+bin/dev                  # hot-reload dev server (recommended)
+# or: bin/serve          # quiet static server, no injection
+# or: python3 -m http.server 8000
 ```
 
-That is the whole setup. No npm install. No build. Drop a `.md` in `lessons/`,
-flip the manifest entry, refresh the browser.
+`bin/dev` watches `*.html`, `*.css`, `*.js`, `lessons/*.md`, and `lessons/*.json`.
+Save any of them and the browser auto-reloads. CodeMirror editor state survives
+the reload because it's persisted to `localStorage` on every keystroke.
+
+In VS Code, hit **F5** and pick **"learnc: dev server (hot reload)"** (uses the
+Microsoft Python extension's debugger), or run **Tasks: Run Task → learnc: dev**
+from the command palette (no extension required).
+
+No npm install. No build. Drop a `.md` in `lessons/`, flip the manifest entry,
+the browser refreshes.
 
 ## The lesson file format
 
