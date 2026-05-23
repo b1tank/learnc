@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+"""bin/new-lesson — scaffold a K&R lesson stub into a draft .md file.
+
+Reads lessons/manifest.json, finds the requested item (or the next stub in
+reading order), and writes a pre-filled lesson .md with the correct
+frontmatter and neighbour links. Then flips the manifest entry's status
+from "stub" to "draft" so the index page shows it in-progress.
+
+usage:
+  bin/new-lesson              # list remaining stubs and suggest the next
+  bin/new-lesson next         # scaffold the first stub in reading order
+  bin/new-lesson 01-02-temp   # scaffold a specific id
+  bin/new-lesson done <id>    # mark a draft as done in the manifest
+"""
+
+import json
+import pathlib
+import re
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+MANIFEST = ROOT / "lessons" / "manifest.json"
+
+# Section lessons get a title from the manifest; exercises don't carry K&R's
+# wording (copyright + brevity), so we synthesise a title and leave a placeholder
+# in the body for the problem statement.
+SECTION_TEMPLATE = """\
+---
+id: {id}
+chapter: {chapter}
+label: "{label}"
+title: {title}
+prev: {prev}
+next: {next}
+status: draft
+---
+
+<!-- One short paragraph: what this section is about and why it matters. -->
+
+```c:starter
+#include <stdio.h>
+
+int main(void) {{
+    /* starter code */
+    return 0;
+}}
+```
+
+```output
+expected stdout here
+```
+
+## What's going on
+
+- Bullet explaining the first interesting piece.
+- Bullet explaining the second.
+- 3–6 bullets total.
+
+## Modern note
+
+<!-- Optional: how current C diverges from K&R's 1988 style. Delete if N/A. -->
+
+## Try it
+
+1. A small variation.
+2. A break-it-on-purpose experiment.
+3. An open-ended extension.
+
+*Click **next →** to ___.*
+"""
+
+EXERCISE_TEMPLATE = """\
+---
+id: {id}
+chapter: {chapter}
+label: "{label}"
+title: {title}
+prev: {prev}
+next: {next}
+status: draft
+---
+
+> **K&R Exercise {label}.** <!-- Paraphrase the problem statement in your own
+> words. Do not copy K&R verbatim. One or two sentences is enough. -->
+
+## Approach
+
+<!-- A short paragraph framing how you'd attack this. Don't give the full
+solution away above the editor — let the reader try first. -->
+
+```c:starter
+#include <stdio.h>
+
+int main(void) {{
+    /* your attempt here */
+    return 0;
+}}
+```
+
+## Solution
+
+<!-- Walk through one working solution after the reader has tried. Keep it
+small — K&R exercises are intentionally bite-sized. -->
+
+```c
+#include <stdio.h>
+
+int main(void) {{
+    return 0;
+}}
+```
+
+```output
+expected stdout here
+```
+
+## Notes
+
+- Edge cases worth pointing out.
+- Common mistakes you hit while writing this.
+"""
+
+
+def load_manifest():
+    return json.loads(MANIFEST.read_text())
+
+
+def set_status(id_, new_status):
+    """Surgically rewrite the manifest line for `id_` to set its status.
+
+    The manifest is hand-curated with one JSON object per line; re-serialising
+    via json.dumps would explode every item across many lines and escape
+    non-ASCII (em-dashes etc.). So we do a targeted regex edit that touches
+    only the bytes for the matching line.
+    """
+    text = MANIFEST.read_text()
+    line_re = re.compile(
+        r'^(?P<lead>[ \t]*)\{(?P<body>[^{}\n]*?"id"[ \t]*:[ \t]*"'
+        + re.escape(id_)
+        + r'"[^{}\n]*)\}(?P<tail>[ \t]*,?[ \t]*)$',
+        re.MULTILINE,
+    )
+    m = line_re.search(text)
+    if not m:
+        sys.exit(f"error: could not find a single-line manifest entry for id={id_!r}")
+    lead, body, tail = m.group("lead"), m.group("body"), m.group("tail")
+    # Strip any existing status field (and the comma that joins it).
+    body = re.sub(r',[ \t]*"status"[ \t]*:[ \t]*"[^"]*"', "", body)
+    body = re.sub(r'"status"[ \t]*:[ \t]*"[^"]*"[ \t]*,?', "", body)
+    body = body.rstrip().rstrip(",")
+    new_line = f'{lead}{{ {body.lstrip()}, "status": "{new_status}" }}{tail}'
+    MANIFEST.write_text(text[: m.start()] + new_line + text[m.end():])
+
+
+def flat_items(m):
+    """All (chapter, item) pairs in reading order."""
+    out = []
+    for ch in m["chapters"]:
+        for it in ch.get("items", []):
+            out.append((ch, it))
+    return out
+
+
+def status_of(it):
+    """Items without an explicit status are implicit stubs."""
+    return it.get("status", "stub")
+
+
+def find_index(items, id_):
+    for i, (_, it) in enumerate(items):
+        if it["id"] == id_:
+            return i
+    return None
+
+
+def first_stub(items):
+    for ch, it in items:
+        if status_of(it) == "stub":
+            return it["id"]
+    return None
+
+
+def title_for(item):
+    if item.get("title"):
+        return item["title"]
+    # Exercises typically have no title in the manifest.
+    return f"Exercise {item['label']}"
+
+
+def scaffold(id_):
+    m = load_manifest()
+    items = flat_items(m)
+    idx = find_index(items, id_)
+    if idx is None:
+        sys.exit(f"error: id {id_!r} is not in lessons/manifest.json")
+
+    chapter, item = items[idx]
+    out_path = ROOT / "lessons" / f"{id_}.md"
+    if out_path.exists():
+        sys.exit(f"error: {out_path.relative_to(ROOT)} already exists "
+                 f"— refusing to clobber. Edit it directly.")
+
+    prev_id = items[idx - 1][1]["id"] if idx > 0 else "null"
+    next_id = items[idx + 1][1]["id"] if idx + 1 < len(items) else "null"
+
+    tmpl = EXERCISE_TEMPLATE if item.get("kind") == "exercise" else SECTION_TEMPLATE
+    body = tmpl.format(
+        id=id_,
+        chapter=chapter["n"],
+        label=item["label"],
+        title=title_for(item),
+        prev=prev_id,
+        next=next_id,
+    )
+    out_path.write_text(body)
+
+    # Bump manifest entry to draft so the index renders it as in-progress.
+    set_status(id_, "draft")
+
+    rel = out_path.relative_to(ROOT)
+    print(f"created   {rel}")
+    print(f"manifest  {id_}: status -> draft")
+    print()
+    print(f"  $ code {rel}")
+    print(f"  open  http://127.0.0.1:8000/lesson.html?id={id_}")
+    print()
+    print(f"When the lesson is finished:")
+    print(f"  $ bin/new-lesson done {id_}")
+
+
+def mark_done(id_):
+    m = load_manifest()
+    items = flat_items(m)
+    if find_index(items, id_) is None:
+        sys.exit(f"error: id {id_!r} is not in lessons/manifest.json")
+    old = status_of(items[find_index(items, id_)][1])
+    set_status(id_, "done")
+    print(f"{id_}: status {old} -> done")
+
+
+def list_stubs():
+    m = load_manifest()
+    items = flat_items(m)
+    stubs = [(ch, it) for ch, it in items if status_of(it) == "stub"]
+    drafts = [(ch, it) for ch, it in items if status_of(it) == "draft"]
+    done = [(ch, it) for ch, it in items if status_of(it) == "done"]
+
+    total = len(items)
+    print(f"progress: {len(done)} done, {len(drafts)} draft, "
+          f"{len(stubs)} stub (of {total} total)")
+    print()
+
+    if drafts:
+        print("In-progress drafts:")
+        for _, it in drafts:
+            print(f"  - {it['id']:24s}  {title_for(it)}")
+        print()
+
+    if not stubs:
+        print("no stubs left — every lesson has been started!")
+        return
+
+    nch, nit = stubs[0]
+    print(f"Next stub (chapter {nch['n']} — {nch['title']}):")
+    print(f"  ▶ {nit['id']:24s}  {title_for(nit)}")
+    print()
+    print(f"  $ bin/new-lesson next")
+    print()
+    print(f"All {len(stubs)} stubs in reading order:")
+    cur_ch = None
+    for ch, it in stubs:
+        if ch is not cur_ch:
+            print(f"\n  Ch{ch['n']} — {ch['title']}")
+            cur_ch = ch
+        print(f"    {it['id']:24s}  {title_for(it)}")
+
+
+def main(argv):
+    args = argv[1:]
+    if not args:
+        list_stubs()
+        return
+    cmd = args[0]
+    if cmd in ("-h", "--help", "help"):
+        print(__doc__)
+        return
+    if cmd == "next":
+        m = load_manifest()
+        nid = first_stub(flat_items(m))
+        if not nid:
+            sys.exit("no stubs left")
+        scaffold(nid)
+        return
+    if cmd == "done":
+        if len(args) < 2:
+            sys.exit("usage: bin/new-lesson done <id>")
+        mark_done(args[1])
+        return
+    scaffold(cmd)
+
+
+if __name__ == "__main__":
+    main(sys.argv)

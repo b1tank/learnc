@@ -48,6 +48,9 @@ learnc/
 ├── coi-serviceworker.js COOP/COEP shim so SAB works on static hosts
 ├── humans.txt          who built it, what's inside, what's not
 ├── .nojekyll           GitHub Pages: serve files literally
+├── bin/
+│   ├── new-lesson      scaffold the next lesson from the manifest
+│   └── serve           local dev server with a friendly banner
 └── lessons/
     ├── manifest.json   the full spine (all chapters, all exercises)
     ├── _template.md    skeleton for new lessons
@@ -58,11 +61,28 @@ learnc/
 ## Running locally
 
 ```sh
-python3 -m http.server 8000
-# open http://localhost:8000/
+bin/serve
+# or: python3 -m http.server 8000
+# then open http://localhost:8000/
 ```
 
 That's it. No npm install, no build, no config.
+
+## Authoring flow
+
+There's a small helper in `bin/` to skip the boilerplate when writing a new lesson:
+
+```sh
+bin/new-lesson              # show progress + the next stub
+bin/new-lesson next         # scaffold the next stub (prev/next links pre-filled)
+bin/new-lesson 01-04-define # scaffold a specific id
+bin/new-lesson done 01-04-define   # mark a draft as done in the manifest
+```
+
+It writes `lessons/<id>.md` from the right template (section vs. exercise),
+fills in the frontmatter from `lessons/manifest.json`, and surgically bumps the
+manifest entry to `status: draft`. Open the URL it prints in your browser and
+start writing.
 
 ## Contributing
 

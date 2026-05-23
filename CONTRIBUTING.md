@@ -19,22 +19,44 @@ learnc is a hand-written, runnable companion to K&R's *The C Programming Languag
 
 ## Adding a lesson — step by step
 
-1. Pick a stub from the index, e.g. `01-04-define`.
-2. Copy [`lessons/_template.md`](lessons/_template.md) to `lessons/01-04-define.md`.
-3. Fill in the frontmatter (`title`, `prev`, `next`, set `status: draft` or `done`).
-4. Write 2–3 paragraphs of prose, one `c:starter` fenced block, optionally one `output` block, a `What's going on` list, a `Modern note` if applicable, and a `Try it` section.
-5. In [`lessons/manifest.json`](lessons/manifest.json), add `"status": "draft"` (or `"done"`) to the matching item.
-6. Visit `lesson.html?id=01-04-define` locally. It should load.
-7. Open a PR.
+There's a tiny helper to skip the boilerplate. From the repo root:
+
+```sh
+bin/new-lesson              # shows progress + the next stub in reading order
+bin/new-lesson next         # scaffolds the first stub (prev/next links pre-filled)
+bin/new-lesson 01-04-define # scaffolds a specific id
+bin/new-lesson done 01-04-define  # flips the manifest entry to status: done
+```
+
+`bin/new-lesson next` creates `lessons/<id>.md` with the right frontmatter,
+flips the manifest entry to `status: draft` so the index shows it in-progress,
+and prints the URL to open while editing. Sections and exercises get different
+templates (exercises include a problem-statement placeholder and a solution
+block).
+
+If you'd rather scaffold by hand: copy [`lessons/_template.md`](lessons/_template.md)
+to `lessons/<id>.md`, fill in the frontmatter (`id`, `chapter`, `label`, `title`,
+`prev`, `next`, `status`), and add `"status": "draft"` to the matching entry in
+[`lessons/manifest.json`](lessons/manifest.json) on the same one-line item.
+
+Then:
+
+1. Write 2–3 paragraphs of prose, one `c:starter` fenced block, optionally one `output` block.
+2. Add a `What's going on` list, a `Modern note` if applicable, and a `Try it` section.
+3. Visit `lesson.html?id=<id>` locally to preview.
+4. When the lesson is finished, `bin/new-lesson done <id>` (or change `"draft"` → `"done"` in the manifest by hand).
+5. Open a PR.
 
 ## Running locally
 
 ```sh
+bin/serve                # python3 -m http.server with a friendly banner
+# or:
 python3 -m http.server 8000
-# open http://localhost:8000/
 ```
 
-That is the whole setup. If you drop a `.md` file in `lessons/` and update `manifest.json`, it appears.
+That is the whole setup. No npm install. No build. Drop a `.md` in `lessons/`,
+flip the manifest entry, refresh the browser.
 
 ## The lesson file format
 

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# bin/serve — run the learnc site locally for editing.
+# Usage: bin/serve [PORT]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+PORT="${1:-8000}"
+echo "learnc:  http://127.0.0.1:${PORT}/"
+echo "lesson:  http://127.0.0.1:${PORT}/lesson.html?id=01-01-hello"
+echo
+exec python3 -m http.server "${PORT}"
