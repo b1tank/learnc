@@ -8,8 +8,13 @@ response served by this dev server (so it lives only here — production
 HTML on GitHub Pages stays untouched).
 
 usage:
-  bin/dev                # serve on the first free port from 8000
+  bin/dev                # serve on the first free port from 8000, bound to 0.0.0.0
   bin/dev 4000           # specific port (fails if taken)
+  bin/dev --host 127.0.0.1   # loopback only (no LAN access)
+
+The server binds to 0.0.0.0 by default so you can verify from another
+device on your LAN (e.g. an iPhone). Pass `--host 127.0.0.1` to keep it
+loopback-only.
 
 Save any .html / .css / .js / lessons/**.md / lessons/**.json and the
 browser auto-reloads. CodeMirror editor state survives the reload
@@ -30,6 +35,7 @@ import threading
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+DEFAULT_HOST = "0.0.0.0"
 
 # Globs whose modification triggers a browser reload. Narrow on purpose:
 # scanning the whole tree on every tick is wasteful when only a handful of
@@ -225,40 +231,92 @@ class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address = True
 
 
-def _port_is_free(port: int) -> bool:
+def _port_is_free(host: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(("127.0.0.1", port))
+            s.bind((host, port))
         except OSError:
             return False
     return True
 
 
-def _pick_port(requested: int | None) -> int:
+def _pick_port(host: str, requested: int | None) -> int:
     if requested is not None:
-        if not _port_is_free(requested):
+        if not _port_is_free(host, requested):
             sys.exit(f"error: port {requested} is in use")
         return requested
     for candidate in range(8000, 8020):
-        if _port_is_free(candidate):
+        if _port_is_free(host, candidate):
             return candidate
     sys.exit("error: no free port in 8000-8019")
 
 
+def _lan_ip() -> str | None:
+    # No traffic actually leaves the box; we just ask the OS which local
+    # interface it would use to reach a public address.
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        s.close()
+
+
+def _parse_args(argv: list[str]) -> tuple[str, int | None]:
+    host = DEFAULT_HOST
+    port: int | None = None
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a in ("--host", "-H", "--bind"):
+            host = argv[i + 1]
+            i += 2
+            continue
+        if a.startswith("--host=") or a.startswith("--bind="):
+            host = a.split("=", 1)[1]
+            i += 1
+            continue
+        if a in ("--port", "-p"):
+            port = int(argv[i + 1])
+            i += 2
+            continue
+        if a.startswith("--port="):
+            port = int(a.split("=", 1)[1])
+            i += 1
+            continue
+        if a in ("-h", "--help"):
+            print(__doc__)
+            sys.exit(0)
+        # Bare positional integer = port (back-compat with `bin/dev 4000`).
+        try:
+            port = int(a)
+        except ValueError:
+            sys.exit(f"error: unknown argument: {a}")
+        i += 1
+    return host, port
+
+
 def main() -> None:
-    requested = int(sys.argv[1]) if len(sys.argv) > 1 else None
-    port = _pick_port(requested)
+    host, requested = _parse_args(sys.argv)
+    port = _pick_port(host, requested)
     os.chdir(ROOT)
     print("[learnc dev] starting")
     print(f"[learnc dev]   root:    {ROOT}")
-    print(f"[learnc dev]   url:     http://127.0.0.1:{port}/")
+    print(f"[learnc dev]   bind:    {host}:{port}")
+    print(f"[learnc dev]   local:   http://127.0.0.1:{port}/")
+    if host == "0.0.0.0":
+        ip = _lan_ip()
+        if ip:
+            print(f"[learnc dev]   lan:     http://{ip}:{port}/  (open on phone/tablet on same wifi)")
     print(f"[learnc dev]   lesson:  http://127.0.0.1:{port}/lesson.html?id=01-01-hello")
     print(f"[learnc dev]   watch:   {', '.join(WATCH_GLOBS)}")
     print("[learnc dev]   save any watched file -> browser reloads")
     print("[learnc dev]   Ctrl-C to stop")
     print()
     threading.Thread(target=watcher_loop, daemon=True).start()
-    server = ThreadingServer(("127.0.0.1", port), HotReloadHandler)
+    server = ThreadingServer((host, port), HotReloadHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
