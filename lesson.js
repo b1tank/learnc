@@ -380,6 +380,29 @@ function setupRunner(starter, expected) {
     writeUrlCode(code);
     var term = document.getElementById("terminal");
     var btn = document.getElementById("run-btn");
+    // The WASM C runtime needs SharedArrayBuffer, which only exists when
+    // the page is crossOriginIsolated. Without this guard the user just
+    // sees an unhelpful "Can't find variable: SharedArrayBuffer" thrown
+    // from somewhere deep inside Runno. Tell them exactly what's wrong
+    // and how to fix it (most common case: a mobile-Safari LAN visit
+    // where coi-serviceworker can't register over plain HTTP).
+    if (typeof SharedArrayBuffer === "undefined" || !self.crossOriginIsolated) {
+      term.innerHTML =
+        '<span class="terminal-error">' +
+        escapeHTML(
+          "this browser is not cross-origin-isolated, so the WASM C " +
+          "runtime can't start.\n\n" +
+          "crossOriginIsolated: " + self.crossOriginIsolated + "\n" +
+          "SharedArrayBuffer:   " + (typeof SharedArrayBuffer !== "undefined") + "\n" +
+          "isSecureContext:     " + self.isSecureContext + "\n\n" +
+          "if you're on a phone over the LAN, open the site at " +
+          "https://b1tank.github.io/learnc/ instead — the COOP/COEP " +
+          "service worker only registers over HTTPS.\n" +
+          "if you're on localhost, try a hard refresh."
+        ) +
+        "</span>";
+      return;
+    }
     term.innerHTML = '<span class="terminal-empty">compiling and running\u2026</span>';
     document.getElementById("diff-badge").textContent = "";
     btn.disabled = true;

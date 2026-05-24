@@ -19,7 +19,11 @@
   })();
 </script>
 <!-- Register the COOP/COEP service worker on the landing page too so the
-     service worker is already active when the visitor opens a lesson. -->
+     service worker is already active when the visitor opens a lesson.
+     Force require-corp (instead of the library's default of credentialless
+     on Safari) so cross-origin isolation works on iOS < 17.4. See lesson.html
+     for the full rationale. -->
+<script>window.coi = { coepCredentialless: function () { return false; } };</script>
 <script src="coi-serviceworker.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>

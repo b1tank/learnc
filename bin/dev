@@ -131,16 +131,18 @@ class HotReloadHandler(http.server.SimpleHTTPRequestHandler):
     # Setting the headers here makes the page crossOriginIsolated=true
     # natively, so SAB is available with or without the SW.
     #
-    # COEP=credentialless (vs. require-corp) means cross-origin
-    # subresources (the CodeMirror CDN, Runno's wasm, etc.) load without
-    # needing a CORP header, as long as they're fetched without
-    # credentials. Supported in Safari 17.4+, all evergreen browsers.
+    # COEP=require-corp is supported by every browser since Safari 15.2 /
+    # iOS 15.2 (Dec 2021). credentialless is more permissive but only
+    # landed in iOS 17.4, so we'd silently fall off the isolation cliff
+    # on slightly-older iPhones. Module imports + the Runno / CodeMirror
+    # CDNs already serve CORS, which satisfies require-corp.
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         super().end_headers()
 
     def do_GET(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler convention)
