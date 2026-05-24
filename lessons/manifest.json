@@ -1,6 +1,7 @@
 {
   "title": "K&R 2e — learnc lesson manifest",
   "_note": "Section titles are paraphrased descriptors; section labels (1.1, 1.2, ...) and exercise labels (1-1 ... 8-8) match K&R 2nd edition (1988, ANSI C). K&R groups some sub-examples under one section (1.5.1–1.5.4, 4.11.1–4.11.3, 7.8.1–7.8.7); the manifest collapses these to a single lesson per top-level section. Re-verify against your copy as you write each lesson; edit this file freely.",
+  "_format": "Hand-formatted, one item per line, columns roughly aligned by eye. bin/new-lesson edits this file with line-based regex — do NOT reformat with jq, prettier, json5, or a 'JSON pretty-print on save' editor setting; you will break the scaffolder.",
   "_status_values": ["done", "draft", "stub"],
   "chapters": [
     {
