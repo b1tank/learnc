@@ -133,22 +133,59 @@ function lessonStorageKey() {
   return "learnc:code:" + lessonId;
 }
 
+// Tiny DOM helper. Same shape as app.js's `el`. Kept local to avoid the
+// "shared module" anti-pattern for an 8-line function.
+function el(tag, attrs, children) {
+  var e = document.createElement(tag);
+  attrs = attrs || {};
+  for (var k in attrs) {
+    if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+    if (k === "class") e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children || []).forEach(function (c) {
+    if (c == null) return;
+    e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  });
+  return e;
+}
+
 function renderStub() {
   document.getElementById("lesson-title").textContent = "Stub: " + lessonId;
-  document.getElementById("lesson-prose").innerHTML =
-    '<div class="stub-notice">' +
-    '<strong>No walkthrough yet.</strong> This lesson is a stub waiting for content. ' +
-    'Want to contribute? <a href="' + GITHUB_NEW_BASE + '?filename=' +
-    encodeURIComponent(lessonId + ".md") + '">Create <code>lessons/' +
-    escapeHTML(lessonId) + '.md</code> on GitHub</a> using ' +
-    '<a href="https://github.com/b1tank/learnc/blob/main/lessons/_template.md">the lesson template</a>.' +
-    '</div>' +
-    '<p class="muted small">The site loads lessons from markdown files in the ' +
-    '<a href="https://github.com/b1tank/learnc/tree/main/lessons">lessons/</a> directory at runtime. ' +
-    'See <a href="https://github.com/b1tank/learnc/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>';
+  var prose = document.getElementById("lesson-prose");
+  prose.innerHTML = "";
+
+  var createHref = GITHUB_NEW_BASE + "?filename=" +
+    encodeURIComponent(lessonId + ".md");
+
+  var notice = el("div", { class: "stub-notice" }, [
+    el("strong", {}, ["No walkthrough yet."]),
+    " This lesson is a stub waiting for content. Want to contribute? ",
+    el("a", { href: createHref }, [
+      "Create ",
+      el("code", {}, ["lessons/" + lessonId + ".md"]),
+      " on GitHub"
+    ]),
+    " using ",
+    el("a", { href: "https://github.com/b1tank/learnc/blob/main/lessons/_template.md" },
+      ["the lesson template"]),
+    "."
+  ]);
+  prose.appendChild(notice);
+
+  var pointer = el("p", { class: "muted small" }, [
+    "The site loads lessons from markdown files in the ",
+    el("a", { href: "https://github.com/b1tank/learnc/tree/main/lessons" },
+      ["lessons/"]),
+    " directory at runtime. See ",
+    el("a", { href: "https://github.com/b1tank/learnc/blob/main/CONTRIBUTING.md" },
+      ["CONTRIBUTING.md"]),
+    "."
+  ]);
+  prose.appendChild(pointer);
+
   document.getElementById("runner-container").hidden = true;
-  document.getElementById("edit-link").href = GITHUB_NEW_BASE +
-    "?filename=" + encodeURIComponent(lessonId + ".md");
+  document.getElementById("edit-link").href = createHref;
 }
 
 function setupNav(meta) {
