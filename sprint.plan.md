@@ -67,3 +67,42 @@ sprint-in-yolo workflow.
   `_format` key alongside the existing `_note`.
 - Smoke-check: see "Build smoke-check" below.
 
+
+---
+
+# Sprint Plan — round 2 (post-deploy follow-on)
+
+User complaint after first deploy: "printf in the editor is hard to read" and
+"why is it dark mode now". The editor was never themed, so when the page goes
+dark the editor stays stark white with CodeMirror's pale-grey identifiers.
+Plus, the auto theme has no opt-out. This sprint fixes both, knocks out four
+queued UX items, and adds the next K&R lesson.
+
+## Tasks
+
+1. **Editor dark theme.** Install `@codemirror/theme-one-dark`, switch the
+   editor theme to match `prefers-color-scheme`. Files: `lesson.html`
+   (importmap), `editor.js` (theme extension), `style.css` (drop the hardcoded
+   white `.editor` background).
+2. **Manual theme toggle.** A 3-state switch (auto / light / dark) in the site
+   header. Persists in `localStorage`. Applies via a `data-theme` attribute on
+   `<html>`. Refactor `style.css` so dark vars apply via both the media query
+   *and* `[data-theme="dark"]`. The editor theme must also react.
+3. **UX10 — first-run download notice.** When the runner is wired up, show a
+   small "first run downloads ~10 MB" hint in the terminal area until the
+   runtime is cached. Replaces a silent multi-second wait on first click.
+4. **UX17 — keyboard-shortcut overlay.** `?` opens a small modal listing all
+   shortcuts; `Esc` closes. Also wire `Ctrl/Cmd+Enter` inside the editor to
+   trigger the run button.
+5. **UX5 — lesson-index search input.** A live filter input above the chips
+   that matches against lesson title and label.
+6. **Lesson 01-03 — the `for` statement.** Rewrite the K&R temperature table
+   using `for` instead of `while`. Mark as `status: draft`. Update the
+   manifest's done/draft counts in `app.js` via the existing logic (no
+   manifest schema change).
+
+## Atomic commits
+
+Each task lands in its own commit. Order respects dependencies: task 2 needs
+task 1's theme work to be theme-aware end-to-end.
+
