@@ -5,7 +5,7 @@
 import { mountEditor } from "./editor.js";
 import { run as runC, onProgress as runOnProgress } from "./runner.js";
 
-var GITHUB_EDIT_BASE = "https://github.com/b1tank/learnc/edit/main/lessons/";
+var GITHUB_BLOB_BASE = "https://github.com/b1tank/learnc/blob/main/lessons/";
 var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
 
 var params = new URLSearchParams(location.search);
@@ -283,7 +283,7 @@ async function loadLesson() {
     return;
   }
 
-  document.getElementById("edit-link").href = GITHUB_EDIT_BASE + lessonId + ".md";
+  document.getElementById("edit-link").href = GITHUB_BLOB_BASE + lessonId + ".md";
   document.getElementById("lesson-label").textContent = lessonId;
 
   var url = "lessons/" + lessonId + ".md";
