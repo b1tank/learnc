@@ -24,7 +24,7 @@
      on Safari) so cross-origin isolation works on iOS < 17.4. See lesson.html
      for the full rationale. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=61929406"></script>
+<script src="coi-serviceworker.js?v=4938e4e8"></script>
 <!--
   Critical CSS, inlined.
   =====================
@@ -79,8 +79,8 @@ a:hover{background:var(--hl)}
   <noscript> covers users with JS disabled — they get the old
   render-blocking behaviour, which is still correct (just slower).
 -->
-<link rel="preload" href="style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css"></noscript>
+<link rel="preload" href="style.css?v=4938e4e8" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=4938e4e8"></noscript>
 <!-- Warm the cache for the lesson page. We're an MPA, so the click-to-paint
      cost is dominated by loading CodeMirror + the lesson scripts on demand.
      marked is self-hosted (see vendor/) so no preconnect is needed for it.
@@ -125,7 +125,7 @@ a:hover{background:var(--hl)}
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-24">2026-05-24</time> &middot; <a href="https://github.com/b1tank/learnc/commit/61929406" rel="noopener">61929406</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-24">2026-05-24</time> &middot; <a href="https://github.com/b1tank/learnc/commit/4938e4e8" rel="noopener">4938e4e8</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
 <script type="module" src="app.js"></script>

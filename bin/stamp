@@ -11,7 +11,14 @@ What it does, in one pass:
    iOS bfcache trap where Safari serves the page from cache without ever
    consulting the SW — by the time the user sees the page, the SW is
    already mid-install and the next reload is fully isolated.
-3. Inserts/updates a small "Last updated <date> · commit <sha>" stamp in
+3. Same treatment for style.css — both <link rel="stylesheet"> and the
+   <link rel="preload" as="style"> form used on index.html. GitHub Pages
+   caps Cache-Control max-age at ~10 min and we can't set 'immutable', so
+   filename hashing is no win over a `?v=<sha>` query string here; the
+   query just flips the cached URL on every commit, forcing instant
+   revalidation. Vendor files (vendor/marked-12.0.0.min.js) already
+   encode the version in the filename, so they're left alone.
+4. Inserts/updates a small "Last updated <date> · commit <sha>" stamp in
    the site footer, between BUILD-STAMP-START/END markers. The link points
    at the GitHub commit. Style: subtle, single line, like bellard.org.
 
@@ -63,7 +70,18 @@ def stamp_html(text: str, sha: str, date: str) -> str:
         text,
     )
 
-    # 2. footer build stamp between markers — inline <span> so the whole
+    # 2. style.css?v=<sha> — matches both the plain <link rel="stylesheet">
+    #    form (lesson.html) and the <link rel="preload" as="style"> form
+    #    used by index.html's non-blocking CSS pattern. Anchored on
+    #    `href="style.css"` so we don't accidentally rewrite anything that
+    #    happens to contain those bytes inside a comment or string.
+    text = re.sub(
+        r'(href=")style\.css(\?v=[^"]*)?(")',
+        rf'\1style.css?v={sha}\3',
+        text,
+    )
+
+    # 3. footer build stamp between markers — inline <span> so the whole
     #    footer fits on one row alongside the credits line.
     stamp_inner = (
         f'<span class="build-stamp">updated '
