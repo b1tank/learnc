@@ -30,6 +30,7 @@ Press **run**. You should see `hello, world` appear in the terminal below.
 - `#include <stdio.h>` pulls in the **standard I/O** header. It tells the compiler that names like `printf` and `getchar` exist and what shape they have. Without it, the compiler doesn't know that `printf` is a function.
 - `int main(void)` declares the program's entry point. When the operating system starts your program, it calls `main` for you. `main` returns an `int` — `0` means success, anything else means failure.
 - `printf` writes formatted text to **standard output** (your terminal — in this case the black pane below the editor). The `\n` is an *escape sequence* meaning "newline." Without it, the output would not advance to a new line at the end and a typical shell prompt would jam right up against the message.
+- **`printf` never adds a newline for you.** Every line break is one you typed explicitly with `\n`. Two `printf` calls in a row, neither containing `\n`, produce one line of output joined back-to-back. Other escapes in the same family: `\t` (tab), `\b` (backspace), `\"` (literal double quote inside a string), `\\` (a literal backslash).
 - `return 0;` hands control back to the OS with an exit status of zero, the C convention for "everything fine."
 
 ## Modern note
@@ -45,5 +46,6 @@ You can also omit the `return 0;` at the end of `main` in C99 and later — the 
 3. Remove the `\n` from the original message. What changes in the output? Why?
 4. Replace `\n` with `\t`. What does `\t` do?
 5. Delete the `#include <stdio.h>` line. What error do you see? Read it once — you will see this error many more times in your C career.
+6. Slip a stray escape into the string, like `\q` or `\z` (K&R exercise 1-2). Does the compiler complain, warn, or silently ignore it?
 
 When the experiments make sense to you, click **next →** to meet variables.

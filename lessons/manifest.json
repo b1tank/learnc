@@ -8,7 +8,7 @@
       "title": "A Tutorial Introduction",
       "items": [
         { "kind": "section", "id": "01-01-hello",     "label": "1.1",  "title": "Getting Started", "status": "done" },
-        { "kind": "section", "id": "01-02-temp",      "label": "1.2",  "title": "Variables and Arithmetic Expressions" },
+        { "kind": "section", "id": "01-02-temp",      "label": "1.2",  "title": "Variables and Arithmetic Expressions", "status": "draft" },
         { "kind": "section", "id": "01-03-for",       "label": "1.3",  "title": "The for Statement" },
         { "kind": "section", "id": "01-04-define",    "label": "1.4",  "title": "Symbolic Constants" },
         { "kind": "section", "id": "01-05-chario",    "label": "1.5",  "title": "Character Input and Output" },
