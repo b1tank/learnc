@@ -408,17 +408,22 @@ async function loadLesson() {
   }
 
   document.getElementById("edit-link").href = GITHUB_BLOB_BASE + lessonId + ".md";
-  document.getElementById("lesson-label").textContent = lessonId;
+
+  // Kick off the manifest fetch in parallel with the lesson fetch — both are
+  // needed to populate the breadcrumb without a visible flash.
+  var manifestPromise = getManifest().catch(function () { return null; });
 
   var url = "lessons/" + lessonId + ".md";
   var r;
   try {
     r = await fetch(url, { cache: "no-cache" });
   } catch (e) {
+    await renderCrumbs(manifestPromise, null);
     renderStub();
     return;
   }
   if (!r.ok) {
+    await renderCrumbs(manifestPromise, null);
     renderStub();
     return;
   }
@@ -429,7 +434,6 @@ async function loadLesson() {
 
   document.title = (meta.title || lessonId) + " · learnc";
   document.getElementById("lesson-title").textContent = meta.title || lessonId;
-  document.getElementById("lesson-label").textContent = meta.label || meta.id || lessonId;
 
   // Render prose markdown
   /* global marked */
@@ -448,15 +452,34 @@ async function loadLesson() {
 
   setupNav(meta);
 
-  // Resolve chapter context for the breadcrumb (best effort; degrades silently).
-  getManifest().then(function (manifest) {
+  await renderCrumbs(manifestPromise, meta);
+}
+
+// Populate the breadcrumb with `lessons / Ch N. Title / X.Y Lesson title` and
+// reveal it. The `.ready` class is what flips the .crumbs visibility from
+// hidden to visible, so the whole row appears in one paint.
+async function renderCrumbs(manifestPromise, meta) {
+  var crumbsEl = document.getElementById("crumbs");
+  var chapterCrumb = document.getElementById("lesson-chapter-crumb");
+  var labelEl = document.getElementById("lesson-label");
+  var manifest = await manifestPromise;
+
+  if (manifest) {
     var ch = findChapter(manifest, lessonId);
-    if (!ch) return;
-    var crumb = document.getElementById("lesson-chapter-crumb");
-    if (!crumb) return;
-    crumb.innerHTML = " / <span class=\"muted\">Ch " + ch.n + ". " +
-      escapeHTML(ch.title) + "</span>";
-  });
+    if (ch) {
+      chapterCrumb.textContent = " / Ch " + ch.n + ". " + ch.title;
+    }
+  }
+  var labelText;
+  if (meta) {
+    var label = meta.label || meta.id || lessonId;
+    var title = meta.title || "";
+    labelText = title ? (label + " " + title) : label;
+  } else {
+    labelText = lessonId;
+  }
+  labelEl.textContent = " / " + labelText;
+  if (crumbsEl) crumbsEl.classList.add("ready");
 }
 
 loadLesson().catch(function (err) {

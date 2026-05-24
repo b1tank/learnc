@@ -172,7 +172,8 @@ li { margin: 0.15rem 0; }
 #lesson-index.lesson-list--hide-stub li.status-stub { display: none; }
 
 /* Lesson view */
-.crumbs { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+.crumbs { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; visibility: hidden; }
+.crumbs.ready { visibility: visible; }
 .crumbs a { color: var(--muted); }
 
 .runner {
