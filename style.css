@@ -6,8 +6,8 @@
   --link: #0044aa;
   --link-visited: #6633aa;
   --muted: #666;
-  --code-bg: #f4f4f4;
-  --code-border: #ddd;
+  --code-bg: #eaeaea;
+  --code-border: #c8c8c8;
   --terminal-bg: #000;
   --terminal-fg: #0f0;
   --hl: #ffff77;
@@ -20,6 +20,9 @@
   --banner-border: #b9d4f0;
   --stub-bg: #fffae0;
   --stub-border: #e8d870;
+  --accent: #0a7;
+  --accent-fg: #fff;
+  --accent-hover: #086;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,8 +32,8 @@
     --link: #6ab0ff;
     --link-visited: #b59cff;
     --muted: #9a9a9a;
-    --code-bg: #232323;
-    --code-border: #3a3a3a;
+    --code-bg: #2d2d2d;
+    --code-border: #4a4a4a;
     --terminal-bg: #000;
     --terminal-fg: #5f5;
     --hl: #5a4500;
@@ -43,6 +46,9 @@
     --banner-border: #2e4d80;
     --stub-bg: #2a2618;
     --stub-border: #5a4a1a;
+    --accent: #0c8;
+    --accent-fg: #0a1a14;
+    --accent-hover: #0fa;
   }
   hr { border-color: #333; }
   .site-header { border-bottom-color: #333; }
@@ -90,7 +96,7 @@ code, pre, kbd, samp {
   font-family: "Courier New", Courier, monospace;
   font-size: 0.95em;
 }
-code { background: var(--code-bg); padding: 1px 4px; border-radius: 2px; }
+code { background: var(--code-bg); padding: 1px 5px; border: 1px solid var(--code-border); border-radius: 2px; }
 pre {
   background: var(--code-bg);
   border: 1px solid var(--code-border);
@@ -225,6 +231,9 @@ li { margin: 0.15rem 0; }
 /* Lesson view */
 .crumbs { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; visibility: hidden; }
 .crumbs.ready { visibility: visible; }
+/* Title is hidden until lesson.js drops the class, so the page never flashes
+   "Loading…" before the real h1 lands. */
+.lesson-title-empty { visibility: hidden; }
 .crumbs a { color: var(--muted); }
 
 .runner {
@@ -258,6 +267,18 @@ button {
 button:hover { filter: brightness(0.96); }
 button:active { filter: brightness(0.9); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Primary action (the Run button). The rest of the runner toolbar (reset,
+   share) stays tertiary so the eye lands here first. */
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  padding: 0.25rem 1rem;
+  font-weight: bold;
+}
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); filter: none; }
+button.primary:active { filter: brightness(0.92); }
 
 .editor { background: #fff; min-height: 8em; }
 

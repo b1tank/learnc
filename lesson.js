@@ -151,7 +151,9 @@ function el(tag, attrs, children) {
 }
 
 function renderStub() {
-  document.getElementById("lesson-title").textContent = "Stub: " + lessonId;
+  var titleEl = document.getElementById("lesson-title");
+  titleEl.textContent = "Stub: " + lessonId;
+  titleEl.classList.remove("lesson-title-empty");
   var prose = document.getElementById("lesson-prose");
   prose.innerHTML = "";
 
@@ -433,7 +435,9 @@ async function loadLesson() {
   var fences = extractFences(parsed.body);
 
   document.title = (meta.title || lessonId) + " · learnc";
-  document.getElementById("lesson-title").textContent = meta.title || lessonId;
+  var titleEl = document.getElementById("lesson-title");
+  titleEl.textContent = meta.title || lessonId;
+  titleEl.classList.remove("lesson-title-empty");
 
   // Render prose markdown
   /* global marked */

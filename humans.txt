@@ -3,7 +3,9 @@
 Built by:    a human (github.com/b1tank)
 Reading:     The C Programming Language, Kernighan & Ritchie, 2nd ed. (1988)
 Writing:     vim, eyes, fingers
-LLM usage:   only for the WASM C runtime spike. All lesson prose is hand-written.
+LLM usage:   AI may help draft lesson prose; a human verifies it against
+             K&R and revises before it lands. Also used for the WASM C
+             runtime spike.
 
 /* SITE */
 
