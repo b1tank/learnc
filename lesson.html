@@ -31,10 +31,9 @@
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
 <script src="coi-serviceworker.js?v=61929406"></script>
 <link rel="stylesheet" href="style.css">
-<!-- Open TLS to the CDNs early. If the visitor landed here directly (deep
-     link, refresh) we still want the marked + CodeMirror fetches to start as
-     soon as possible. -->
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- Open TLS to esm.sh early so the CodeMirror submodule graph can start
+     downloading as soon as the importmap is parsed. marked is self-hosted
+     under vendor/, so no third-party preconnect is needed for it. -->
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <!-- modulepreload: lesson.js statically imports these sibling modules, so
      pre-fetching them in parallel with lesson.js shaves one waterfall layer.
@@ -51,8 +50,10 @@
 <!-- `defer` lets the HTML parser finish before fetching/executing marked, so
      the title and prose container are in the DOM by the time module scripts
      start. Modules are implicitly deferred and run after this script, which
-     means `window.marked` is ready when lesson.js evaluates. -->
-<script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+     means `window.marked` is ready when lesson.js evaluates.
+     Self-hosted under vendor/ — saves a TLS handshake to jsdelivr and lets
+     us version-pin via the filename instead of a CDN URL. -->
+<script defer src="vendor/marked-12.0.0.min.js"></script>
 <!--
   Import map: pin every CodeMirror 6 submodule + its transitive deps so that
   all packages share the SAME @codemirror/state instance. Without this, multiple
