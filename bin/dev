@@ -328,7 +328,7 @@ def main() -> None:
         ip = _lan_ip()
         if ip:
             print(f"[learnc dev]   lan:     http://{ip}:{port}/  (open on phone/tablet on same wifi)")
-    print(f"[learnc dev]   lesson:  http://127.0.0.1:{port}/lesson.html?id=01-01-hello")
+    print(f"[learnc dev]   lesson:  http://127.0.0.1:{port}/lesson.html?id=01-01-getting-started")
     print(f"[learnc dev]   watch:   {', '.join(WATCH_GLOBS)}")
     print("[learnc dev]   save any watched file -> browser reloads")
     print("[learnc dev]   Ctrl-C to stop")

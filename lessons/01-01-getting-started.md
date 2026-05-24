@@ -1,10 +1,10 @@
 ---
-id: 01-01-hello
+id: 01-01-getting-started
 chapter: 1
 label: "1.1"
 title: Getting Started
 prev: null
-next: 01-02-temp
+next: 01-02-variables-and-arithmetic-expressions
 status: done
 ---
 

@@ -9,7 +9,7 @@ from "stub" to "draft" so the index page shows it in-progress.
 usage:
   bin/new-lesson              # list remaining stubs and suggest the next
   bin/new-lesson next         # scaffold the first stub in reading order
-  bin/new-lesson 01-02-temp   # scaffold a specific id
+  bin/new-lesson 01-02-variables-and-arithmetic-expressions   # scaffold a specific id
   bin/new-lesson done <id>    # mark a draft as done in the manifest
 """
 

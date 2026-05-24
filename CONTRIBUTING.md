@@ -68,7 +68,7 @@ the browser refreshes.
 
 ## The lesson file format
 
-See [`lessons/_template.md`](lessons/_template.md) for the skeleton and [`lessons/01-01-hello.md`](lessons/01-01-hello.md) for a real example.
+See [`lessons/_template.md`](lessons/_template.md) for the skeleton and [`lessons/01-01-getting-started.md`](lessons/01-01-getting-started.md) for a real example.
 
 Two fenced code blocks are special:
 
@@ -79,7 +79,7 @@ Everything else is plain markdown rendered by [marked](https://marked.js.org/).
 
 ## Tone
 
-Read [`lessons/01-01-hello.md`](lessons/01-01-hello.md) for the voice. Short sentences. Concrete examples. No hype. No "amazing" or "powerful". No emoji. Treat the reader as a smart adult who can handle being told the truth about C.
+Read [`lessons/01-01-getting-started.md`](lessons/01-01-getting-started.md) for the voice. Short sentences. Concrete examples. No hype. No "amazing" or "powerful". No emoji. Treat the reader as a smart adult who can handle being told the truth about C.
 
 ## Code of conduct
 

@@ -26,7 +26,7 @@ Why Lighthouse 11 by default:
 usage:
   bin/perf                       # prod, index + the canonical lesson
   bin/perf --local               # against http://127.0.0.1:8765 (run bin/dev first)
-  bin/perf --lesson 01-02-temp   # pick a different lesson page
+  bin/perf --lesson 01-02-variables-and-arithmetic-expressions   # pick a different lesson page
   bin/perf --url https://...     # arbitrary URL, single page
   bin/perf --desktop             # desktop profile instead of mobile
   bin/perf --full                # all 5 categories, not just performance
@@ -48,7 +48,7 @@ PERF_DIR = REPO / ".perf"
 
 DEFAULT_PROD = "https://b1tank.github.io/learnc"
 DEFAULT_LOCAL = "http://127.0.0.1:8765"
-DEFAULT_LESSON = "01-01-hello"
+DEFAULT_LESSON = "01-01-getting-started"
 
 
 def run_lighthouse(url: str, label: str, *, lh: str, form_factor: str, full: bool) -> Path:

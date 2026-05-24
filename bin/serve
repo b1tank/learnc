@@ -5,6 +5,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${1:-8000}"
 echo "learnc:  http://127.0.0.1:${PORT}/"
-echo "lesson:  http://127.0.0.1:${PORT}/lesson.html?id=01-01-hello"
+echo "lesson:  http://127.0.0.1:${PORT}/lesson.html?id=01-01-getting-started"
 echo
 exec python3 -m http.server "${PORT}"

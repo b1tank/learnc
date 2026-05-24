@@ -1,11 +1,11 @@
 ---
-id: 01-02-temp
+id: 01-02-variables-and-arithmetic-expressions
 chapter: 1
 label: "1.2"
 title: Variables and Arithmetic Expressions
-prev: 01-01-hello
-next: 01-03-for
-status: draft
+prev: 01-01-getting-started
+next: 01-03-the-for-statement
+status: done
 ---
 
 The second program in K&R prints a Fahrenheit-to-Celsius conversion table. It is still one function — `main` — but it now has variables, arithmetic, a loop, and formatted output. Five new ideas packed into twenty lines. Run it once, then read the breakdown — each piece will come back in every future lesson.
@@ -72,6 +72,12 @@ K&R's original is `main()` with no return statement. Modern C wants `int main(vo
 3. Switch to floating-point: declare the variables as `float`, change the formula to `celsius = (5.0 / 9.0) * (fahr - 32.0);`, and the format to `"%3.0f %6.1f\n"`. The Celsius column should now show one decimal.
 4. Make a Celsius-to-Fahrenheit table going from `-40` to `120` in steps of `10` (K&R exercise 1-4). The formula is `fahr = celsius * 9 / 5 + 32`.
 5. Swap `<=` for `<` in the `while` condition. What disappears from the output? Why?
+
+## Notes from the author
+
+- The integer-arithmetic gotcha (`5/9 = 0`) is *the* canonical "C is not Python" lesson. If you came from a high-level language this is the first place the metal shows through. When you revise, consider expanding this into its own callout — it's worth more than one bullet.
+- I deliberately did not show the floating-point version inline because the `while` loop is the headline; the float rewrite is in the experiments and again in 1.3. If you find that too subtle, swap experiment #3 into the main code and add a "Modern note" about IEEE-754.
+- The `printf` format string is the first sighting of C's *implicit contract* between format and arguments — mismatched specifiers don't crash, they silently print garbage. Worth a deeper note when you have time; modern compilers warn under `-Wformat`, the wasm runtime here may or may not.
 
 *Click **next →** to meet the `for` loop, which packs initialise/test/increment into one line.*
 
