@@ -36,6 +36,29 @@
 
   function renderIndex(manifest, root) {
     root.innerHTML = "";
+
+    // Progress summary at the top.
+    var counts = { done: 0, draft: 0, stub: 0, total: 0 };
+    manifest.chapters.forEach(function (ch) {
+      ch.items.forEach(function (it) {
+        counts.total++;
+        var s = it.status || "stub";
+        if (counts[s] != null) counts[s]++;
+      });
+    });
+    var pct = counts.total
+      ? Math.round((counts.done / counts.total) * 100)
+      : 0;
+    var summary = el("p", { class: "progress-summary" }, [
+      el("strong", {}, [String(counts.done) + " / " + counts.total + " lessons done"]),
+      " (" + pct + "%)",
+      counts.draft
+        ? " \u00b7 " + counts.draft + " in draft"
+        : "",
+      " \u00b7 " + counts.stub + " stubs left"
+    ]);
+    root.appendChild(summary);
+
     manifest.chapters.forEach(function (ch) {
       var sec = el("section", { class: "chapter" });
       sec.appendChild(el("h2", { class: "chapter-head" }, ["Chapter " + ch.n + ". " + ch.title]));

@@ -11,6 +11,27 @@ var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
 var params = new URLSearchParams(location.search);
 var lessonId = params.get("id");
 
+// Cached manifest (loaded lazily for the chapter breadcrumb).
+var manifestPromise = null;
+function getManifest() {
+  if (manifestPromise) return manifestPromise;
+  manifestPromise = fetch("lessons/manifest.json", { cache: "no-cache" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; });
+  return manifestPromise;
+}
+
+function findChapter(manifest, id) {
+  if (!manifest || !manifest.chapters) return null;
+  for (var i = 0; i < manifest.chapters.length; i++) {
+    var ch = manifest.chapters[i];
+    for (var j = 0; j < (ch.items || []).length; j++) {
+      if (ch.items[j].id === id) return ch;
+    }
+  }
+  return null;
+}
+
 function escapeHTML(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -106,6 +127,67 @@ function setupNav(meta) {
   if (meta.next) {
     next.href = "lesson.html?id=" + encodeURIComponent(meta.next);
     next.classList.remove("disabled");
+  }
+
+  // Keyboard shortcuts: ← / → jump to prev / next lesson. Ignore when the
+  // user is typing in an input, textarea, or the CodeMirror editor, or when
+  // any modifier key is held (so browser shortcuts like Cmd-← "back" still work).
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    var t = e.target;
+    if (t && t.closest) {
+      if (t.closest(".cm-editor")) return;
+      var tag = t.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || t.isContentEditable) return;
+    }
+    if (e.key === "ArrowLeft" && meta.prev) {
+      e.preventDefault();
+      location.href = "lesson.html?id=" + encodeURIComponent(meta.prev);
+    } else if (e.key === "ArrowRight" && meta.next) {
+      e.preventDefault();
+      location.href = "lesson.html?id=" + encodeURIComponent(meta.next);
+    }
+  });
+}
+
+// Decorate every <pre> in the prose with a small "copy" button. The editor
+// (CodeMirror) and the terminal already have their own buttons; only the
+// inert markdown code blocks need this.
+function addCopyButtons(root) {
+  if (!root) return;
+  var pres = root.querySelectorAll("pre");
+  for (var i = 0; i < pres.length; i++) {
+    var pre = pres[i];
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.setAttribute("aria-label", "copy code to clipboard");
+    (function (pre, btn) {
+      btn.addEventListener("click", function () {
+        var code = pre.querySelector("code");
+        var text = code ? code.textContent : pre.textContent;
+        var done = function () {
+          btn.textContent = "copied";
+          setTimeout(function () { btn.textContent = "copy"; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () {
+            btn.textContent = "failed";
+            setTimeout(function () { btn.textContent = "copy"; }, 1500);
+          });
+        } else {
+          // Fallback: select + execCommand (best-effort on older browsers).
+          var sel = window.getSelection();
+          var range = document.createRange();
+          range.selectNodeContents(pre);
+          sel.removeAllRanges(); sel.addRange(range);
+          try { document.execCommand("copy"); done(); } catch (_) {}
+          sel.removeAllRanges();
+        }
+      });
+    })(pre, btn);
+    pre.appendChild(btn);
   }
 }
 
@@ -227,19 +309,30 @@ async function loadLesson() {
 
   // Render prose markdown
   /* global marked */
+  var prose = document.getElementById("lesson-prose");
   if (typeof marked !== "undefined") {
     marked.setOptions({ headerIds: false, mangle: false });
-    document.getElementById("lesson-prose").innerHTML = marked.parse(fences.body);
+    prose.innerHTML = marked.parse(fences.body);
   } else {
-    document.getElementById("lesson-prose").innerHTML =
-      "<pre>" + escapeHTML(fences.body) + "</pre>";
+    prose.innerHTML = "<pre>" + escapeHTML(fences.body) + "</pre>";
   }
+  addCopyButtons(prose);
 
   if (fences.starter !== null) {
     setupRunner(fences.starter, fences.expected);
   }
 
   setupNav(meta);
+
+  // Resolve chapter context for the breadcrumb (best effort; degrades silently).
+  getManifest().then(function (manifest) {
+    var ch = findChapter(manifest, lessonId);
+    if (!ch) return;
+    var crumb = document.getElementById("lesson-chapter-crumb");
+    if (!crumb) return;
+    crumb.innerHTML = " / <span class=\"muted\">Ch " + ch.n + ". " +
+      escapeHTML(ch.title) + "</span>";
+  });
 }
 
 loadLesson().catch(function (err) {

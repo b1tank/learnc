@@ -47,8 +47,26 @@ pre {
   padding: 0.6rem 0.8rem;
   overflow-x: auto;
   line-height: 1.45;
+  position: relative;
 }
 pre code { background: none; padding: 0; }
+
+/* Copy button on prose code blocks (the editor has its own buttons). */
+.copy-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 0.72rem;
+  padding: 0.05rem 0.45rem;
+  background: #fff;
+  border: 1px solid #bbb;
+  opacity: 0;
+  transition: opacity 0.12s;
+  font-family: Verdana, Geneva, sans-serif;
+}
+pre:hover .copy-btn,
+.copy-btn:focus { opacity: 1; }
+@media (hover: none) { .copy-btn { opacity: 0.7; } }
 
 hr { border: 0; border-top: 1px solid #ccc; margin: 1.5rem 0; }
 
@@ -93,6 +111,15 @@ li { margin: 0.15rem 0; }
 .site-footer a { color: var(--muted); }
 
 /* Lesson index */
+.progress-summary {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin: 0 0 1.2rem;
+  padding: 0.4rem 0.7rem;
+  background: #f4f4f4;
+  border-left: 3px solid #888;
+}
+.progress-summary strong { color: var(--fg); }
 .chapter { margin-bottom: 1.5rem; }
 .chapter-head { margin: 0 0 0.4rem; font-size: 1.1rem; }
 .lesson-list { list-style: none; padding-left: 0; margin: 0; }
