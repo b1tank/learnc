@@ -1,0 +1,163 @@
+---
+name: ios-safari-remote-debug
+description: 'Remote-debug mobile Safari on a connected iPhone from a Linux workstation via ios-webkit-debug-proxy + a CDP driver. Use when: diagnosing why a page misbehaves on iOS Safari, checking crossOriginIsolated / SharedArrayBuffer / service-worker state on a real iPhone, evaluating JS in an iPhone Safari tab from the terminal, streaming console logs from an iPhone, or reproducing cache / bfcache issues that only happen on iOS. Triggers: "debug iphone safari", "ios remote debug", "ios webkit debug proxy", "iwdp", "inspect iphone tab", "crossOriginIsolated on ios", "SAB on iphone", "service worker not intercepting on safari".'
+---
+
+# iOS Safari Remote Debug
+
+Drive a real iPhone's Safari from this Linux box. Evaluate JS, stream console
+logs, and probe runtime state (`crossOriginIsolated`, `SharedArrayBuffer`,
+service-worker registration, response headers) — all from the terminal.
+
+## When to Use
+
+- A page works in desktop browsers but fails on mobile Safari
+- Need to inspect `crossOriginIsolated`, `SharedArrayBuffer`, COOP/COEP, or
+  service-worker behavior on a real iPhone
+- Want to reproduce a stale-cache / bfcache issue that only surfaces on iOS
+- Want to script repeatable iPhone checks (CI smoke tests, manual reload
+  loops, header verification) without poking at the device by hand
+
+## Prerequisites
+
+- Linux host (tested on Ubuntu 22.04)
+- iPhone connected over USB, **unlocked**, with "Trust This Computer" granted
+- On the iPhone: **Settings → Safari → Advanced → Web Inspector = ON**
+
+## Setup (one time)
+
+Install libimobiledevice and build `ios-webkit-debug-proxy`:
+
+```bash
+.github/skills/ios-safari-remote-debug/scripts/install.sh
+```
+
+What it does:
+1. `apt install` libimobiledevice tools, `ideviceinstaller`, `usbmuxd`, build deps
+2. Clones `google/ios-webkit-debug-proxy`, configures, builds, `sudo make install`
+3. Verifies `idevice_id -l` lists your phone
+4. Installs the Python `websockets` module (used by [iosdbg.py](./scripts/iosdbg.py))
+
+## Usage
+
+### 1. Start the proxy
+
+```bash
+.github/skills/ios-safari-remote-debug/scripts/start-proxy.sh
+```
+
+Backgrounds `ios_webkit_debug_proxy -F`. Devices show up on `http://localhost:9221/json`
+and per-device DevTools endpoints on `http://localhost:9222/`, `:9223/`, …
+
+### 2. Open Safari on the iPhone
+
+Navigate to the page you want to inspect. Until a tab is open with Web Inspector
+enabled, `iosdbg.py tabs` returns `[]`.
+
+### 3. Drive it from the terminal
+
+```bash
+PY=.github/skills/ios-safari-remote-debug/scripts/iosdbg.py
+
+$PY tabs                                       # list inspectable Safari tabs
+$PY eval --match learnc "self.crossOriginIsolated"
+$PY eval --match learnc "$(cat probe.js)"      # multi-line JS via file
+$PY logs --match learnc --for 30               # stream console for 30s
+```
+
+`--match <substr>` filters by URL or title. Without it, the first tab is used.
+
+### Multi-line JS pattern
+
+iOS WebKit's `Runtime.evaluate` returns whatever the expression evaluates to.
+For async work, set a global from inside an IIFE then read it back:
+
+```js
+// probe.js
+window.__out = null;
+(async () => {
+  const r = await fetch(location.href, { cache: 'no-store' });
+  window.__out = {
+    coi: self.crossOriginIsolated,
+    sab: typeof SharedArrayBuffer !== 'undefined',
+    coep: r.headers.get('cross-origin-embedder-policy'),
+  };
+})();
+"started"
+```
+
+```bash
+$PY eval --match learnc "$(cat probe.js)"
+sleep 1
+$PY eval --match learnc "JSON.stringify(window.__out)"
+```
+
+Why two calls: iOS WebKit honors `Runtime.evaluate` synchronously but is
+inconsistent about `awaitPromise: true`. Setting a global + polling is the
+reliable pattern.
+
+## Protocol Gotchas (iOS 13+)
+
+`ios-webkit-debug-proxy` exposes a Chrome DevTools-style WebSocket, but
+**every CDP message must be wrapped in `Target.sendMessageToTarget`** and
+responses arrive inside `Target.dispatchMessageFromTarget`. Sending bare
+`Runtime.evaluate` gets you `'Runtime' domain was not found`.
+
+[iosdbg.py](./scripts/iosdbg.py) handles the wrapping for you — see its `CDP`
+class. If you need to extend it (DOM inspection, network capture, etc.),
+just add new `await cdp.call("Domain.method", params)` calls; everything
+goes through the same envelope.
+
+## Common Diagnostic Snippets
+
+### Cross-origin isolation health
+
+```js
+JSON.stringify({
+  crossOriginIsolated: self.crossOriginIsolated,
+  hasSAB: typeof SharedArrayBuffer !== 'undefined',
+  swController: !!navigator.serviceWorker.controller,
+  swState: navigator.serviceWorker.controller && navigator.serviceWorker.controller.state,
+})
+```
+
+### Did the SW actually serve this navigation?
+
+```js
+JSON.stringify((() => {
+  const n = performance.getEntriesByType('navigation')[0] || {};
+  return { workerStart: n.workerStart, transferSize: n.transferSize, type: n.type };
+})())
+```
+
+`workerStart: 0` and `transferSize: 0` mean Safari served the page from
+bfcache and the SW was bypassed. Force a hard reload (or bust the SW URL
+with a query string) to recover.
+
+### Response headers from a real fetch
+
+```js
+window.__h = null;
+fetch(location.href, { cache: 'no-store' }).then(async r => {
+  window.__h = {
+    coop: r.headers.get('cross-origin-opener-policy'),
+    coep: r.headers.get('cross-origin-embedder-policy'),
+    corp: r.headers.get('cross-origin-resource-policy'),
+  };
+});
+"started"
+```
+
+## Cleanup
+
+```bash
+pkill ios_webkit_debug_proxy
+```
+
+The libimobiledevice/usbmuxd packages stay installed (they're cheap).
+
+## Files
+
+- [scripts/install.sh](./scripts/install.sh) — installs apt deps, builds iwdp, pip-installs websockets
+- [scripts/start-proxy.sh](./scripts/start-proxy.sh) — runs `ios_webkit_debug_proxy -F` in the background
+- [scripts/iosdbg.py](./scripts/iosdbg.py) — CDP driver: `tabs`, `eval`, `logs`
