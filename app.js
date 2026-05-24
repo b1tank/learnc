@@ -117,7 +117,10 @@ function init() {
     { keys: ["?"], label: "show this help" },
     { keys: ["Esc"], label: "close help" }
   ]);
-  fetch(MANIFEST_URL, { cache: "no-cache" })
+  // Plain fetch (default cache mode). The manifest is the same JSON for
+  // every visitor; GitHub Pages already serves a short max-age. The old
+  // `no-cache` forced a 304 round-trip on every page view.
+  fetch(MANIFEST_URL)
     .then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
