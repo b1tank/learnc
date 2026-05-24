@@ -36,6 +36,18 @@
      soon as possible. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://esm.sh" crossorigin>
+<!-- modulepreload: lesson.js statically imports these sibling modules, so
+     pre-fetching them in parallel with lesson.js shaves one waterfall layer.
+     editor.js is intentionally NOT preloaded here — it depends on the
+     importmap below for its bare specifiers (codemirror, @codemirror/*),
+     and modulepreloading a module before its importmap is in scope makes
+     the browser try to resolve those specifiers as URLs and fail. We rely
+     on the static import "./editor.js" in lesson.js to pull it in once the
+     importmap is parsed. -->
+<link rel="modulepreload" href="lesson.js">
+<link rel="modulepreload" href="runner.js">
+<link rel="modulepreload" href="theme.js">
+<link rel="modulepreload" href="shortcuts.js">
 <!-- `defer` lets the HTML parser finish before fetching/executing marked, so
      the title and prose container are in the DOM by the time module scripts
      start. Modules are implicitly deferred and run after this script, which

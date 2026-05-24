@@ -33,6 +33,12 @@
      need. Browsers ignore these on save-data / 2g, which is exactly right. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://esm.sh" crossorigin>
+<!-- modulepreload: app.js statically imports theme.js + shortcuts.js, so
+     fetching them at the same time as app.js (instead of after) eliminates
+     one waterfall layer. The browser is the only thing that has to do real
+     work here — same bytes, just earlier discovery. -->
+<link rel="modulepreload" href="theme.js">
+<link rel="modulepreload" href="shortcuts.js">
 <link rel="prefetch" href="lesson.html">
 <link rel="prefetch" href="lesson.js" as="script" crossorigin>
 <link rel="prefetch" href="editor.js" as="script" crossorigin>
