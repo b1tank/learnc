@@ -121,10 +121,26 @@ def watcher_loop(interval: float = 0.3) -> None:
 class HotReloadHandler(http.server.SimpleHTTPRequestHandler):
     # Browsers aggressively cache static files; that defeats hot reload.
     # Disable caching for everything the dev server serves.
+    #
+    # COOP/COEP: the WASM C runtime (Runno) needs SharedArrayBuffer, which
+    # requires cross-origin isolation. In production, coi-serviceworker.js
+    # injects these headers from a service worker — but mobile Safari
+    # refuses to register a service worker over plain HTTP unless the host
+    # is localhost. Phones on the LAN hit us by IP, so the SW never runs
+    # and SAB is undefined ("Can't find variable: SharedArrayBuffer").
+    # Setting the headers here makes the page crossOriginIsolated=true
+    # natively, so SAB is available with or without the SW.
+    #
+    # COEP=credentialless (vs. require-corp) means cross-origin
+    # subresources (the CodeMirror CDN, Runno's wasm, etc.) load without
+    # needing a CORP header, as long as they're fetched without
+    # credentials. Supported in Safari 17.4+, all evergreen browsers.
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
         super().end_headers()
 
     def do_GET(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler convention)
