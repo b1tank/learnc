@@ -4,6 +4,7 @@
 
 import { mountEditor } from "./editor.js";
 import { run as runC, onProgress as runOnProgress } from "./runner.js";
+import { mountToggle as mountThemeToggle } from "./theme.js";
 
 var GITHUB_BLOB_BASE = "https://github.com/b1tank/learnc/blob/main/lessons/";
 var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
@@ -348,6 +349,13 @@ function setupRunner(starter, expected) {
     }, 200);
   });
 
+  // Keep the editor's CodeMirror theme in sync with the page theme whenever
+  // the user cycles the toggle. The editor also listens to matchMedia on its
+  // own for OS-level changes when no manual override is pinned.
+  document.addEventListener("learnc:theme", function (e) {
+    if (editorAPI && editorAPI.setDark) editorAPI.setDark(!!e.detail.isDark);
+  });
+
   if (sharedCode) {
     showSharedBanner(container, sharedCode, localCode, starter);
   }
@@ -401,6 +409,9 @@ function setupRunner(starter, expected) {
 }
 
 async function loadLesson() {
+  // Theme toggle is the same everywhere; mount it as soon as the page is up.
+  mountThemeToggle(document.getElementById("theme-toggle-slot"));
+
   if (!lessonId) {
     document.getElementById("lesson-title").textContent = "No lesson selected";
     document.getElementById("lesson-prose").innerHTML =

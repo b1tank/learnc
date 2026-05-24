@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>learnc — interactive K&amp;R C in your browser</title>
 <meta name="description" content="A hand-revised, runnable companion to The C Programming Language (Kernighan &amp; Ritchie, 2e). Every example runs in your browser. No signup. No tracking. Prose verified against K&amp;R.">
+<!-- Boot the theme BEFORE paint so the page never flashes the wrong palette.
+     Reads localStorage; falls back to prefers-color-scheme. The toggle lives
+     in theme.js, mounted after DOM ready. -->
+<script>
+  (function () {
+    try {
+      var pref = localStorage.getItem("learnc.theme");
+      var dark = pref === "dark" || (pref !== "light" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      if (dark) document.documentElement.dataset.theme = "dark";
+    } catch (e) { /* private mode, no localStorage — fall through */ }
+  })();
+</script>
 <!-- Register the COOP/COEP service worker on the landing page too so the
      service worker is already active when the visitor opens a lesson. -->
 <script src="coi-serviceworker.js"></script>
@@ -18,6 +31,7 @@
   <nav>
     <a href="index.html">lessons</a>
     <a href="https://github.com/b1tank/learnc">github</a>
+    <span id="theme-toggle-slot"></span>
   </nav>
   <p class="tagline">A hand-written, runnable companion to <em>The C Programming Language</em> (K&amp;R, 2e). Every example runs in your browser.</p>
 </header>

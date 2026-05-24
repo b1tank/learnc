@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>lesson · learnc</title>
+<!-- Boot theme BEFORE paint — see index.html for the rationale. -->
+<script>
+  (function () {
+    try {
+      var pref = localStorage.getItem("learnc.theme");
+      var dark = pref === "dark" || (pref !== "light" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      if (dark) document.documentElement.dataset.theme = "dark";
+    } catch (e) { /* private mode — fall through */ }
+  })();
+</script>
 <!--
   coi-serviceworker installs COOP/COEP response headers via a service worker
   so that SharedArrayBuffer is available (needed by the WASM C compiler).
@@ -54,6 +65,7 @@
     <a href="index.html">lessons</a>
     <a id="edit-link" href="#" rel="noopener">edit on github</a>
     <a href="https://github.com/b1tank/learnc">github</a>
+    <span id="theme-toggle-slot"></span>
   </nav>
 </header>
 

@@ -2,6 +2,8 @@
 // Lesson index renderer (used by index.html only). Loaded as a module, so
 // `script type="module"` already implies strict mode and module scope.
 
+import { mountToggle as mountThemeToggle } from "./theme.js";
+
 var MANIFEST_URL = "lessons/manifest.json";
 
 function el(tag, attrs, children) {
@@ -109,6 +111,7 @@ function renderIndex(manifest, root) {
 function init() {
   var root = document.getElementById("lesson-index");
   if (!root) return;
+  mountThemeToggle(document.getElementById("theme-toggle-slot"));
   fetch(MANIFEST_URL, { cache: "no-cache" })
     .then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
