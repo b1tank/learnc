@@ -79,13 +79,32 @@ function extractFences(markdown) {
   };
 }
 
-// Shareable code state in URL hash: #code=<base64(encodeURIComponent(code))>
+// Shareable code state in URL hash: #code=<urlsafe-base64(utf8(code))>.
+// Plain base64 would leak '+' and '/' into the hash, which most browsers
+// accept but chat apps (Slack/Discord) and email clients tend to mangle.
+// We use the url-safe alphabet (- and _) and drop '=' padding.
+function b64uEncode(str) {
+  // encodeURIComponent first so non-ASCII (rare in C, but possible in
+  // comments) survives the btoa byte boundary.
+  return btoa(encodeURIComponent(str))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function b64uDecode(b) {
+  // Restore padding to a multiple of 4 before atob.
+  var s = b.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return decodeURIComponent(atob(s));
+}
+
 function readUrlCode() {
   if (!location.hash) return null;
   try {
     var m = location.hash.match(/#code=([^&]+)/);
     if (!m) return null;
-    return decodeURIComponent(atob(m[1]));
+    return b64uDecode(m[1]);
   } catch (e) {
     return null;
   }
@@ -93,8 +112,11 @@ function readUrlCode() {
 
 function writeUrlCode(code) {
   try {
-    var b = btoa(encodeURIComponent(code));
-    history.replaceState(null, "", location.pathname + location.search + "#code=" + b);
+    history.replaceState(
+      null,
+      "",
+      location.pathname + location.search + "#code=" + b64uEncode(code)
+    );
   } catch (e) { /* ignore */ }
 }
 
