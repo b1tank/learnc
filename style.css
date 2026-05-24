@@ -203,13 +203,16 @@ li { margin: 0.15rem 0; }
 .site-footer .build-stamp time { font-variant-numeric: tabular-nums; }
 
 /* Lesson index */
+.progress-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin: 0 0 1.2rem;
+}
 .progress-summary {
   font-size: 0.95rem;
   color: var(--muted);
-  margin: 0 0 1.2rem;
-  padding: 0.4rem 0.7rem;
-  background: var(--panel-bg);
-  border-left: 3px solid #888;
 }
 .progress-summary strong { color: var(--fg); }
 .chapter { margin-bottom: 1.5rem; }
@@ -230,12 +233,11 @@ li { margin: 0.15rem 0; }
 .lesson-list .status.done { color: #096; }
 .lesson-list .status.draft { color: #c80; }
 
-/* Filter chips above the lesson sections. */
+/* Filter chips — sit in the progress row. */
 .filter-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: 0 0 1rem;
 }
 .chip {
   font: inherit;

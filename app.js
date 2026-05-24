@@ -40,7 +40,9 @@ function renderIndex(manifest, root) {
   // glazes over. The chips below let the learner toggle them back on.
   root.classList.add("lesson-list--hide-stub");
 
-  // Progress summary at the top.
+  // Progress row: one line containing a short summary on the left and the
+  // status filter chips on the right. Counts are shown on the chips, so the
+  // summary only carries the overall "done / total (pct)".
   var counts = { done: 0, draft: 0, stub: 0, total: 0 };
   manifest.chapters.forEach(function (ch) {
     ch.items.forEach(function (it) {
@@ -52,18 +54,15 @@ function renderIndex(manifest, root) {
   var pct = counts.total
     ? Math.round((counts.done / counts.total) * 100)
     : 0;
-  var summary = el("p", { class: "progress-summary" }, [
-    el("strong", {}, [String(counts.done) + " / " + counts.total + " lessons done"]),
-    " (" + pct + "%)",
-    counts.draft
-      ? " \u00b7 " + counts.draft + " in draft"
-      : "",
-    " \u00b7 " + counts.stub + " stubs left"
+  var row = el("div", { class: "progress-bar" });
+  var summary = el("span", { class: "progress-summary" }, [
+    el("strong", {}, [counts.done + " / " + counts.total + " done"]),
+    " (" + pct + "%)"
   ]);
-  root.appendChild(summary);
+  row.appendChild(summary);
 
   // Filter chips. Each chip toggles a class on the root that hides the
-  // matching <li>s via CSS. "all" is the master toggle.
+  // matching <li>s via CSS.
   var chips = el("div", { class: "filter-chips", role: "group",
     "aria-label": "filter lessons by status" });
   function makeChip(label, key, on) {
@@ -80,7 +79,8 @@ function renderIndex(manifest, root) {
   chips.appendChild(makeChip("done (" + counts.done + ")", "done", true));
   chips.appendChild(makeChip("draft (" + counts.draft + ")", "draft", true));
   chips.appendChild(makeChip("stubs (" + counts.stub + ")", "stub", false));
-  root.appendChild(chips);
+  row.appendChild(chips);
+  root.appendChild(row);
 
   manifest.chapters.forEach(function (ch) {
     var sec = el("section", { class: "chapter" });
