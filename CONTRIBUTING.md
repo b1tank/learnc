@@ -11,7 +11,7 @@ learnc is a hand-written, runnable companion to K&R's *The C Programming Languag
 
 ## Ground rules
 
-- **No AI-generated prose.** This is the site's defining promise. Use AI to help you read C — sure — but write each explanation yourself, in your voice.
+- **Hand-revised against K&R.** AI assistance is fine for drafts, brainstorming, or unblocking — but every line that ships must be read against K&R and rewritten in your own voice. The promise is "verified by a human," not "untouched by a tool."
 - **No reproducing K&R text.** Paraphrase. The book is still copyrighted.
 - **No frameworks, no build step.** Vanilla HTML, CSS, JavaScript. If you need a library, justify it in the PR.
 - **Mobile-readable.** Lessons must read well on a phone, even when editing C on a phone is awkward.

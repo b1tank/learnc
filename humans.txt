@@ -19,7 +19,7 @@ Servers:     none — pure static, runs in your browser
 
 /* PROMISE */
 
-- No AI-generated lesson prose.
+- Lesson prose is hand-revised against K&R (AI may draft, humans verify).
 - No signup.
 - No tracking.
 - No ads.

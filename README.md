@@ -12,7 +12,7 @@ A learning artifact. I am reading K&R cover-to-cover and writing a short rewrite
 
 ## What this isn't
 
-- Not an LLM wrapper. **No AI-generated prose.** Every word of every lesson is written by a human reading K&R.
+- Not an LLM wrapper. **Hand-revised against K&R.** AI may help draft a first cut, but every line is read against the book and rewritten by a human before it ships.
 - Not a SaaS. **No signup. No tracking. No cookies. No analytics.** Your progress and edited code live in `localStorage`. That's it.
 - Not a framework. Plain HTML, plain CSS, plain JS. One `marked.min.js` for markdown, one `codemirror@6` for the editor, [Runno](https://runno.dev) as the WebAssembly C compiler, [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) to enable `SharedArrayBuffer` on static hosts. Page weight: tiny site, ~10–15 MB of clang+libc downloaded lazily on first Run and then cached.
 - Not a startup. **MIT-licensed. Self-hostable. Fork it.**
