@@ -97,17 +97,52 @@
 <p class="crumbs" id="crumbs"><a href="index.html">lessons</a><span id="lesson-chapter-crumb"></span><span id="lesson-label" class="muted"></span></p>
 <h1 id="lesson-title" class="lesson-title-empty">&nbsp;</h1>
 <script>
-  // First-paint title hint. The index page caches a slug→title map in
-  // localStorage when it loads the manifest; reading it here lets the real
-  // title appear with the page itself, instead of after lesson.js parses the
-  // manifest a few hundred ms later. Idempotent — lesson.js overwrites with
-  // the same string once it runs. Misses (first-ever visit, deep link from
-  // outside, private mode) fall through to the old "hidden until JS" path.
+  // Inline boot script — runs synchronously during HTML parse so the
+  // browser learns about the lesson's URL slug as early as possible.
+  // Two jobs, both pure best-effort:
+  //
+  //   1. Preload the lesson markdown. We know the .md filename from
+  //      ?id=<slug>, so we can inject a <link rel=preload as=fetch>
+  //      immediately. The browser starts the .md fetch in parallel with
+  //      HTML parse + lesson.js download, instead of waiting for
+  //      lesson.js to execute its `await fetch(...)` call. On a slow
+  //      connection this trims a full RTT off LCP.
+  //
+  //   2. Paint the lesson title. The index page caches a slug→title map
+  //      in localStorage when it loads the manifest; reading it here
+  //      lets the real title appear at first paint, instead of after
+  //      lesson.js parses the manifest a few hundred ms later.
+  //      Idempotent — lesson.js overwrites with the same string once it
+  //      runs.
+  //
+  // Misses (no ?id, first-ever visit, private mode) just fall through;
+  // the page still works, it just loses these micro-optimisations.
   (function () {
+    var m = location.search.match(/[?&]id=([^&]+)/);
+    if (!m) return;
+    var id;
+    try { id = decodeURIComponent(m[1]); } catch (e) { return; }
+    // Reject anything that doesn't look like a lesson slug. Defends
+    // against ?id=../etc/passwd style probes that would otherwise be
+    // pushed into a <link href> attribute.
+    if (!/^[A-Za-z0-9_-]+$/.test(id)) return;
+
+    // 1. Start the markdown fetch immediately.
+    //
+    // We tried <link rel=preload as=fetch> but Chromium's credentials-mode
+    // matching is fiddly for same-origin static files and the browser
+    // refuses to reuse the bytes (logs a credentials-mismatch warning and
+    // double-fetches). Skipping the preload and just calling fetch() from
+    // this inline script has the same network effect with no matching
+    // gymnastics: the request goes out during HTML parse, the response
+    // lands while lesson.js is still downloading, and lesson.js awaits
+    // window.__lessonMdPromise instead of issuing its own fetch.
     try {
-      var m = location.search.match(/[?&]id=([^&]+)/);
-      if (!m) return;
-      var id = decodeURIComponent(m[1]);
+      window.__lessonMdPromise = fetch("lessons/" + id + ".md");
+    } catch (e) { /* old browsers — lesson.js falls back to its own fetch */ }
+
+    // 2. Paint title from cache
+    try {
       var titles = JSON.parse(localStorage.getItem("learnc.titles") || "{}");
       var t = titles[id];
       if (!t) return;

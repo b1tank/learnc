@@ -491,13 +491,13 @@ async function loadLesson() {
   var manifestPromise = getManifest().catch(function () { return null; });
 
   var url = "lessons/" + lessonId + ".md";
-  // Default cache mode: lesson markdown is content-addressed by URL and
-  // GitHub Pages emits a sensible max-age. Forcing no-cache cost ~100ms
-  // per navigation for nothing (the previous lesson's bytes were never
-  // about to be reused anyway).
+  // If the inline boot script in lesson.html kicked off the fetch
+  // already, await its promise instead of issuing a duplicate request.
+  // That lets the fetch overlap with HTML parse + lesson.js download
+  // instead of starting only after this function runs.
   var r;
   try {
-    r = await fetch(url);
+    r = await (window.__lessonMdPromise || fetch(url));
   } catch (e) {
     await renderCrumbs(manifestPromise, null);
     renderStub();
