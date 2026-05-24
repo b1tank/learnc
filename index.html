@@ -25,7 +25,62 @@
      for the full rationale. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
 <script src="coi-serviceworker.js?v=61929406"></script>
-<link rel="stylesheet" href="style.css">
+<!--
+  Critical CSS, inlined.
+  =====================
+  This is a hand-picked subset of style.css covering only what the landing
+  page paints above the fold: theme tokens, body, links, the header row,
+  the footer row, and the dark-theme overrides for those. Once style.css
+  lands (loaded non-blocking below) it overrides nothing here — the rules
+  are byte-for-byte identical, so order doesn't matter.
+
+  Why bother? Without this block the browser blocks first paint on
+  style.css (~150 ms on a local Lighthouse mobile run). With it, the
+  inline rules paint the page immediately and style.css upgrades the
+  details (code blocks, lesson list, chips, etc.) by the time the
+  manifest has been fetched and the lesson list has been built.
+
+  Keep this block tiny. If you add a selector here, you probably want it
+  in style.css too — duplication is fine as long as the inline copy
+  stays a subset.
+-->
+<style>
+:root{--fg:#111;--bg:#fdfdfd;--link:#0044aa;--link-visited:#6633aa;--muted:#666;--panel-bg:#f4f4f4;--panel-border:#ccc;--hl:#ffff77}
+:root[data-theme="dark"]{--fg:#e5e5e5;--bg:#1a1a1a;--link:#6ab0ff;--link-visited:#b59cff;--muted:#9a9a9a;--panel-bg:#232323;--panel-border:#3a3a3a;--hl:#5a4500}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font:16px/1.55 Verdana,Geneva,sans-serif;color:var(--fg);background:var(--bg);max-width:74ch;margin:2rem auto;padding:0 1rem 4rem}
+.skip-link{position:absolute;left:-9999px;top:0;padding:.4rem .8rem;background:var(--bg);color:var(--link);border:1px solid var(--panel-border);text-decoration:underline;z-index:100}
+.skip-link:focus{left:0}
+h1{font-size:1.6rem;margin:0 0 .3rem;font-weight:bold}
+a{color:var(--link);text-decoration:underline}
+a:visited{color:var(--link-visited)}
+a:hover{background:var(--hl)}
+.muted{color:var(--muted)}
+.site-header{border-bottom:1px solid #ccc;margin-bottom:1.5rem;padding-bottom:.6rem;display:flex;flex-wrap:wrap;align-items:baseline;gap:.6rem 1rem}
+.site-header h1{display:inline;font-size:1.6rem;flex:1}
+.site-header h1 a{color:inherit;text-decoration:none}
+.site-header nav{font-size:.9rem;display:flex;align-items:center;gap:.6rem}
+.site-header nav a{display:inline-flex;align-items:center;justify-content:center;width:1.8rem;height:1.8rem;color:var(--muted);text-decoration:none;border-radius:3px}
+.site-header nav a:hover{background:var(--hl);color:var(--fg)}
+.site-header nav a:visited{color:var(--muted)}
+.site-header nav .icon{display:block}
+.site-footer{border-top:1px solid #ccc;margin-top:3rem;padding-top:.8rem;font-size:.85rem;color:var(--muted)}
+.site-footer a{color:var(--muted)}
+.site-footer .build-stamp{opacity:.7}
+:root[data-theme="dark"] .site-header{border-bottom-color:#333}
+:root[data-theme="dark"] .site-footer{border-top-color:#333}
+@media (max-width:600px){body{font-size:15px;margin:1rem auto}h1{font-size:1.3rem}}
+</style>
+<!--
+  Load style.css without blocking first paint. The `preload` makes the
+  browser start fetching at high priority; the `onload` swaps it to a
+  normal stylesheet so the rules actually apply once the bytes arrive.
+  <noscript> covers users with JS disabled — they get the old
+  render-blocking behaviour, which is still correct (just slower).
+-->
+<link rel="preload" href="style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css"></noscript>
 <!-- Warm the cache for the lesson page. We're an MPA, so the click-to-paint
      cost is dominated by loading CodeMirror + the lesson scripts on demand.
      marked is self-hosted (see vendor/) so no preconnect is needed for it.
