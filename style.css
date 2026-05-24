@@ -280,7 +280,9 @@ button.primary {
 button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); filter: none; }
 button.primary:active { filter: brightness(0.92); }
 
-.editor { background: #fff; min-height: 8em; }
+/* Editor: light mode falls through to CodeMirror's default white; in dark
+   mode the oneDark extension applies its own background. */
+.editor { min-height: 8em; }
 
 .terminal {
   background: var(--terminal-bg);
