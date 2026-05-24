@@ -96,7 +96,7 @@
       .then(function (m) { renderIndex(m, root); })
       .catch(function (err) {
         root.innerHTML = '<p class="terminal-error">Could not load lesson manifest: '
-          + String(err.message) + "</p>";
+          + String(err.message) + ' — <a href="">retry</a></p>';
       });
   }
 

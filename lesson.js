@@ -24,7 +24,12 @@ function getManifest() {
   if (manifestPromise) return manifestPromise;
   manifestPromise = fetch("lessons/manifest.json", { cache: "no-cache" })
     .then(function (r) { return r.ok ? r.json() : null; })
-    .catch(function () { return null; });
+    .catch(function () {
+      // Clear the cache so the next call retries instead of returning a
+      // permanently-null promise after one network blip.
+      manifestPromise = null;
+      return null;
+    });
   return manifestPromise;
 }
 
