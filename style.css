@@ -212,6 +212,29 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   margin: 1rem 0;
 }
 
+.shared-banner {
+  background: #eef6ff;
+  border: 1px solid #b9d4f0;
+  padding: 0.5rem 0.7rem;
+  margin: 0 0 0.6rem 0;
+  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.shared-banner .dismiss { margin-left: auto; }
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--link, #06c);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+.linklike:hover { color: #03a; }
+
 /* Responsive */
 @media (max-width: 600px) {
   body { font-size: 15px; margin: 1rem auto; }

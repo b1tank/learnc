@@ -288,11 +288,52 @@ function renderResult(result, expected) {
   }
 }
 
+// Insert a dismissible banner above the editor when the editor was filled
+// from a `#code=` shared link. Offers a reset back to the lesson starter so
+// the learner doesn't think their localStorage draft is gone forever.
+function showSharedBanner(container, sharedCode, savedCode, starter) {
+  if (document.querySelector(".shared-banner")) return; // idempotent
+  var banner = el("div", { class: "shared-banner" }, []);
+  var msg = el("span", {}, ["Editor loaded from a shared link."]);
+  banner.appendChild(msg);
+
+  if (savedCode && savedCode !== sharedCode) {
+    var restore = el("button", { type: "button", class: "linklike" },
+      ["restore my saved version"]);
+    restore.addEventListener("click", function () {
+      if (editorAPI) editorAPI.setValue(savedCode);
+      writeUrlCode("");
+      banner.remove();
+    });
+    banner.appendChild(restore);
+  }
+
+  var reset = el("button", { type: "button", class: "linklike" },
+    ["reset to lesson starter"]);
+  reset.addEventListener("click", function () {
+    if (editorAPI) editorAPI.setValue(starter || "");
+    writeUrlCode("");
+    banner.remove();
+  });
+  banner.appendChild(reset);
+
+  var dismiss = el("button", { type: "button", class: "linklike dismiss",
+    "aria-label": "dismiss" }, ["\u00D7"]);
+  dismiss.addEventListener("click", function () { banner.remove(); });
+  banner.appendChild(dismiss);
+
+  container.insertBefore(banner, container.firstChild);
+}
+
 function setupRunner(starter, expected) {
   var container = document.getElementById("runner-container");
   container.hidden = false;
 
-  var initial = readUrlCode() || localStorage.getItem(lessonStorageKey()) || starter || "";
+  // Detect a shared-link override before localStorage so we can warn the
+  // learner that their in-progress edits were swapped out for the link's code.
+  var sharedCode = readUrlCode();
+  var localCode = localStorage.getItem(lessonStorageKey());
+  var initial = sharedCode || localCode || starter || "";
   // Debounce the localStorage writes — every keystroke fires onChange, and
   // for a long program that's many small writes/sec. 200ms is plenty fast
   // for survive-a-reload semantics without thrashing.
@@ -304,6 +345,10 @@ function setupRunner(starter, expected) {
       try { localStorage.setItem(lessonStorageKey(), code); } catch (e) { /* quota */ }
     }, 200);
   });
+
+  if (sharedCode) {
+    showSharedBanner(container, sharedCode, localCode, starter);
+  }
 
   document.getElementById("run-btn").addEventListener("click", async function () {
     var code = editorAPI.getValue();
