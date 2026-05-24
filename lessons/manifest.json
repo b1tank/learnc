@@ -11,7 +11,7 @@
         { "kind": "section", "id": "01-01-getting-started",                       "label": "1.1",  "title": "Getting Started", "status": "done" },
         { "kind": "section", "id": "01-02-variables-and-arithmetic-expressions",   "label": "1.2",  "title": "Variables and Arithmetic Expressions", "status": "done" },
         { "kind": "section", "id": "01-03-the-for-statement",                      "label": "1.3",  "title": "The for Statement", "status": "done" },
-        { "kind": "section", "id": "01-04-symbolic-constants",                     "label": "1.4",  "title": "Symbolic Constants" },
+        { "kind": "section", "id": "01-04-symbolic-constants",                     "label": "1.4",  "title": "Symbolic Constants", "status": "done" },
         { "kind": "section", "id": "01-05-character-input-and-output",             "label": "1.5",  "title": "Character Input and Output" },
         { "kind": "section", "id": "01-06-arrays",                                 "label": "1.6",  "title": "Arrays" },
         { "kind": "section", "id": "01-07-functions",                              "label": "1.7",  "title": "Functions" },
