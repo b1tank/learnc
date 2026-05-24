@@ -31,7 +31,16 @@
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
 <script src="coi-serviceworker.js?v=88396b4d"></script>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<!-- Open TLS to the CDNs early. If the visitor landed here directly (deep
+     link, refresh) we still want the marked + CodeMirror fetches to start as
+     soon as possible. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://esm.sh" crossorigin>
+<!-- `defer` lets the HTML parser finish before fetching/executing marked, so
+     the title and prose container are in the DOM by the time module scripts
+     start. Modules are implicitly deferred and run after this script, which
+     means `window.marked` is ready when lesson.js evaluates. -->
+<script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <!--
   Import map: pin every CodeMirror 6 submodule + its transitive deps so that
   all packages share the SAME @codemirror/state instance. Without this, multiple
@@ -87,6 +96,30 @@
 
 <p class="crumbs" id="crumbs"><a href="index.html">lessons</a><span id="lesson-chapter-crumb"></span><span id="lesson-label" class="muted"></span></p>
 <h1 id="lesson-title" class="lesson-title-empty">&nbsp;</h1>
+<script>
+  // First-paint title hint. The index page caches a slug→title map in
+  // localStorage when it loads the manifest; reading it here lets the real
+  // title appear with the page itself, instead of after lesson.js parses the
+  // manifest a few hundred ms later. Idempotent — lesson.js overwrites with
+  // the same string once it runs. Misses (first-ever visit, deep link from
+  // outside, private mode) fall through to the old "hidden until JS" path.
+  (function () {
+    try {
+      var m = location.search.match(/[?&]id=([^&]+)/);
+      if (!m) return;
+      var id = decodeURIComponent(m[1]);
+      var titles = JSON.parse(localStorage.getItem("learnc.titles") || "{}");
+      var t = titles[id];
+      if (!t) return;
+      var h1 = document.getElementById("lesson-title");
+      if (h1) {
+        h1.textContent = t;
+        h1.classList.remove("lesson-title-empty");
+      }
+      document.title = t + " \u00b7 learnc";
+    } catch (e) { /* private mode / parse error — fall through */ }
+  })();
+</script>
 
 <article id="lesson-prose"></article>
 

@@ -122,11 +122,34 @@ function init() {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     })
-    .then(function (m) { renderIndex(m, root); })
+    .then(function (m) {
+      cacheTitleMap(m);
+      renderIndex(m, root);
+    })
     .catch(function (err) {
       root.innerHTML = '<p class="terminal-error">Could not load lesson manifest: '
         + String(err.message) + ' — <a href="">retry</a></p>';
     });
+}
+
+// Persist a slug → display-title map so lesson.html's inline hint script
+// can paint the real title at first paint (instead of waiting for lesson.js
+// to fetch + parse the manifest). Exercises don't have titles in the
+// manifest, so fall back to the label ("Ex 1-1") for consistency with the
+// rest of the UI.
+function cacheTitleMap(manifest) {
+  try {
+    var titles = {};
+    manifest.chapters.forEach(function (ch) {
+      ch.items.forEach(function (it) {
+        var t = it.title;
+        if (!t && it.kind === "exercise") t = "Exercise " + it.label;
+        if (!t) t = it.id;
+        titles[it.id] = t;
+      });
+    });
+    localStorage.setItem("learnc.titles", JSON.stringify(titles));
+  } catch (e) { /* private mode — paint hint is best-effort */ }
 }
 
 if (document.readyState === "loading") {

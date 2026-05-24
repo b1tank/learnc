@@ -26,6 +26,18 @@
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
 <script src="coi-serviceworker.js?v=88396b4d"></script>
 <link rel="stylesheet" href="style.css">
+<!-- Warm the cache for the lesson page. We're an MPA, so the click-to-paint
+     cost is dominated by loading marked + the lesson scripts on demand. With
+     these hints the browser opens TLS to the CDNs while the index is still
+     rendering, and queues low-priority fetches for assets the next click will
+     need. Browsers ignore these on save-data / 2g, which is exactly right. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://esm.sh" crossorigin>
+<link rel="prefetch" href="lesson.html">
+<link rel="prefetch" href="lesson.js" as="script" crossorigin>
+<link rel="prefetch" href="editor.js" as="script" crossorigin>
+<link rel="prefetch" href="runner.js" as="script" crossorigin>
+<link rel="prefetch" href="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js" as="script" crossorigin>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
