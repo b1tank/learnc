@@ -52,6 +52,20 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
+/* Keyboard-accessible skip link: invisible until focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: 0.4rem 0.8rem;
+  background: var(--bg);
+  color: var(--link);
+  border: 1px solid var(--panel-border);
+  text-decoration: underline;
+  z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
 body {
   font: 16px/1.55 Verdana, Geneva, sans-serif;
   color: var(--fg);
