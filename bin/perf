@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""bin/perf — run Lighthouse against learnc and print a one-screen summary.
+
+What it does:
+
+1. Shells out to `npx lighthouse` (mobile profile, simulated 4G + 4x CPU
+   slowdown — the same setup PageSpeed Insights uses).
+2. Writes the full JSON + HTML reports under `.perf/` for digging in later.
+3. Prints the headline metrics (score, FCP, LCP, TBT, CLS, Speed Index,
+   transfer size) plus the things you actually need to read to fix a
+   regression: the LCP element, the top opportunities, render-blocking
+   resources, and the longest main-thread tasks.
+
+Why Lighthouse and not WebPageTest / Playwright traces:
+- WebPageTest is a service; this needs no account and runs offline.
+- Playwright traces are great for one-off custom metrics (we used them
+  inline earlier to time "title painted") but Lighthouse normalises the
+  metrics to PSI's scoring curve so scores are comparable across runs and
+  meaningful to a human reader.
+
+Why Lighthouse 11 by default:
+- LH 12 ships a new trace engine that crashes on this site's trace
+  (suspected interaction with COOP/COEP + service-worker registration).
+  LH 11 is stable. Override with `--lh 12` once upstream ships a fix.
+
+usage:
+  bin/perf                       # prod, index + the canonical lesson
+  bin/perf --local               # against http://127.0.0.1:8765 (run bin/dev first)
+  bin/perf --lesson 01-02-temp   # pick a different lesson page
+  bin/perf --url https://...     # arbitrary URL, single page
+  bin/perf --desktop             # desktop profile instead of mobile
+  bin/perf --full                # all 5 categories, not just performance
+
+Reports land in .perf/<label>.report.{json,html}. Open the .html for the
+familiar Lighthouse UI; the JSON is what this script parses.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+PERF_DIR = REPO / ".perf"
+
+DEFAULT_PROD = "https://b1tank.github.io/learnc"
+DEFAULT_LOCAL = "http://127.0.0.1:8765"
+DEFAULT_LESSON = "01-01-hello"
+
+
+def run_lighthouse(url: str, label: str, *, lh: str, form_factor: str, full: bool) -> Path:
+	"""Invoke `npx lighthouse` and return the path to the JSON report."""
+	PERF_DIR.mkdir(exist_ok=True)
+	out = PERF_DIR / label
+	cmd = [
+		"npx", "--yes", f"lighthouse@{lh}", url,
+		"--quiet",
+		"--chrome-flags=--headless=new --no-sandbox",
+		f"--form-factor={form_factor}",
+		"--throttling-method=simulate",
+		"--output=json", "--output=html",
+		f"--output-path={out}",
+	]
+	# Limit categories so the run is faster when the user only cares about perf.
+	# `--full` keeps the default (all 5 categories: perf, a11y, best-practices, seo, pwa).
+	if not full:
+		cmd.append("--only-categories=performance")
+	# On desktop runs lighthouse picks a wider screen emulation automatically;
+	# we just need to pass the form factor.
+	if form_factor == "desktop":
+		# `simulate` throttling is mobile-tuned. For desktop, devtools throttling
+		# gives more realistic numbers (no artificial CPU slowdown).
+		cmd[cmd.index("--throttling-method=simulate")] = "--throttling-method=devtools"
+
+	print(f"→ {label}: {url}")
+	r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+	if r.returncode != 0:
+		# Print stderr tail so the user can see CDP errors / network failures.
+		sys.stderr.write(r.stderr[-2000:] + "\n")
+		raise SystemExit(f"lighthouse failed for {url} (exit {r.returncode})")
+	report = PERF_DIR / f"{label}.report.json"
+	if not report.exists():
+		raise SystemExit(f"lighthouse produced no JSON at {report}")
+	return report
+
+
+def fmt_ms(v: float | None) -> str:
+	if v is None: return "  —  "
+	return f"{round(v):>5} ms"
+
+
+def summarise(label: str, report: Path) -> None:
+	data = json.loads(report.read_text())
+	a = data["audits"]
+	cats = data["categories"]
+	score = round((cats.get("performance") or {}).get("score", 0) * 100)
+
+	def num(k): return (a.get(k) or {}).get("numericValue")
+
+	print()
+	print(f"━━━ {label} ━━━ score {score} / 100 ━━━")
+	print(f"  FCP          {fmt_ms(num('first-contentful-paint'))}")
+	print(f"  LCP          {fmt_ms(num('largest-contentful-paint'))}")
+	print(f"  TBT          {fmt_ms(num('total-blocking-time'))}")
+	cls = num("cumulative-layout-shift") or 0
+	print(f"  CLS          {cls:>6.3f}")
+	print(f"  Speed Index  {fmt_ms(num('speed-index'))}")
+	print(f"  Transfer     {round((num('total-byte-weight') or 0)/1024):>5} KiB")
+
+	# LCP element: the most actionable single line in a perf report.
+	lcp_audit = a.get("largest-contentful-paint-element") or {}
+	items = (lcp_audit.get("details") or {}).get("items") or []
+	if items:
+		node = items[0].get("node") or {}
+		label_str = node.get("nodeLabel") or node.get("snippet") or "?"
+		# Truncate so the table stays one-screen.
+		print(f"  LCP element  {label_str[:80]}")
+
+	# Top opportunities by potential savings.
+	opps = []
+	for aid, audit in a.items():
+		details = audit.get("details") or {}
+		if details.get("type") == "opportunity":
+			ms = details.get("overallSavingsMs") or 0
+			if ms > 0:
+				opps.append((ms, aid, audit.get("title", "")))
+	opps.sort(reverse=True)
+	if opps:
+		print("  opportunities")
+		for ms, aid, title in opps[:5]:
+			print(f"    {round(ms):>5} ms  {aid} — {title}")
+
+	# Render-blocking resources — usually the first thing to fix.
+	rb = ((a.get("render-blocking-resources") or {}).get("details") or {}).get("items") or []
+	if rb:
+		print("  render-blocking")
+		for it in rb[:5]:
+			print(f"    {round(it.get('wastedMs', 0)):>5} ms  {it.get('url','')}")
+
+	# Long main-thread tasks (>50ms). These cause TBT and delay interactivity.
+	lt = ((a.get("long-tasks") or {}).get("details") or {}).get("items") or []
+	if lt:
+		print("  long tasks")
+		for it in lt[:5]:
+			dur = round(it.get("duration", 0))
+			print(f"    {dur:>5} ms  {it.get('url') or '(unattributed)'}")
+
+
+def main() -> int:
+	p = argparse.ArgumentParser(prog="bin/perf",
+		description="Lighthouse runner for learnc.",
+		formatter_class=argparse.RawDescriptionHelpFormatter)
+	p.add_argument("--local", action="store_true",
+		help=f"test against {DEFAULT_LOCAL} (run bin/dev first)")
+	p.add_argument("--lesson", default=DEFAULT_LESSON,
+		help=f"lesson slug to audit (default: {DEFAULT_LESSON})")
+	p.add_argument("--url", help="audit a single arbitrary URL instead of index+lesson")
+	p.add_argument("--desktop", action="store_true",
+		help="desktop emulation (default: mobile)")
+	p.add_argument("--full", action="store_true",
+		help="run all 5 audit categories (default: performance only)")
+	p.add_argument("--lh", default="11", choices=["11", "12"],
+		help="pin lighthouse major version (default: 11; 12 has trace-engine bug)")
+	args = p.parse_args()
+
+	# Sanity: we need npx + chrome.
+	if shutil.which("npx") is None:
+		raise SystemExit("npx not found — install Node.js (https://nodejs.org)")
+	if not any(shutil.which(b) for b in ("google-chrome", "chromium", "chromium-browser")):
+		raise SystemExit("no Chrome/Chromium on PATH — Lighthouse needs a headless browser")
+
+	form_factor = "desktop" if args.desktop else "mobile"
+	base = DEFAULT_LOCAL if args.local else DEFAULT_PROD
+	scope = "local" if args.local else "prod"
+
+	# Build the list of (label, url) pairs to audit. Single-URL mode skips
+	# the index+lesson pairing.
+	if args.url:
+		targets = [(f"{scope}-custom", args.url)]
+	else:
+		targets = [
+			(f"{scope}-index", f"{base}/"),
+			(f"{scope}-lesson", f"{base}/lesson.html?id={args.lesson}"),
+		]
+
+	reports = []
+	for label, url in targets:
+		reports.append((label, run_lighthouse(url, label, lh=args.lh,
+			form_factor=form_factor, full=args.full)))
+
+	for label, report in reports:
+		summarise(label, report)
+
+	print()
+	print(f"reports written under {PERF_DIR.relative_to(REPO)}/")
+	return 0
+
+
+if __name__ == "__main__":
+	raise SystemExit(main())
