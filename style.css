@@ -386,6 +386,12 @@ button.primary:active { filter: brightness(0.92); }
   font-size: 0.95rem;
   gap: 1rem;
 }
+.lesson-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.lesson-nav a .icon { display: block; }
 .lesson-nav a.disabled { color: #aaa; pointer-events: none; text-decoration: none; }
 .kbd-hint { color: var(--muted); font-size: 0.8rem; }
 .kbd-hint kbd {
@@ -409,7 +415,9 @@ button.primary:active { filter: brightness(0.92); }
   background: var(--banner-bg);
   border: 1px solid var(--banner-border);
   padding: 0.5rem 0.7rem;
-  margin: 0 0 0.6rem 0;
+  /* sits flush on top of the runner toolbar — they read as one panel */
+  margin: 0;
+  border-bottom: 0;
   font-size: 0.9rem;
   display: flex;
   flex-wrap: wrap;
