@@ -56,3 +56,6 @@ dkms.conf
 
 # Playwright MCP browser snapshots
 .playwright-mcp/
+
+# Local agent skill installs (from b1tank/skills via `npx skills add`)
+.agents/

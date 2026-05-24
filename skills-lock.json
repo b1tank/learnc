@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "ios-safari-debug": {
+      "source": "b1tank/skills",
+      "sourceType": "github",
+      "skillPath": ".github/skills/ios-safari-debug/SKILL.md",
+      "computedHash": "de86a2fd2a3beb23959257ecba27a96326240eea38e97c4f1fbc4af32793b692"
+    }
+  }
+}

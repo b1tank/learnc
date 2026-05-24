@@ -24,7 +24,7 @@
      on Safari) so cross-origin isolation works on iOS < 17.4. See lesson.html
      for the full rationale. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=3c60f342"></script>
+<script src="coi-serviceworker.js?v=f089b6c1"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,37 +32,29 @@
 
 <header class="site-header">
   <h1><a href="index.html">learnc</a></h1>
-  <nav>
-    <a href="index.html">lessons</a>
-    <a href="https://github.com/b1tank/learnc">github</a>
+  <nav aria-label="primary">
+    <a href="https://github.com/b1tank/learnc" aria-label="source on GitHub" title="source on GitHub">
+      <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55v-2.05c-3.2.7-3.87-1.36-3.87-1.36-.53-1.35-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.17.08 1.79 1.21 1.79 1.21 1.04 1.79 2.74 1.27 3.41.97.11-.76.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.04 11.04 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.26 5.69.42.36.8 1.08.8 2.18v3.23c0 .31.21.67.79.55C20.22 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+    </a>
     <span id="theme-toggle-slot"></span>
   </nav>
-  <p class="tagline">A hand-written, runnable companion to <em>The C Programming Language</em> (K&amp;R, 2e). Every example runs in your browser.</p>
 </header>
 
 <main id="main">
+
+<section class="intro">
+  <p>A hand-written companion to <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2e). Each section is rewritten in my own words, with runnable starter code and an in-browser C compiler. Chapter&nbsp;1 is in progress; the rest are stubs.</p>
+  <p class="small muted">No signup, no tracking, no JavaScript framework &mdash; plain HTML and one markdown file per lesson. AI assists with drafts; I read and rewrite everything before it lands. The first <em>run</em> on each visit downloads about 10&nbsp;MB of <a href="https://runno.dev">Runno</a>/clang WebAssembly, then caches it. <a href="https://github.com/b1tank/learnc">Contribute a lesson</a>.</p>
+</section>
 
 <div id="lesson-index">
   <p class="muted">Loading lesson index&hellip;</p>
 </div>
 
-<hr>
-
-<section class="about">
-  <p>This site is a learning artifact written while I read K&amp;R cover-to-cover. Each section of the book has a short rewrite in my own words, runnable starter code, and a "try it" list. The exercises are enumerated for every chapter &mdash; most are still stubs waiting for a walkthrough.</p>
-
-  <p><strong>No signup. No tracking. No JavaScript framework.</strong> Plain HTML, one markdown file per lesson, and a C compiler that runs in your browser. Prose is hand-revised against K&amp;R; AI-assisted drafts are verified and rewritten before they land.</p>
-
-  <p class="small muted">Status: early. Chapter 1 is in progress; the rest is scaffolded as stubs. The in-browser C compiler is wired up &mdash; the first <em>run</em> on each visit downloads about 10&nbsp;MB of <a href="https://runno.dev">Runno</a>/clang WebAssembly, then caches it. <a href="https://github.com/b1tank/learnc">Contribute a lesson</a>.</p>
-</section>
-
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT-licensed &middot; hand-revised against K&amp;R</p>
-  <!-- BUILD-STAMP-START -->
-  <p class="build-stamp">Last updated <time datetime="2026-05-24">2026-05-24</time> · <a href="https://github.com/b1tank/learnc/commit/3c60f342" rel="noopener">commit 3c60f342</a></p>
-  <!-- BUILD-STAMP-END -->
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-24">2026-05-24</time> &middot; <a href="https://github.com/b1tank/learnc/commit/f089b6c1" rel="noopener">f089b6c1</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
 <script type="module" src="app.js"></script>

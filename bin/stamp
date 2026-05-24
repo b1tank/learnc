@@ -63,11 +63,12 @@ def stamp_html(text: str, sha: str, date: str) -> str:
         text,
     )
 
-    # 2. footer build stamp between markers
+    # 2. footer build stamp between markers — inline <span> so the whole
+    #    footer fits on one row alongside the credits line.
     stamp_inner = (
-        f'\n  <p class="build-stamp">Last updated '
-        f'<time datetime="{date}">{date}</time> · '
-        f'<a href="{REPO_URL}/commit/{sha}" rel="noopener">commit {sha}</a></p>\n  '
+        f'<span class="build-stamp">updated '
+        f'<time datetime="{date}">{date}</time> &middot; '
+        f'<a href="{REPO_URL}/commit/{sha}" rel="noopener">{sha}</a></span>'
     )
     block = f"{STAMP_START}{stamp_inner}{STAMP_END}"
 
@@ -80,12 +81,12 @@ def stamp_html(text: str, sha: str, date: str) -> str:
             flags=re.DOTALL,
         )
     else:
-        # Insert just before </footer>. Match the first site-footer's closing tag.
-        text = text.replace(
-            "</footer>",
-            f"  {block}\n</footer>",
-            1,
-        )
+        # New footer template (single-row): insert before </p></footer>.
+        # Fall back to before </footer> if the template ever drifts.
+        if "</p>\n</footer>" in text:
+            text = text.replace("</p>\n</footer>", f" &middot; {block}</p>\n</footer>", 1)
+        else:
+            text = text.replace("</footer>", f"  <p>{block}</p>\n</footer>", 1)
 
     return text
 
