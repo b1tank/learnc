@@ -142,6 +142,35 @@ li { margin: 0.15rem 0; }
 .lesson-list .status.done { color: #096; }
 .lesson-list .status.draft { color: #c80; }
 
+/* Filter chips above the lesson sections. */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+.chip {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.6rem;
+  background: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.chip.on {
+  background: #e8f0ff;
+  border-color: #b9d4f0;
+  color: #06c;
+}
+.chip:hover { border-color: #888; }
+
+/* Filter classes — set on #lesson-index by the chip handlers. */
+#lesson-index.lesson-list--hide-done li.status-done { display: none; }
+#lesson-index.lesson-list--hide-draft li.status-draft { display: none; }
+#lesson-index.lesson-list--hide-stub li.status-stub { display: none; }
+
 /* Lesson view */
 .crumbs { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
 .crumbs a { color: var(--muted); }

@@ -33,6 +33,9 @@ function statusLabel(s) {
 
 function renderIndex(manifest, root) {
   root.innerHTML = "";
+  // Hide stubs by default — the index has hundreds of them and the eye
+  // glazes over. The chips below let the learner toggle them back on.
+  root.classList.add("lesson-list--hide-stub");
 
   // Progress summary at the top.
   var counts = { done: 0, draft: 0, stub: 0, total: 0 };
@@ -56,12 +59,33 @@ function renderIndex(manifest, root) {
   ]);
   root.appendChild(summary);
 
+  // Filter chips. Each chip toggles a class on the root that hides the
+  // matching <li>s via CSS. "all" is the master toggle.
+  var chips = el("div", { class: "filter-chips", role: "group",
+    "aria-label": "filter lessons by status" });
+  function makeChip(label, key, on) {
+    var b = el("button", { type: "button", class: "chip" + (on ? " on" : ""),
+      "data-key": key, "aria-pressed": on ? "true" : "false" }, [label]);
+    b.addEventListener("click", function () {
+      var pressed = b.getAttribute("aria-pressed") === "true";
+      b.setAttribute("aria-pressed", pressed ? "false" : "true");
+      b.classList.toggle("on", !pressed);
+      root.classList.toggle("lesson-list--hide-" + key, pressed);
+    });
+    return b;
+  }
+  chips.appendChild(makeChip("done (" + counts.done + ")", "done", true));
+  chips.appendChild(makeChip("draft (" + counts.draft + ")", "draft", true));
+  chips.appendChild(makeChip("stubs (" + counts.stub + ")", "stub", false));
+  root.appendChild(chips);
+
   manifest.chapters.forEach(function (ch) {
     var sec = el("section", { class: "chapter" });
     sec.appendChild(el("h2", { class: "chapter-head" }, ["Chapter " + ch.n + ". " + ch.title]));
     var ul = el("ul", { class: "lesson-list" });
     ch.items.forEach(function (item) {
-      var li = el("li");
+      var status = item.status || "stub";
+      var li = el("li", { class: "status-" + status });
       var label;
       var title;
       if (item.kind === "exercise") {
@@ -73,7 +97,7 @@ function renderIndex(manifest, root) {
       }
       li.appendChild(el("span", { class: "lbl" }, [label]));
       li.appendChild(el("a", { href: lessonURL(item.id) }, [title]));
-      var st = statusLabel(item.status);
+      var st = statusLabel(status);
       li.appendChild(el("span", { class: st.cls }, [st.text]));
       ul.appendChild(li);
     });
