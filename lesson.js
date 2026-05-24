@@ -10,6 +10,13 @@ var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
 
 var params = new URLSearchParams(location.search);
 var lessonId = params.get("id");
+// Guard: lesson ids are flat slugs (letters/digits/hyphens). Anything else
+// is either a typo or a probe — refuse to feed it into fetch URLs, github
+// links, or storage keys. Path-traversal style ids would otherwise resolve
+// against the static site root.
+if (lessonId !== null && !/^[A-Za-z0-9_-]+$/.test(lessonId)) {
+  lessonId = null;
+}
 
 // Cached manifest (loaded lazily for the chapter breadcrumb).
 var manifestPromise = null;
