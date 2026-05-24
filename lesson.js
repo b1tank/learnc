@@ -5,6 +5,7 @@
 import { mountEditor } from "./editor.js";
 import { run as runC, onProgress as runOnProgress } from "./runner.js";
 import { mountToggle as mountThemeToggle } from "./theme.js";
+import { mountHelp as mountShortcuts } from "./shortcuts.js";
 
 var GITHUB_BLOB_BASE = "https://github.com/b1tank/learnc/blob/main/lessons/";
 var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
@@ -426,6 +427,24 @@ function setupRunner(starter, expected) {
 async function loadLesson() {
   // Theme toggle is the same everywhere; mount it as soon as the page is up.
   mountThemeToggle(document.getElementById("theme-toggle-slot"));
+  mountShortcuts([
+    { keys: ["\u2190", "\u2192"], label: "previous / next lesson" },
+    { keys: ["Ctrl+Enter", "Cmd+Enter"], label: "run the current code" },
+    { keys: ["?"], label: "show this help" },
+    { keys: ["Esc"], label: "close help" }
+  ]);
+
+  // Ctrl/Cmd+Enter triggers the run button from anywhere on the page,
+  // including inside the CodeMirror editor.
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      var btn = document.getElementById("run-btn");
+      if (btn && !btn.disabled) {
+        e.preventDefault();
+        btn.click();
+      }
+    }
+  });
 
   if (!lessonId) {
     document.getElementById("lesson-title").textContent = "No lesson selected";

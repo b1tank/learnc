@@ -3,6 +3,7 @@
 // `script type="module"` already implies strict mode and module scope.
 
 import { mountToggle as mountThemeToggle } from "./theme.js";
+import { mountHelp as mountShortcuts } from "./shortcuts.js";
 
 var MANIFEST_URL = "lessons/manifest.json";
 
@@ -112,6 +113,10 @@ function init() {
   var root = document.getElementById("lesson-index");
   if (!root) return;
   mountThemeToggle(document.getElementById("theme-toggle-slot"));
+  mountShortcuts([
+    { keys: ["?"], label: "show this help" },
+    { keys: ["Esc"], label: "close help" }
+  ]);
   fetch(MANIFEST_URL, { cache: "no-cache" })
     .then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);

@@ -319,6 +319,46 @@ button.primary:active { filter: brightness(0.92); }
 .diff-ok { color: #0a0; }
 .diff-bad { color: #c00; }
 
+/* Keyboard shortcut help overlay. Hidden by default; revealed by pressing `?`.
+   `[hidden]` from the HTML attribute does the heavy lifting; the rest is just
+   layout for the modal centered above a dim backdrop. */
+.shortcut-help {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.shortcut-help[hidden] { display: none; }
+.shortcut-help-panel {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 1rem 1.4rem 1.2rem;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+.shortcut-help-panel h2 { margin: 0 0 0.6rem; font-size: 1.1rem; }
+.shortcut-help-panel dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.6rem;
+}
+.shortcut-help-panel dt { margin: 0; text-align: right; }
+.shortcut-help-panel dd { margin: 0; color: var(--muted); }
+.shortcut-help-panel .kbd-sep { color: var(--muted); }
+.shortcut-help-hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
 .lesson-nav {
   display: flex;
   justify-content: space-between;
