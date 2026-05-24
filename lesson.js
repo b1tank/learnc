@@ -256,8 +256,16 @@ function setupRunner(starter, expected) {
   container.hidden = false;
 
   var initial = readUrlCode() || localStorage.getItem(lessonStorageKey()) || starter || "";
+  // Debounce the localStorage writes — every keystroke fires onChange, and
+  // for a long program that's many small writes/sec. 200ms is plenty fast
+  // for survive-a-reload semantics without thrashing.
+  var saveTimer = null;
   editorAPI = mountEditor(document.getElementById("editor"), initial, function (code) {
-    try { localStorage.setItem(lessonStorageKey(), code); } catch (e) { /* quota */ }
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      try { localStorage.setItem(lessonStorageKey(), code); } catch (e) { /* quota */ }
+    }, 200);
   });
 
   document.getElementById("run-btn").addEventListener("click", async function () {
