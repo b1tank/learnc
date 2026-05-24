@@ -11,6 +11,42 @@
   --terminal-bg: #000;
   --terminal-fg: #0f0;
   --hl: #ffff77;
+  --panel-bg: #f4f4f4;
+  --panel-border: #ccc;
+  --chip-on-bg: #e8f0ff;
+  --chip-on-border: #b9d4f0;
+  --chip-on-fg: #06c;
+  --banner-bg: #eef6ff;
+  --banner-border: #b9d4f0;
+  --stub-bg: #fffae0;
+  --stub-border: #e8d870;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e5e5e5;
+    --bg: #1a1a1a;
+    --link: #6ab0ff;
+    --link-visited: #b59cff;
+    --muted: #9a9a9a;
+    --code-bg: #232323;
+    --code-border: #3a3a3a;
+    --terminal-bg: #000;
+    --terminal-fg: #5f5;
+    --hl: #5a4500;
+    --panel-bg: #232323;
+    --panel-border: #3a3a3a;
+    --chip-on-bg: #1e2c40;
+    --chip-on-border: #2e4d80;
+    --chip-on-fg: #8cb6ff;
+    --banner-bg: #1a2536;
+    --banner-border: #2e4d80;
+    --stub-bg: #2a2618;
+    --stub-border: #5a4a1a;
+  }
+  hr { border-color: #333; }
+  .site-header { border-bottom-color: #333; }
+  .site-footer { border-top-color: #333; }
 }
 
 * { box-sizing: border-box; }
@@ -58,8 +94,9 @@ pre code { background: none; padding: 0; }
   right: 4px;
   font-size: 0.72rem;
   padding: 0.05rem 0.45rem;
-  background: #fff;
-  border: 1px solid #bbb;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--panel-border);
   opacity: 0;
   transition: opacity 0.12s;
   font-family: Verdana, Geneva, sans-serif;
@@ -68,7 +105,7 @@ pre:hover .copy-btn,
 .copy-btn:focus { opacity: 1; }
 @media (hover: none) { .copy-btn { opacity: 0.7; } }
 
-hr { border: 0; border-top: 1px solid #ccc; margin: 1.5rem 0; }
+hr { border: 0; border-top: 1px solid var(--panel-border); margin: 1.5rem 0; }
 
 blockquote {
   border-left: 3px solid #aaa;
@@ -78,8 +115,8 @@ blockquote {
 }
 
 table { border-collapse: collapse; margin: 0.8rem 0; }
-th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
-th { background: #eee; }
+th, td { border: 1px solid var(--panel-border); padding: 0.3rem 0.6rem; text-align: left; }
+th { background: var(--panel-bg); }
 
 ul, ol { padding-left: 1.4rem; }
 li { margin: 0.15rem 0; }
@@ -120,7 +157,7 @@ li { margin: 0.15rem 0; }
   color: var(--muted);
   margin: 0 0 1.2rem;
   padding: 0.4rem 0.7rem;
-  background: #f4f4f4;
+  background: var(--panel-bg);
   border-left: 3px solid #888;
 }
 .progress-summary strong { color: var(--fg); }
@@ -153,16 +190,16 @@ li { margin: 0.15rem 0; }
   font: inherit;
   font-size: 0.85rem;
   padding: 0.15rem 0.6rem;
-  background: #f4f4f4;
-  border: 1px solid #ccc;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: 999px;
   color: var(--muted);
   cursor: pointer;
 }
 .chip.on {
-  background: #e8f0ff;
-  border-color: #b9d4f0;
-  color: #06c;
+  background: var(--chip-on-bg);
+  border-color: var(--chip-on-border);
+  color: var(--chip-on-fg);
 }
 .chip:hover { border-color: #888; }
 
@@ -178,8 +215,8 @@ li { margin: 0.15rem 0; }
 
 .runner {
   margin: 1rem 0;
-  border: 1px solid #ccc;
-  background: #fafafa;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
 }
 .runner-bar {
   background: #eee;
@@ -199,12 +236,13 @@ button {
   font: inherit;
   font-size: 0.9rem;
   padding: 0.2rem 0.7rem;
-  border: 1px solid #999;
-  background: #f5f5f5;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  color: var(--fg);
   cursor: pointer;
 }
-button:hover { background: #e8e8e8; }
-button:active { background: #d8d8d8; }
+button:hover { filter: brightness(0.96); }
+button:active { filter: brightness(0.9); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .editor { background: #fff; min-height: 8em; }
@@ -238,8 +276,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .lesson-nav a.disabled { color: #aaa; pointer-events: none; text-decoration: none; }
 .kbd-hint { color: var(--muted); font-size: 0.8rem; }
 .kbd-hint kbd {
-  background: #f4f4f4;
-  border: 1px solid #ccc;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-bottom-width: 2px;
   border-radius: 3px;
   padding: 0 0.3em;
@@ -248,15 +286,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .stub-notice {
-  background: #fffae0;
-  border: 1px solid #e8d870;
+  background: var(--stub-bg);
+  border: 1px solid var(--stub-border);
   padding: 0.8rem 1rem;
   margin: 1rem 0;
 }
 
 .shared-banner {
-  background: #eef6ff;
-  border: 1px solid #b9d4f0;
+  background: var(--banner-bg);
+  border: 1px solid var(--banner-border);
   padding: 0.5rem 0.7rem;
   margin: 0 0 0.6rem 0;
   font-size: 0.9rem;
