@@ -96,7 +96,7 @@ start writing.
 
 ## Contributing
 
-There are ~96 numbered exercises and ~77 sections across 8 chapters. Most are stubs. Pick one, write a walkthrough, send a PR. See [CONTRIBUTING.md](CONTRIBUTING.md).
+There are 97 numbered exercises and 77 sections across 8 chapters. Most are stubs. Pick one, write a walkthrough, send a PR. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Inspiration
 
