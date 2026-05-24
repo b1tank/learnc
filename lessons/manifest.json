@@ -15,7 +15,7 @@
         { "kind": "section", "id": "01-05-character-input-and-output",             "label": "1.5",  "title": "Character Input and Output", "status": "done" },
         { "kind": "section", "id": "01-06-arrays",                                 "label": "1.6",  "title": "Arrays", "status": "done" },
         { "kind": "section", "id": "01-07-functions",                              "label": "1.7",  "title": "Functions", "status": "done" },
-        { "kind": "section", "id": "01-08-arguments-call-by-value",                "label": "1.8",  "title": "Arguments — Call by Value" },
+        { "kind": "section", "id": "01-08-arguments-call-by-value",                "label": "1.8",  "title": "Arguments — Call by Value", "status": "done" },
         { "kind": "section", "id": "01-09-character-arrays",                       "label": "1.9",  "title": "Character Arrays" },
         { "kind": "section", "id": "01-10-external-variables-and-scope",           "label": "1.10", "title": "External Variables and Scope" },
         { "kind": "exercise", "id": "ex-1-1",  "label": "1-1"  },
