@@ -24,7 +24,7 @@
      on Safari) so cross-origin isolation works on iOS < 17.4. See lesson.html
      for the full rationale. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js"></script>
+<script src="coi-serviceworker.js?v=3c60f342"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -60,6 +60,9 @@
 
 <footer class="site-footer">
   <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT-licensed &middot; hand-revised against K&amp;R</p>
+  <!-- BUILD-STAMP-START -->
+  <p class="build-stamp">Last updated <time datetime="2026-05-24">2026-05-24</time> · <a href="https://github.com/b1tank/learnc/commit/3c60f342" rel="noopener">commit 3c60f342</a></p>
+  <!-- BUILD-STAMP-END -->
 </footer>
 
 <script type="module" src="app.js"></script>

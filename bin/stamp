@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""bin/stamp — version-stamp the static site for cache-busting.
+
+What it does, in one pass:
+
+1. Reads the current git short SHA + commit date.
+2. Rewrites every <script src="coi-serviceworker.js…"> reference to append
+   `?v=<sha>` so the browser sees a new SW URL on every commit. A changed
+   SW URL forces Safari (and everyone else) to fetch a fresh worker, which
+   re-installs and re-claims clients on the next navigation. This fixes the
+   iOS bfcache trap where Safari serves the page from cache without ever
+   consulting the SW — by the time the user sees the page, the SW is
+   already mid-install and the next reload is fully isolated.
+3. Inserts/updates a small "Last updated <date> · commit <sha>" stamp in
+   the site footer, between BUILD-STAMP-START/END markers. The link points
+   at the GitHub commit. Style: subtle, single line, like bellard.org.
+
+Idempotent: re-running with the same HEAD yields no diff. Re-running after
+a new commit produces a clean two-line diff per HTML file.
+
+usage:
+  bin/stamp            # stamp all known HTML files with current HEAD
+  bin/stamp --check    # exit 1 if the stamp is stale (for pre-push hook)
+
+This script has zero external deps and zero side effects beyond the file
+edits. It's safe to run from a pre-commit hook, a CI step, or by hand.
+"""
+from __future__ import annotations
+
+import argparse
+import pathlib
+import re
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+HTML_FILES = ["index.html", "lesson.html"]
+REPO_URL = "https://github.com/b1tank/learnc"
+
+STAMP_START = "<!-- BUILD-STAMP-START -->"
+STAMP_END = "<!-- BUILD-STAMP-END -->"
+
+
+def git(*args: str) -> str:
+    return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
+
+
+def build_info() -> tuple[str, str]:
+    """Return (short_sha, iso_date). Falls back to 'dev' if not in a git repo."""
+    try:
+        sha = git("rev-parse", "--short=8", "HEAD")
+        date = git("log", "-1", "--format=%cs")  # YYYY-MM-DD in committer's tz
+        return sha, date
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "dev", "unknown"
+
+
+def stamp_html(text: str, sha: str, date: str) -> str:
+    # 1. coi-serviceworker.js?v=<sha>
+    text = re.sub(
+        r'(<script src="coi-serviceworker\.js)(\?v=[^"]*)?(">)',
+        rf'\1?v={sha}\3',
+        text,
+    )
+
+    # 2. footer build stamp between markers
+    stamp_inner = (
+        f'\n  <p class="build-stamp">Last updated '
+        f'<time datetime="{date}">{date}</time> · '
+        f'<a href="{REPO_URL}/commit/{sha}" rel="noopener">commit {sha}</a></p>\n  '
+    )
+    block = f"{STAMP_START}{stamp_inner}{STAMP_END}"
+
+    if STAMP_START in text and STAMP_END in text:
+        text = re.sub(
+            re.escape(STAMP_START) + r".*?" + re.escape(STAMP_END),
+            block,
+            text,
+            count=1,
+            flags=re.DOTALL,
+        )
+    else:
+        # Insert just before </footer>. Match the first site-footer's closing tag.
+        text = text.replace(
+            "</footer>",
+            f"  {block}\n</footer>",
+            1,
+        )
+
+    return text
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true",
+                    help="exit 1 if any file would change (does not write)")
+    args = ap.parse_args()
+
+    sha, date = build_info()
+    print(f"==> stamping with sha={sha} date={date}", file=sys.stderr)
+
+    dirty = False
+    for name in HTML_FILES:
+        path = ROOT / name
+        before = path.read_text()
+        after = stamp_html(before, sha, date)
+        if before == after:
+            print(f"    {name}: clean")
+            continue
+        if args.check:
+            print(f"    {name}: STALE", file=sys.stderr)
+            dirty = True
+        else:
+            path.write_text(after)
+            print(f"    {name}: updated")
+
+    if args.check and dirty:
+        print("run bin/stamp to refresh, then commit", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
