@@ -328,10 +328,13 @@ button.primary:active { filter: brightness(0.92); }
   word-break: break-word;
   overflow-x: auto;
 }
-.terminal-empty { color: #555; font-style: italic; }
+.terminal-empty { color: #ddd; font-style: italic; }
 .terminal-error { color: #f66; }
 
 .diff-badge { padding: 0.2rem 0.7rem; font-size: 0.85rem; background: #fafafa; border-top: 1px solid #eee; }
+/* Collapse the badge when there's no diff result yet — otherwise a thin
+   light strip sits under the terminal on first paint and looks like a bug. */
+.diff-badge:empty { display: none; }
 .diff-ok { color: #0a0; }
 .diff-bad { color: #c00; }
 
