@@ -230,10 +230,22 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .lesson-nav {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-top: 2rem;
   font-size: 0.95rem;
+  gap: 1rem;
 }
 .lesson-nav a.disabled { color: #aaa; pointer-events: none; text-decoration: none; }
+.kbd-hint { color: var(--muted); font-size: 0.8rem; }
+.kbd-hint kbd {
+  background: #f4f4f4;
+  border: 1px solid #ccc;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0 0.3em;
+  font-family: inherit;
+  font-size: 0.9em;
+}
 
 .stub-notice {
   background: #fffae0;
