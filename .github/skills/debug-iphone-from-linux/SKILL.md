@@ -1,13 +1,18 @@
 ---
-name: ios-safari-remote-debug
-description: 'Remote-debug mobile Safari on a connected iPhone from a Linux workstation via ios-webkit-debug-proxy + a CDP driver. Use when: diagnosing why a page misbehaves on iOS Safari, checking crossOriginIsolated / SharedArrayBuffer / service-worker state on a real iPhone, evaluating JS in an iPhone Safari tab from the terminal, streaming console logs from an iPhone, or reproducing cache / bfcache issues that only happen on iOS. Triggers: "debug iphone safari", "ios remote debug", "ios webkit debug proxy", "iwdp", "inspect iphone tab", "crossOriginIsolated on ios", "SAB on iphone", "service worker not intercepting on safari".'
+name: debug-iphone-from-linux
+description: 'Debug a real iPhone''s Safari from a Linux (or Windows) workstation — no Mac required. Wraps libimobiledevice + ios-webkit-debug-proxy + a CDP driver into one workflow. Use when: a page works in desktop browsers but breaks on iPhone Safari, you need iPhone Safari Web Inspector but don''t have a Mac, you need to evaluate JS or stream console logs from an iPhone tab, or you need to inspect crossOriginIsolated / SharedArrayBuffer / COOP / COEP / service-worker / bfcache behavior on a real iPhone. Triggers: "debug iphone from linux", "iphone safari devtools on linux", "iphone web inspector without mac", "inspect iphone safari", "ios remote debug", "ios webkit debug proxy", "iwdp", "crossOriginIsolated on ios", "SAB on iphone", "service worker not intercepting on safari".'
 ---
 
-# iOS Safari Remote Debug
+# Debug iPhone Safari from Linux
 
-Drive a real iPhone's Safari from this Linux box. Evaluate JS, stream console
-logs, and probe runtime state (`crossOriginIsolated`, `SharedArrayBuffer`,
-service-worker registration, response headers) — all from the terminal.
+Drive a real iPhone's Safari from a Linux workstation — no Mac required.
+Evaluate JS, stream console logs, and probe runtime state
+(`crossOriginIsolated`, `SharedArrayBuffer`, service-worker registration,
+response headers) — all from the terminal.
+
+This is the equivalent of Safari Web Inspector that ships with macOS, but
+built on top of [google/ios-webkit-debug-proxy](https://github.com/google/ios-webkit-debug-proxy)
+so you can use it from any non-Apple host.
 
 ## When to Use
 
@@ -20,7 +25,7 @@ service-worker registration, response headers) — all from the terminal.
 
 ## Prerequisites
 
-- Linux host (tested on Ubuntu 22.04)
+- Linux host (tested on Ubuntu 22.04; Windows via WSL2/usbipd should also work)
 - iPhone connected over USB, **unlocked**, with "Trust This Computer" granted
 - On the iPhone: **Settings → Safari → Advanced → Web Inspector = ON**
 
@@ -29,7 +34,7 @@ service-worker registration, response headers) — all from the terminal.
 Install libimobiledevice and build `ios-webkit-debug-proxy`:
 
 ```bash
-.github/skills/ios-safari-remote-debug/scripts/install.sh
+.github/skills/debug-iphone-from-linux/scripts/install.sh
 ```
 
 What it does:
@@ -43,7 +48,7 @@ What it does:
 ### 1. Start the proxy
 
 ```bash
-.github/skills/ios-safari-remote-debug/scripts/start-proxy.sh
+.github/skills/debug-iphone-from-linux/scripts/start-proxy.sh
 ```
 
 Backgrounds `ios_webkit_debug_proxy -F`. Devices show up on `http://localhost:9221/json`
@@ -57,7 +62,7 @@ enabled, `iosdbg.py tabs` returns `[]`.
 ### 3. Drive it from the terminal
 
 ```bash
-PY=.github/skills/ios-safari-remote-debug/scripts/iosdbg.py
+PY=.github/skills/debug-iphone-from-linux/scripts/iosdbg.py
 
 $PY tabs                                       # list inspectable Safari tabs
 $PY eval --match learnc "self.crossOriginIsolated"
