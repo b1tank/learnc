@@ -34,7 +34,7 @@
         { "kind": "exercise", "id": "ex-1-14", "label": "1-14", "status": "done" },
         { "kind": "exercise", "id": "ex-1-15", "label": "1-15", "status": "done" },
         { "kind": "exercise", "id": "ex-1-16", "label": "1-16", "status": "done" },
-        { "kind": "exercise", "id": "ex-1-17", "label": "1-17" },
+        { "kind": "exercise", "id": "ex-1-17", "label": "1-17", "status": "done" },
         { "kind": "exercise", "id": "ex-1-18", "label": "1-18" },
         { "kind": "exercise", "id": "ex-1-19", "label": "1-19" },
         { "kind": "exercise", "id": "ex-1-20", "label": "1-20" },
