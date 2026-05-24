@@ -5,24 +5,39 @@ import asyncio
 import itertools
 import json
 import sys
+import urllib.error
 import urllib.request
 
 import websockets
 
 
 def list_tabs(port: int = 9222) -> list[dict]:
-    with urllib.request.urlopen(f"http://localhost:{port}/json", timeout=3) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(f"http://localhost:{port}/json", timeout=3) as r:
+            return json.loads(r.read())
+    except (urllib.error.URLError, ConnectionError, TimeoutError) as e:
+        sys.exit(
+            f"can't reach ios_webkit_debug_proxy on :{port} ({e}).\n"
+            f"Friendly reminder: start it first with scripts/start-proxy.sh,\n"
+            f"or run scripts/check.sh to diagnose the full setup."
+        )
 
 
 def pick_tab(match: str | None, port: int = 9222) -> dict:
     tabs = list_tabs(port)
     if not tabs:
-        sys.exit("no inspectable tabs — open a page in Safari first")
+        sys.exit(
+            "no inspectable tabs on the iPhone yet. Common causes:\n"
+            "  - Safari has no page open → open any URL on the phone\n"
+            "  - Web Inspector is OFF → Settings → Safari → Advanced → Web Inspector\n"
+            "  - iPhone is locked / not Trusted → run scripts/check.sh"
+        )
     if match:
-        tabs = [t for t in tabs if match in t.get("url", "") or match in t.get("title", "")]
-        if not tabs:
-            sys.exit(f"no tab matches {match!r}")
+        filtered = [t for t in tabs if match in t.get("url", "") or match in t.get("title", "")]
+        if not filtered:
+            available = "\n  ".join(f"- {t.get('title','?')[:50]} :: {t.get('url','')[:80]}" for t in tabs)
+            sys.exit(f"no tab matches {match!r}. Available tabs:\n  {available}")
+        tabs = filtered
     return tabs[0]
 
 

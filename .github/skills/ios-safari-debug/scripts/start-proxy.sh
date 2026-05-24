@@ -4,8 +4,18 @@
 # script is safe to invoke repeatedly.
 set -euo pipefail
 
+here=$(cd "$(dirname "$0")" && pwd)
+
 if ! command -v ios_webkit_debug_proxy >/dev/null 2>&1; then
-    echo "ios_webkit_debug_proxy not found. Run install.sh first." >&2
+    cat >&2 <<EOF
+ios_webkit_debug_proxy is not installed yet.
+
+Quick fix:
+    $here/install.sh
+
+(Installs libimobiledevice, builds the proxy, and pip-installs websockets.
+Idempotent — safe to re-run.)
+EOF
     exit 1
 fi
 
@@ -16,7 +26,17 @@ if pgrep -x ios_webkit_debug_proxy >/dev/null; then
 fi
 
 if ! idevice_id -l 2>/dev/null | grep -q .; then
-    echo "no iPhone visible to libimobiledevice. Plug in + unlock + trust this computer." >&2
+    cat >&2 <<EOF
+No iPhone visible to libimobiledevice.
+
+Friendly checklist:
+    1. Plug the iPhone into this machine over USB
+    2. Unlock the iPhone (the screen must be on)
+    3. When the iPhone asks "Trust This Computer?", tap Trust
+    4. Verify with:  idevice_id -l
+
+Full preflight (recommended): $here/check.sh
+EOF
     exit 1
 fi
 

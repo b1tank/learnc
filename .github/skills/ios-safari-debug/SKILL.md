@@ -23,11 +23,57 @@ so you can use it from any non-Apple host.
 - Want to script repeatable iPhone checks (CI smoke tests, manual reload
   loops, header verification) without poking at the device by hand
 
-## Prerequisites
+## Preflight (always run this first)
 
-- Linux host (tested on Ubuntu 22.04; Windows via WSL2/usbipd should also work)
-- iPhone connected over USB, **unlocked**, with "Trust This Computer" granted
-- On the iPhone: **Settings → Safari → Advanced → Web Inspector = ON**
+**Agent instructions:** before suggesting any debug step, run `check.sh` and
+read its output. It diagnoses every prerequisite layer in one pass and
+prints a precise fix for whatever's missing. It is read-only — safe to run
+any time.
+
+```bash
+.github/skills/ios-safari-debug/scripts/check.sh
+```
+
+What the exit code means:
+
+| Code | Meaning | What you should do |
+|------|---------|--------------------|
+| 0 | All green | Proceed to [Usage](#usage) |
+| 1 | Host packages missing | **Offer to run `install.sh`** on the user's behalf (it uses `sudo apt`, so confirm first if they didn't ask for installation) |
+| 2 | iPhone not connected / not Trusted / locked | **Politely remind the user** to plug in, unlock, and tap "Trust This Computer". You cannot do this for them — it's a physical/security gate. |
+| 3 | Everything installed, proxy not running | **Offer to run `start-proxy.sh`** (no sudo needed) |
+
+### Friendly-reminder rules for the agent
+
+When prerequisites are missing, *never* fail silently or dump a stack trace.
+Instead:
+
+1. Run `check.sh` and quote the relevant `[MISSING]` / `[WARN]` lines back to
+   the user verbatim.
+2. **If it's something you can fix:** offer to run the fix command and wait
+   for confirmation. Examples: `install.sh`, `start-proxy.sh`, killing a
+   stale proxy with `pkill -x ios_webkit_debug_proxy`.
+3. **If it requires the user (physical access, iPhone settings):** give a
+   short, numbered checklist of what they need to tap, and offer to re-run
+   `check.sh` once they say they're done.
+4. Web Inspector is invisible from the host — always mention it explicitly
+   when no tabs show up: *"Open Settings → Safari → Advanced and confirm
+   Web Inspector is ON."*
+
+## Prerequisites (what `check.sh` verifies)
+
+**On the host:**
+- Linux (Ubuntu 22.04 tested; WSL2 + `usbipd-win` also works)
+- `libimobiledevice` tools: `idevice_id`, `ideviceinfo`, `ideviceinstaller`
+- `ios_webkit_debug_proxy` binary on `PATH`
+- Python 3 with the `websockets` module
+- `usbmuxd` daemon (usually auto-starts)
+
+**On the iPhone:**
+- Plugged in via USB, **unlocked**
+- "Trust This Computer" granted (one-time pairing prompt)
+- **Settings → Safari → Advanced → Web Inspector = ON**
+- A Safari tab open on the page you want to inspect
 
 ## Setup (one time)
 
@@ -163,6 +209,7 @@ The libimobiledevice/usbmuxd packages stay installed (they're cheap).
 
 ## Files
 
+- [scripts/check.sh](./scripts/check.sh) — read-only preflight; always run first
 - [scripts/install.sh](./scripts/install.sh) — installs apt deps, builds iwdp, pip-installs websockets
 - [scripts/start-proxy.sh](./scripts/start-proxy.sh) — runs `ios_webkit_debug_proxy -F` in the background
 - [scripts/iosdbg.py](./scripts/iosdbg.py) — CDP driver: `tabs`, `eval`, `logs`
