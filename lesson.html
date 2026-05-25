@@ -29,8 +29,8 @@
   CORS, which counts under require-corp for module fetches).
 -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=4a1465da"></script>
-<link rel="stylesheet" href="style.css?v=4a1465da">
+<script src="coi-serviceworker.js?v=518465d5"></script>
+<link rel="stylesheet" href="style.css?v=518465d5">
 <!-- Open TLS to esm.sh early so the CodeMirror submodule graph can start
      downloading as soon as the importmap is parsed. marked is self-hosted
      under vendor/, so no third-party preconnect is needed for it. -->
@@ -43,10 +43,10 @@
      the browser try to resolve those specifiers as URLs and fail. We rely
      on the static import "./editor.js" in lesson.js to pull it in once the
      importmap is parsed. -->
-<link rel="modulepreload" href="lesson.js?v=4a1465da">
-<link rel="modulepreload" href="runner.js?v=4a1465da">
-<link rel="modulepreload" href="theme.js?v=4a1465da">
-<link rel="modulepreload" href="shortcuts.js?v=4a1465da">
+<link rel="modulepreload" href="lesson.js?v=518465d5">
+<link rel="modulepreload" href="runner.js?v=518465d5">
+<link rel="modulepreload" href="theme.js?v=518465d5">
+<link rel="modulepreload" href="shortcuts.js?v=518465d5">
 <!-- `defer` lets the HTML parser finish before fetching/executing marked, so
      the title and prose container are in the DOM by the time module scripts
      start. Modules are implicitly deferred and run after this script, which
@@ -198,9 +198,9 @@
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-25T06:09Z">2026-05-25 06:09 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/4a1465da" rel="noopener">4a1465da</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-25T06:30Z">2026-05-25 06:30 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/518465d5" rel="noopener">518465d5</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
-<script type="module" src="lesson.js?v=4a1465da"></script>
+<script type="module" src="lesson.js?v=518465d5"></script>
 </body>
 </html>
