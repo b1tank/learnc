@@ -1,37 +1,51 @@
-# Sprint: K&R Chapter 1 Walkthrough
+# Sprint: K&R Chapters 2 – 8 Walkthrough
 
-**Goal:** populate every Chapter 1 lesson stub with original, runnable walk-throughs so the site works as a read-the-book replacement. PDF used as factual reference only; all prose, examples, and exercise solutions written in original voice. Each section ships as its own commit + push so GitHub Pages updates incrementally and the author can read live.
+**Goal:** populate every Chapter 2 – 8 lesson stub with original, runnable walkthroughs in the same voice and structure as Chapter 1. PDF used only as factual reference. All prose, examples, and exercise prompts written in original voice — **no K&R text reproduced**.
 
-## Conventions for this sprint
+## Conventions
 
-- **File naming**: section titles, lowercase, dash-separated, e.g. `01-03-the-for-statement.md`.
-- **One commit per lesson** (`feat(ch1): section 1.x …` / `feat(ch1): exercise 1-NN …`).
-- **Each lesson** ends with a `## Notes from the author` block flagging what to revise.
-- **No K&R prose reproduced.** Concepts are factual and free to discuss; expression is original.
-- **Verify** each lesson loads in the local dev server before commit.
+- File naming: section titles, lowercase, dash-separated (e.g. `02-01-variable-names.md`).
+- One commit per lesson: `feat(chN): section N.M "Title" walkthrough` or `feat(chN): exercise N-M "title"`.
+- Each lesson ends with a `## Notes from the author` block.
+- Verify by curl/HTTP smoke-check at chapter boundaries rather than every lesson — Ch 1 confirmed the pattern is solid.
 
 ## Tasks (in order)
 
-0. [x] Rename `01-01-hello.md` → `01-01-getting-started.md`; `01-02-temp.md` → `01-02-variables-and-arithmetic-expressions.md`. Update manifest ids and `prev`/`next` chain. *(906b30d)*
-1. [x] §1.3 The `for` Statement → `01-03-the-for-statement.md` *(fcdd8b3)*
-2. [x] §1.4 Symbolic Constants → `01-04-symbolic-constants.md` *(b2e3a7b)*
-3. [x] §1.5 Character Input and Output → `01-05-character-input-and-output.md` *(4032692)*
-4. [x] §1.6 Arrays → `01-06-arrays.md` *(be7ef42)*
-5. [x] §1.7 Functions → `01-07-functions.md` *(c9b0736)*
-6. [x] §1.8 Arguments — Call by Value → `01-08-arguments-call-by-value.md` *(89b650e)*
-7. [x] §1.9 Character Arrays → `01-09-character-arrays.md` *(b1aaf38)*
-8. [x] §1.10 External Variables and Scope → `01-10-external-variables-and-scope.md` *(50d6fbb)*
-9. [x] Exercises 1-1 … 1-24 → `ex-1-NN.md`, each its own commit (1-1, 1-2 individual; 1-3..1-8 batched; 1-9..1-24 individual).
-10. [x] Build/perf smoke-check, push final commits — `curl` smoke-check across spread of lessons all returned `200` in <1ms locally.
+### Chapter 2 — Types, Operators, and Expressions
+- [ ] Refactor: rename manifest ids and ex-1-24's `next` to title-based ids.
+- [ ] §2.1 Variable Names → §2.12 Precedence (12 sections)
+- [ ] Exercises 2-1 … 2-10
+
+### Chapter 3 — Control Flow
+- [ ] Refactor id renames
+- [ ] §3.1 … §3.8 (8 sections)
+- [ ] Exercises 3-1 … 3-6
+
+### Chapter 4 — Functions and Program Structure
+- [ ] Refactor id renames
+- [ ] §4.1 … §4.11 (11 sections)
+- [ ] Exercises 4-1 … 4-14
+
+### Chapter 5 — Pointers and Arrays
+- [ ] Refactor id renames
+- [ ] §5.1 … §5.12 (12 sections)
+- [ ] Exercises 5-1 … 5-20
+
+### Chapter 6 — Structures
+- [ ] Refactor id renames
+- [ ] §6.1 … §6.9 (9 sections)
+- [ ] Exercises 6-1 … 6-6
+
+### Chapter 7 — Input and Output
+- [ ] Refactor id renames
+- [ ] §7.1 … §7.8 (8 sections)
+- [ ] Exercises 7-1 … 7-9
+
+### Chapter 8 — The UNIX System Interface
+- [ ] Refactor id renames
+- [ ] §8.1 … §8.7 (7 sections)
+- [ ] Exercises 8-1 … 8-8
 
 ## Hiccups & Notes
 
-- **ex-1-3..1-8 batched into a single commit (1c1c1b9).** I authored the six exercise files in parallel and then flipped all six manifest entries in one `multi_replace_string_in_file` pass before noticing the sprint's "one commit per task" rule. Rather than rewrite history, I committed them as one batch with a frank commit message and proceeded one-at-a-time from 1-9 onward.
-- **`fseek(stdout, -1, SEEK_CUR)` is a footgun.** While drafting ex-1-23 (strip comments) I reached for `fseek` to take back a held character. It only works when stdout is a regular file. I left the broken version in the lesson alongside the correct lookahead version as a teaching moment — the "right way" is to **lookahead** a single character with `getchar`/`ungetc`.
-- **One-character lookahead is enough for almost everything.** Exercises 1-22, 1-23, and 1-24 each independently arrived at the same pattern (hold the previous character, decide on the next one). Named LL(1) in the parsing literature. Worth calling out explicitly when Chapter 6 starts on data structures and parsing.
-- **PDF as factual reference only.** Used `pdftotext -layout` to dump the K&R Ch 1 table of contents and exercise prompts (paraphrased). No prose reproduced. All code in `c:starter`/`c`/`output` blocks is original.
-- **Browser verification** via the persistent `navigate_page` page worked for spot-checks (ex-1-9, ex-1-10, ex-1-24). For Pages-on-prod I'd need to wait for GitHub Actions to publish each commit, which the user is checking out-of-band.
-
-## Status
-
-✅ **Chapter 1 complete.** 10 section walkthroughs + 24 exercises = 34 lessons. All `status: done` in the manifest. Next: Chapter 2 (`02-01-names` and onward) — left as the natural follow-up sprint.
+*(append here as work proceeds)*
