@@ -60,16 +60,16 @@
         { "kind": "section", "id": "02-10-assignment-operators-and-expressions",   "label": "2.10", "title": "Assignment Operators and Expressions" },
         { "kind": "section", "id": "02-11-conditional-expressions",                "label": "2.11", "title": "Conditional Expressions" },
         { "kind": "section", "id": "02-12-precedence-and-order-of-evaluation",     "label": "2.12", "title": "Precedence and Order of Evaluation" },
-        { "kind": "exercise", "id": "ex-2-1",  "label": "2-1"  },
-        { "kind": "exercise", "id": "ex-2-2",  "label": "2-2"  },
-        { "kind": "exercise", "id": "ex-2-3",  "label": "2-3"  },
-        { "kind": "exercise", "id": "ex-2-4",  "label": "2-4"  },
-        { "kind": "exercise", "id": "ex-2-5",  "label": "2-5"  },
-        { "kind": "exercise", "id": "ex-2-6",  "label": "2-6"  },
-        { "kind": "exercise", "id": "ex-2-7",  "label": "2-7"  },
-        { "kind": "exercise", "id": "ex-2-8",  "label": "2-8"  },
-        { "kind": "exercise", "id": "ex-2-9",  "label": "2-9"  },
-        { "kind": "exercise", "id": "ex-2-10", "label": "2-10" }
+        { "kind": "exercise", "id": "ex-2-1",  "label": "2-1", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-2",  "label": "2-2", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-3",  "label": "2-3", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-4",  "label": "2-4", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-5",  "label": "2-5", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-6",  "label": "2-6", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-7",  "label": "2-7", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-8",  "label": "2-8", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-9",  "label": "2-9", "status": "done" },
+        { "kind": "exercise", "id": "ex-2-10", "label": "2-10", "status": "done" }
       ]
     },
     {
