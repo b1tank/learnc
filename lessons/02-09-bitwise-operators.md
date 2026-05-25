@@ -3,7 +3,7 @@ id: 02-09-bitwise-operators
 chapter: 2
 label: "2.9"
 title: Bitwise Operators
-prev: 02-08-increment-and-decrement-operators
+prev: ex-2-5
 next: ex-2-6
 status: done
 ---

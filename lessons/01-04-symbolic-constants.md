@@ -3,7 +3,7 @@ id: 01-04-symbolic-constants
 chapter: 1
 label: "1.4"
 title: Symbolic Constants
-prev: 01-03-the-for-statement
+prev: ex-1-5
 next: 01-05-character-input-and-output
 status: done
 ---

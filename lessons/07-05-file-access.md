@@ -4,7 +4,7 @@ chapter: 7
 label: "7.5"
 title: 'File Access'
 prev: ex-7-5
-next: ex-7-6
+next: 07-06-error-handling-stderr-and-exit
 status: done
 ---
 

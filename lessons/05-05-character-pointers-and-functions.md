@@ -3,7 +3,7 @@ id: 05-05-character-pointers-and-functions
 chapter: 5
 label: "5.5"
 title: Character Pointers and Functions
-prev: ex-5-2
+prev: 05-04-address-arithmetic
 next: ex-5-3
 status: done
 ---

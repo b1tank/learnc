@@ -3,8 +3,8 @@ id: 05-06-pointer-arrays
 chapter: 5
 label: "5.6"
 title: Pointer Arrays; Pointers to Pointers
-prev: ex-5-5
-next: ex-5-6
+prev: ex-5-7
+next: 05-07-multi-dimensional-arrays
 status: done
 ---
 

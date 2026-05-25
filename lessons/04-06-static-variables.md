@@ -4,7 +4,7 @@ chapter: 4
 label: "4.6"
 title: Static Variables
 prev: 04-05-header-files
-next: 04-07-register-variables
+next: ex-4-11
 status: done
 ---
 

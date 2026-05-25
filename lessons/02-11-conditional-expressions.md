@@ -3,7 +3,7 @@ id: 02-11-conditional-expressions
 chapter: 2
 label: "2.11"
 title: Conditional Expressions
-prev: 02-10-assignment-operators-and-expressions
+prev: ex-2-9
 next: ex-2-10
 status: done
 ---

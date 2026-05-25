@@ -3,7 +3,7 @@ id: 05-03-pointers-and-arrays
 chapter: 5
 label: "5.3"
 title: Pointers and Arrays
-prev: 05-02-pointers-and-function-arguments
+prev: ex-5-2
 next: 05-04-address-arithmetic
 status: done
 ---

@@ -3,7 +3,7 @@ id: 05-07-multi-dimensional-arrays
 chapter: 5
 label: "5.7"
 title: Multi-dimensional Arrays
-prev: ex-5-7
+prev: 05-06-pointer-arrays
 next: ex-5-8
 status: done
 ---

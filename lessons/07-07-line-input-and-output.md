@@ -4,7 +4,7 @@ chapter: 7
 label: "7.7"
 title: 'Line Input and Output'
 prev: 07-06-error-handling-stderr-and-exit
-next: 07-08-miscellaneous-functions
+next: ex-7-6
 status: done
 ---
 

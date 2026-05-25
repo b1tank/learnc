@@ -3,7 +3,7 @@ id: 05-09-pointers-vs-multi-dimensional-arrays
 chapter: 5
 label: "5.9"
 title: Pointers vs. Multi-dimensional Arrays
-prev: 05-08-initialization-of-pointer-arrays
+prev: ex-5-9
 next: 05-10-command-line-arguments
 status: done
 ---

@@ -3,7 +3,7 @@ id: 04-07-register-variables
 chapter: 4
 label: "4.7"
 title: Register Variables
-prev: 04-06-static-variables
+prev: ex-4-11
 next: 04-08-block-structure
 status: done
 ---

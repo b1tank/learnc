@@ -4,7 +4,7 @@ chapter: 7
 label: "7.3"
 title: 'Variable-length Argument Lists'
 prev: ex-7-2
-next: 07-04-formatted-input-scanf
+next: ex-7-3
 status: done
 ---
 

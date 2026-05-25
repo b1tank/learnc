@@ -3,8 +3,8 @@ id: 01-10-external-variables-and-scope
 chapter: 1
 label: "1.10"
 title: External Variables and Scope
-prev: ex-1-20
-next: ex-1-21
+prev: ex-1-19
+next: ex-1-20
 status: done
 ---
 

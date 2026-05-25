@@ -3,8 +3,8 @@ id: 02-10-assignment-operators-and-expressions
 chapter: 2
 label: "2.10"
 title: Assignment Operators and Expressions
-prev: ex-2-9
-next: 02-11-conditional-expressions
+prev: ex-2-8
+next: ex-2-9
 status: done
 ---
 

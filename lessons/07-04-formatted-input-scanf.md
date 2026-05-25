@@ -3,8 +3,8 @@ id: 07-04-formatted-input-scanf
 chapter: 7
 label: "7.4"
 title: 'Formatted Input — Scanf'
-prev: 07-03-variable-length-argument-lists
-next: ex-7-3
+prev: ex-7-3
+next: ex-7-4
 status: done
 ---
 

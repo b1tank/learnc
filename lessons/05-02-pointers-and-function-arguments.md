@@ -4,7 +4,7 @@ chapter: 5
 label: "5.2"
 title: Pointers and Function Arguments
 prev: 05-01-pointers-and-addresses
-next: 05-03-pointers-and-arrays
+next: ex-5-1
 status: done
 ---
 

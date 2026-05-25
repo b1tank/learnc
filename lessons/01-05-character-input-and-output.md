@@ -4,7 +4,7 @@ chapter: 1
 label: "1.5"
 title: Character Input and Output
 prev: 01-04-symbolic-constants
-next: ex-1-5
+next: ex-1-6
 status: done
 ---
 

@@ -3,7 +3,7 @@ id: 07-08-miscellaneous-functions
 chapter: 7
 label: "7.8"
 title: 'Miscellaneous Functions'
-prev: 07-07-line-input-and-output
+prev: ex-7-8
 next: ex-7-9
 status: done
 ---

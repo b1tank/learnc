@@ -3,8 +3,8 @@ id: 02-08-increment-and-decrement-operators
 chapter: 2
 label: "2.8"
 title: Increment and Decrement Operators
-prev: ex-2-5
-next: 02-09-bitwise-operators
+prev: ex-2-3
+next: ex-2-4
 status: done
 ---
 

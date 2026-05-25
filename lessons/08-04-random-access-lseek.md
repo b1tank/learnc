@@ -3,7 +3,7 @@ id: 08-04-random-access-lseek
 chapter: 8
 label: "8.4"
 title: 'Random Access — Lseek'
-prev: 08-03-open-creat-close-unlink
+prev: ex-8-1
 next: 08-05-example-fopen-and-getc
 status: done
 ---
