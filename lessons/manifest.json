@@ -194,15 +194,15 @@
         { "kind": "section", "id": "07-06-error-handling-stderr-and-exit","label": "7.6", "title": "Error Handling — Stderr and Exit", "status": "done" },
         { "kind": "section", "id": "07-07-line-input-and-output",         "label": "7.7", "title": "Line Input and Output", "status": "done" },
         { "kind": "section", "id": "07-08-miscellaneous-functions",       "label": "7.8", "title": "Miscellaneous Functions", "status": "done" },
-        { "kind": "exercise", "id": "ex-7-1", "label": "7-1" },
-        { "kind": "exercise", "id": "ex-7-2", "label": "7-2" },
-        { "kind": "exercise", "id": "ex-7-3", "label": "7-3" },
-        { "kind": "exercise", "id": "ex-7-4", "label": "7-4" },
-        { "kind": "exercise", "id": "ex-7-5", "label": "7-5" },
-        { "kind": "exercise", "id": "ex-7-6", "label": "7-6" },
-        { "kind": "exercise", "id": "ex-7-7", "label": "7-7" },
-        { "kind": "exercise", "id": "ex-7-8", "label": "7-8" },
-        { "kind": "exercise", "id": "ex-7-9", "label": "7-9" }
+        { "kind": "exercise", "id": "ex-7-1", "label": "7-1", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-2", "label": "7-2", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-3", "label": "7-3", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-4", "label": "7-4", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-5", "label": "7-5", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-6", "label": "7-6", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-7", "label": "7-7", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-8", "label": "7-8", "status": "done" },
+        { "kind": "exercise", "id": "ex-7-9", "label": "7-9", "status": "done" }
       ]
     },
     {
