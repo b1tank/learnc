@@ -28,12 +28,6 @@ function lessonURL(id) {
   return "lesson.html?id=" + encodeURIComponent(id);
 }
 
-function statusLabel(s) {
-  if (s === "done") return { text: "\u2022 done", cls: "status done" };
-  if (s === "draft") return { text: "\u2022 draft", cls: "status draft" };
-  return { text: "\u2022 stub", cls: "status" };
-}
-
 function renderIndex(manifest, root) {
   root.innerHTML = "";
   // Hide stubs by default — the index has hundreds of them and the eye
@@ -60,8 +54,6 @@ function renderIndex(manifest, root) {
       }
       li.appendChild(el("span", { class: "lbl" }, [label]));
       li.appendChild(el("a", { href: lessonURL(item.id) }, [title]));
-      var st = statusLabel(status);
-      li.appendChild(el("span", { class: st.cls }, [st.text]));
       ul.appendChild(li);
     });
     sec.appendChild(ul);
