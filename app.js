@@ -36,26 +36,63 @@ function renderIndex(manifest, root) {
   // in this slot were removed once every lesson reached "done".
   root.classList.add("lesson-list--hide-stub");
 
+  function makeLessonLi(item) {
+    var status = item.status || "stub";
+    var li = el("li", { class: "status-" + status });
+    var label;
+    var title;
+    if (item.kind === "exercise") {
+      label = "Ex " + item.label;
+      title = item.title || ("Exercise " + item.label);
+    } else {
+      label = item.label;
+      title = item.title || item.label;
+    }
+    li.appendChild(el("span", { class: "lbl" }, [label]));
+    li.appendChild(el("a", { href: lessonURL(item.id) }, [title]));
+    return li;
+  }
+
   manifest.chapters.forEach(function (ch) {
+    // Group exercises by parent section id. Exercises with no `parent`
+    // (legacy entries) fall into the orphan bucket and are rendered at
+    // the chapter tail — same place they used to live before the manifest
+    // gained the `parent` field, so the page degrades gracefully.
+    var children = {};
+    var orphans = [];
+    ch.items.forEach(function (it) {
+      if (it.kind !== "exercise") return;
+      if (it.parent) {
+        (children[it.parent] = children[it.parent] || []).push(it);
+      } else {
+        orphans.push(it);
+      }
+    });
+
     var sec = el("section", { class: "chapter" });
     sec.appendChild(el("h2", { class: "chapter-head" }, ["Chapter " + ch.n + ". " + ch.title]));
     var ul = el("ul", { class: "lesson-list" });
+
     ch.items.forEach(function (item) {
-      var status = item.status || "stub";
-      var li = el("li", { class: "status-" + status });
-      var label;
-      var title;
-      if (item.kind === "exercise") {
-        label = "Ex " + item.label;
-        title = item.title || ("Exercise " + item.label);
-      } else {
-        label = item.label;
-        title = item.title || item.label;
+      if (item.kind !== "section") return;
+      ul.appendChild(makeLessonLi(item));
+      var kids = children[item.id];
+      if (kids && kids.length) {
+        var sub = el("ul", { class: "lesson-list lesson-list--nested" });
+        kids.forEach(function (ex) { sub.appendChild(makeLessonLi(ex)); });
+        // Attach the nested list inside its own <li> so screen readers
+        // see exercises as descendants of the preceding section item.
+        var wrap = el("li", { class: "lesson-list-children" }, [sub]);
+        ul.appendChild(wrap);
       }
-      li.appendChild(el("span", { class: "lbl" }, [label]));
-      li.appendChild(el("a", { href: lessonURL(item.id) }, [title]));
-      ul.appendChild(li);
     });
+
+    // Tail bucket for exercises that don't claim a parent. Keeps any
+    // future "unmapped" entries visible instead of silently dropped.
+    if (orphans.length) {
+      orphans.forEach(function (ex) { ul.appendChild(makeLessonLi(ex)); });
+    }
+
     sec.appendChild(ul);
     root.appendChild(sec);
   });
