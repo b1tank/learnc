@@ -3,8 +3,8 @@ id: 02-12-precedence-and-order-of-evaluation
 chapter: 2
 label: "2.12"
 title: Precedence and Order of Evaluation
-prev: 02-11-conditional-expressions
-next: ex-2-1
+prev: ex-2-10
+next: 03-01-statements-and-blocks
 status: done
 ---
 

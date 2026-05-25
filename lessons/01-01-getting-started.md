@@ -4,7 +4,7 @@ chapter: 1
 label: "1.1"
 title: Getting Started
 prev: null
-next: 01-02-variables-and-arithmetic-expressions
+next: ex-1-1
 status: done
 ---
 

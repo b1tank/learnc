@@ -3,7 +3,7 @@ id: 03-01-statements-and-blocks
 chapter: 3
 label: "3.1"
 title: Statements and Blocks
-prev: ex-2-10
+prev: 02-12-precedence-and-order-of-evaluation
 next: 03-02-if-else
 status: done
 ---

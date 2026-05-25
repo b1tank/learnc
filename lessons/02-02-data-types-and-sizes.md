@@ -4,7 +4,7 @@ chapter: 2
 label: "2.2"
 title: Data Types and Sizes
 prev: 02-01-variable-names
-next: 02-03-constants
+next: ex-2-1
 status: done
 ---
 

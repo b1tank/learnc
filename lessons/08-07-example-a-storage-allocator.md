@@ -3,8 +3,8 @@ id: 08-07-example-a-storage-allocator
 chapter: 8
 label: "8.7"
 title: 'Example — A Storage Allocator'
-prev: 08-06-example-listing-directories
-next: ex-8-1
+prev: ex-8-5
+next: ex-8-6
 status: done
 ---
 

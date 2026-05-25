@@ -4,7 +4,7 @@ chapter: 3
 label: "3.8"
 title: Goto and Labels
 prev: 03-07-break-and-continue
-next: ex-3-1
+next: 04-01-basics-of-functions
 status: done
 ---
 

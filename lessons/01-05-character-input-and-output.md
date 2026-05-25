@@ -4,7 +4,7 @@ chapter: 1
 label: "1.5"
 title: Character Input and Output
 prev: 01-04-symbolic-constants
-next: 01-06-arrays
+next: ex-1-5
 status: done
 ---
 

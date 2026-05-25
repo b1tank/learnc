@@ -3,8 +3,8 @@ id: 01-07-functions
 chapter: 1
 label: "1.7"
 title: Functions
-prev: 01-06-arrays
-next: 01-08-arguments-call-by-value
+prev: ex-1-14
+next: ex-1-15
 status: done
 ---
 

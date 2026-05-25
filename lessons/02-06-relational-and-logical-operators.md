@@ -4,7 +4,7 @@ chapter: 2
 label: "2.6"
 title: Relational and Logical Operators
 prev: 02-05-arithmetic-operators
-next: 02-07-type-conversions
+next: ex-2-2
 status: done
 ---
 

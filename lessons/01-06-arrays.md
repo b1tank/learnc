@@ -3,8 +3,8 @@ id: 01-06-arrays
 chapter: 1
 label: "1.6"
 title: Arrays
-prev: 01-05-character-input-and-output
-next: 01-07-functions
+prev: ex-1-12
+next: ex-1-13
 status: done
 ---
 

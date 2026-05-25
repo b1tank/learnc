@@ -3,8 +3,8 @@ id: 07-02-formatted-output-printf
 chapter: 7
 label: "7.2"
 title: 'Formatted Output — Printf'
-prev: 07-01-standard-input-and-output
-next: 07-03-variable-length-argument-lists
+prev: ex-7-1
+next: ex-7-2
 status: done
 ---
 

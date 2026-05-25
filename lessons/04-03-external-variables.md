@@ -3,8 +3,8 @@ id: 04-03-external-variables
 chapter: 4
 label: "4.3"
 title: External Variables
-prev: 04-02-functions-returning-non-integers
-next: 04-04-scope-rules
+prev: ex-4-2
+next: ex-4-3
 status: done
 ---
 

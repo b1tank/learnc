@@ -3,7 +3,7 @@ id: 05-08-initialization-of-pointer-arrays
 chapter: 5
 label: "5.8"
 title: Initialization of Pointer Arrays
-prev: 05-07-multi-dimensional-arrays
+prev: ex-5-9
 next: 05-09-pointers-vs-multi-dimensional-arrays
 status: done
 ---

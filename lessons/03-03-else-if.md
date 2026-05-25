@@ -4,7 +4,7 @@ chapter: 3
 label: "3.3"
 title: Else-If
 prev: 03-02-if-else
-next: 03-04-switch
+next: ex-3-1
 status: done
 ---
 

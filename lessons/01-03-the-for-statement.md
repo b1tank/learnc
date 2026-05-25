@@ -3,7 +3,7 @@ id: 01-03-the-for-statement
 chapter: 1
 label: "1.3"
 title: The for Statement
-prev: 01-02-variables-and-arithmetic-expressions
+prev: ex-1-4
 next: 01-04-symbolic-constants
 status: done
 ---

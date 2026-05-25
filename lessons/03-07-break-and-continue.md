@@ -3,7 +3,7 @@ id: 03-07-break-and-continue
 chapter: 3
 label: "3.7"
 title: Break and Continue
-prev: 03-06-loops-do-while
+prev: ex-3-6
 next: 03-08-goto-and-labels
 status: done
 ---

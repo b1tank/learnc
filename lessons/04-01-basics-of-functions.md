@@ -3,8 +3,8 @@ id: 04-01-basics-of-functions
 chapter: 4
 label: "4.1"
 title: Basics of Functions
-prev: ex-3-6
-next: 04-02-functions-returning-non-integers
+prev: 03-08-goto-and-labels
+next: ex-4-1
 status: done
 ---
 

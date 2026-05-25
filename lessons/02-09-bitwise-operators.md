@@ -4,7 +4,7 @@ chapter: 2
 label: "2.9"
 title: Bitwise Operators
 prev: 02-08-increment-and-decrement-operators
-next: 02-10-assignment-operators-and-expressions
+next: ex-2-6
 status: done
 ---
 

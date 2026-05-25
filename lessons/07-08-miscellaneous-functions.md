@@ -4,7 +4,7 @@ chapter: 7
 label: "7.8"
 title: 'Miscellaneous Functions'
 prev: 07-07-line-input-and-output
-next: ex-7-1
+next: ex-7-9
 status: done
 ---
 

@@ -3,7 +3,7 @@ id: 08-03-open-creat-close-unlink
 chapter: 8
 label: "8.3"
 title: 'Open, Creat, Close, Unlink'
-prev: 08-02-low-level-io-read-and-write
+prev: ex-8-1
 next: 08-04-random-access-lseek
 status: done
 ---

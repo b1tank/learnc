@@ -3,7 +3,7 @@ id: 07-06-error-handling-stderr-and-exit
 chapter: 7
 label: "7.6"
 title: 'Error Handling — Stderr and Exit'
-prev: 07-05-file-access
+prev: ex-7-8
 next: 07-07-line-input-and-output
 status: done
 ---

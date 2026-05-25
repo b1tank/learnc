@@ -4,7 +4,7 @@ chapter: 8
 label: "8.2"
 title: 'Low Level I/O — Read and Write'
 prev: 08-01-file-descriptors
-next: 08-03-open-creat-close-unlink
+next: ex-8-1
 status: done
 ---
 

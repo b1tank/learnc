@@ -4,7 +4,7 @@ chapter: 6
 label: "6.3"
 title: 'Arrays of Structures'
 prev: 06-02-structures-and-functions
-next: 06-04-pointers-to-structures
+next: ex-6-1
 status: done
 ---
 

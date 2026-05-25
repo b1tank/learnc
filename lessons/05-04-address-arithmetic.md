@@ -4,7 +4,7 @@ chapter: 5
 label: "5.4"
 title: Address Arithmetic
 prev: 05-03-pointers-and-arrays
-next: 05-05-character-pointers-and-functions
+next: ex-5-1
 status: done
 ---
 

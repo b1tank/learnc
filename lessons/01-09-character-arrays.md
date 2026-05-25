@@ -4,7 +4,7 @@ chapter: 1
 label: "1.9"
 title: Character Arrays
 prev: 01-08-arguments-call-by-value
-next: 01-10-external-variables-and-scope
+next: ex-1-16
 status: done
 ---
 

@@ -3,8 +3,8 @@ id: 03-06-loops-do-while
 chapter: 3
 label: "3.6"
 title: Loops — Do-While
-prev: 03-05-loops-while-and-for
-next: 03-07-break-and-continue
+prev: ex-3-3
+next: ex-3-4
 status: done
 ---
 

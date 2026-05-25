@@ -4,7 +4,7 @@ chapter: 6
 label: "6.9"
 title: 'Bit-fields'
 prev: 06-08-unions
-next: ex-6-1
+next: 07-01-standard-input-and-output
 status: done
 ---
 

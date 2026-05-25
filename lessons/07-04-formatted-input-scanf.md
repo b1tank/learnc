@@ -4,7 +4,7 @@ chapter: 7
 label: "7.4"
 title: 'Formatted Input — Scanf'
 prev: 07-03-variable-length-argument-lists
-next: 07-05-file-access
+next: ex-7-3
 status: done
 ---
 

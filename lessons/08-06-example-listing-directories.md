@@ -3,8 +3,8 @@ id: 08-06-example-listing-directories
 chapter: 8
 label: "8.6"
 title: 'Example — Listing Directories'
-prev: 08-05-example-fopen-and-getc
-next: 08-07-example-a-storage-allocator
+prev: ex-8-4
+next: ex-8-5
 status: done
 ---
 

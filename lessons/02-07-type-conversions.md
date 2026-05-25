@@ -3,8 +3,8 @@ id: 02-07-type-conversions
 chapter: 2
 label: "2.7"
 title: Type Conversions
-prev: 02-06-relational-and-logical-operators
-next: 02-08-increment-and-decrement-operators
+prev: ex-2-2
+next: ex-2-3
 status: done
 ---
 

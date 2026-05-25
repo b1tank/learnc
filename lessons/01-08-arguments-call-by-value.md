@@ -3,7 +3,7 @@ id: 01-08-arguments-call-by-value
 chapter: 1
 label: "1.8"
 title: Arguments — Call by Value
-prev: 01-07-functions
+prev: ex-1-15
 next: 01-09-character-arrays
 status: done
 ---

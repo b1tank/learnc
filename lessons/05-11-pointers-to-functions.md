@@ -3,8 +3,8 @@ id: 05-11-pointers-to-functions
 chapter: 5
 label: "5.11"
 title: Pointers to Functions
-prev: 05-10-command-line-arguments
-next: 05-12-complicated-declarations
+prev: ex-5-13
+next: ex-5-14
 status: done
 ---
 

@@ -4,7 +4,7 @@ chapter: 2
 label: "2.11"
 title: Conditional Expressions
 prev: 02-10-assignment-operators-and-expressions
-next: 02-12-precedence-and-order-of-evaluation
+next: ex-2-10
 status: done
 ---
 

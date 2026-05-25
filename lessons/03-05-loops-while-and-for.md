@@ -3,8 +3,8 @@ id: 03-05-loops-while-and-for
 chapter: 3
 label: "3.5"
 title: Loops — While and For
-prev: 03-04-switch
-next: 03-06-loops-do-while
+prev: ex-3-2
+next: ex-3-3
 status: done
 ---
 

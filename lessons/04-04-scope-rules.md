@@ -3,7 +3,7 @@ id: 04-04-scope-rules
 chapter: 4
 label: "4.4"
 title: Scope Rules
-prev: 04-03-external-variables
+prev: ex-4-11
 next: 04-05-header-files
 status: done
 ---

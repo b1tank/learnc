@@ -3,7 +3,7 @@ id: 02-03-constants
 chapter: 2
 label: "2.3"
 title: Constants
-prev: 02-02-data-types-and-sizes
+prev: ex-2-1
 next: 02-04-declarations
 status: done
 ---

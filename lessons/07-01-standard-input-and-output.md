@@ -3,8 +3,8 @@ id: 07-01-standard-input-and-output
 chapter: 7
 label: "7.1"
 title: 'Standard Input and Output'
-prev: ex-6-6
-next: 07-02-formatted-output-printf
+prev: 06-09-bit-fields
+next: ex-7-1
 status: done
 ---
 

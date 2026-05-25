@@ -3,7 +3,7 @@ id: 02-10-assignment-operators-and-expressions
 chapter: 2
 label: "2.10"
 title: Assignment Operators and Expressions
-prev: 02-09-bitwise-operators
+prev: ex-2-9
 next: 02-11-conditional-expressions
 status: done
 ---

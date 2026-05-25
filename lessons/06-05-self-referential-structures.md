@@ -4,7 +4,7 @@ chapter: 6
 label: "6.5"
 title: 'Self-referential Structures'
 prev: 06-04-pointers-to-structures
-next: 06-06-table-lookup
+next: ex-6-2
 status: done
 ---
 

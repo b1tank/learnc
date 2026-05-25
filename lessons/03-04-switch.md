@@ -3,8 +3,8 @@ id: 03-04-switch
 chapter: 3
 label: "3.4"
 title: Switch
-prev: 03-03-else-if
-next: 03-05-loops-while-and-for
+prev: ex-3-1
+next: ex-3-2
 status: done
 ---
 

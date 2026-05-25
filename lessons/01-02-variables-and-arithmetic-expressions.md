@@ -3,8 +3,8 @@ id: 01-02-variables-and-arithmetic-expressions
 chapter: 1
 label: "1.2"
 title: Variables and Arithmetic Expressions
-prev: 01-01-getting-started
-next: 01-03-the-for-statement
+prev: ex-1-2
+next: ex-1-3
 status: done
 ---
 

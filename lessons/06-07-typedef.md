@@ -3,7 +3,7 @@ id: 06-07-typedef
 chapter: 6
 label: "6.7"
 title: 'Typedef'
-prev: 06-06-table-lookup
+prev: ex-6-6
 next: 06-08-unions
 status: done
 ---

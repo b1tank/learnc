@@ -3,8 +3,8 @@ id: 06-06-table-lookup
 chapter: 6
 label: "6.6"
 title: 'Table Lookup with a Hash Table'
-prev: 06-05-self-referential-structures
-next: 06-07-typedef
+prev: ex-6-4
+next: ex-6-5
 status: done
 ---
 

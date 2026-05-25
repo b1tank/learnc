@@ -3,7 +3,7 @@ id: 06-04-pointers-to-structures
 chapter: 6
 label: "6.4"
 title: 'Pointers to Structures'
-prev: 06-03-arrays-of-structures
+prev: ex-6-1
 next: 06-05-self-referential-structures
 status: done
 ---

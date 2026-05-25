@@ -3,8 +3,8 @@ id: 05-12-complicated-declarations
 chapter: 5
 label: "5.12"
 title: Complicated Declarations
-prev: 05-11-pointers-to-functions
-next: ex-5-1
+prev: ex-5-17
+next: ex-5-18
 status: done
 ---
 

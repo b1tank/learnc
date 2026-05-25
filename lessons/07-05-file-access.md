@@ -3,8 +3,8 @@ id: 07-05-file-access
 chapter: 7
 label: "7.5"
 title: 'File Access'
-prev: 07-04-formatted-input-scanf
-next: 07-06-error-handling-stderr-and-exit
+prev: ex-7-5
+next: ex-7-6
 status: done
 ---
 

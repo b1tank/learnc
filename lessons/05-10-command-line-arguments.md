@@ -4,7 +4,7 @@ chapter: 5
 label: "5.10"
 title: Command-line Arguments
 prev: 05-09-pointers-vs-multi-dimensional-arrays
-next: 05-11-pointers-to-functions
+next: ex-5-10
 status: done
 ---
 

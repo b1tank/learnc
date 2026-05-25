@@ -3,7 +3,7 @@ id: 07-03-variable-length-argument-lists
 chapter: 7
 label: "7.3"
 title: 'Variable-length Argument Lists'
-prev: 07-02-formatted-output-printf
+prev: ex-7-2
 next: 07-04-formatted-input-scanf
 status: done
 ---

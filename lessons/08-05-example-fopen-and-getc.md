@@ -4,7 +4,7 @@ chapter: 8
 label: "8.5"
 title: 'Example — Fopen and Getc'
 prev: 08-04-random-access-lseek
-next: 08-06-example-listing-directories
+next: ex-8-2
 status: done
 ---
 

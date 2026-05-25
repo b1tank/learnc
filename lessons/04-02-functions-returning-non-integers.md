@@ -3,8 +3,8 @@ id: 04-02-functions-returning-non-integers
 chapter: 4
 label: "4.2"
 title: Functions Returning Non-integers
-prev: 04-01-basics-of-functions
-next: 04-03-external-variables
+prev: ex-4-1
+next: ex-4-2
 status: done
 ---
 
