@@ -222,6 +222,7 @@ li { margin: 0.15rem 0; }
 .lesson-list .lbl {
   display: inline-block;
   min-width: 4em;
+  padding-right: 0.6em;
   color: var(--muted);
   font-family: "Courier New", monospace;
 }
