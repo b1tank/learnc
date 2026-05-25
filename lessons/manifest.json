@@ -174,12 +174,12 @@
         { "kind": "section", "id": "06-07-typedef",                     "label": "6.7", "title": "Typedef", "status": "done" },
         { "kind": "section", "id": "06-08-unions",                      "label": "6.8", "title": "Unions", "status": "done" },
         { "kind": "section", "id": "06-09-bit-fields",                  "label": "6.9", "title": "Bit-fields", "status": "done" },
-        { "kind": "exercise", "id": "ex-6-1", "label": "6-1" },
-        { "kind": "exercise", "id": "ex-6-2", "label": "6-2" },
-        { "kind": "exercise", "id": "ex-6-3", "label": "6-3" },
-        { "kind": "exercise", "id": "ex-6-4", "label": "6-4" },
-        { "kind": "exercise", "id": "ex-6-5", "label": "6-5" },
-        { "kind": "exercise", "id": "ex-6-6", "label": "6-6" }
+        { "kind": "exercise", "id": "ex-6-1", "label": "6-1", "status": "done" },
+        { "kind": "exercise", "id": "ex-6-2", "label": "6-2", "status": "done" },
+        { "kind": "exercise", "id": "ex-6-3", "label": "6-3", "status": "done" },
+        { "kind": "exercise", "id": "ex-6-4", "label": "6-4", "status": "done" },
+        { "kind": "exercise", "id": "ex-6-5", "label": "6-5", "status": "done" },
+        { "kind": "exercise", "id": "ex-6-6", "label": "6-6", "status": "done" }
       ]
     },
     {
