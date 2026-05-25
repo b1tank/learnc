@@ -3,7 +3,7 @@
 
 What it does, in one pass:
 
-1. Reads the current git short SHA + commit date.
+1. Reads the current git short SHA + commit datetime.
 2. Rewrites every <script src="coi-serviceworker.js…"> reference to append
    `?v=<sha>` so the browser sees a new SW URL on every commit. A changed
    SW URL forces Safari (and everyone else) to fetch a fresh worker, which
@@ -18,7 +18,14 @@ What it does, in one pass:
    query just flips the cached URL on every commit, forcing instant
    revalidation. Vendor files (vendor/marked-12.0.0.min.js) already
    encode the version in the filename, so they're left alone.
-4. Inserts/updates a small "Last updated <date> · commit <sha>" stamp in
+4. Same `?v=<sha>` treatment for the project's own ES modules — app.js,
+   lesson.js, theme.js, shortcuts.js, runner.js — in both their <script
+   type="module" src="…"> entry-point form and their <link
+   rel="modulepreload" href="…"> hints. Without this, a stale local JS
+   bundle survives across deploys until GitHub Pages' max-age expires,
+   so any change to fetch-cache strategy or render logic is invisible
+   to existing tabs for up to 10 min.
+5. Inserts/updates a small "updated <date HH:MM UTC> · <sha>" stamp in
    the site footer, between BUILD-STAMP-START/END markers. The link points
    at the GitHub commit. Style: subtle, single line, like bellard.org.
 
@@ -35,6 +42,7 @@ edits. It's safe to run from a pre-commit hook, a CI step, or by hand.
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import pathlib
 import re
 import subprocess
@@ -44,6 +52,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML_FILES = ["index.html", "lesson.html"]
 REPO_URL = "https://github.com/b1tank/learnc"
 
+# Sibling ES modules to version-stamp. Anything in this list gets `?v=<sha>`
+# appended to <script type="module" src="…"> and <link rel="modulepreload"
+# href="…"> references. Vendor bundles (vendor/marked-…) are deliberately
+# excluded — they already encode the version in the filename.
+JS_MODULES = ("app.js", "lesson.js", "theme.js", "shortcuts.js", "runner.js")
+
 STAMP_START = "<!-- BUILD-STAMP-START -->"
 STAMP_END = "<!-- BUILD-STAMP-END -->"
 
@@ -52,17 +66,27 @@ def git(*args: str) -> str:
     return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
 
 
-def build_info() -> tuple[str, str]:
-    """Return (short_sha, iso_date). Falls back to 'dev' if not in a git repo."""
+def build_info() -> tuple[str, str, str]:
+    """Return (short_sha, iso_attr, human).
+
+    iso_attr is a value suitable for <time datetime="…"> (UTC, minute
+    precision, trailing Z). human is what's displayed to the user
+    (`YYYY-MM-DD HH:MM UTC`). Both are derived from the committer date so
+    they advance monotonically with each commit (author-date jumps around
+    when rebases happen).
+    """
     try:
         sha = git("rev-parse", "--short=8", "HEAD")
-        date = git("log", "-1", "--format=%cs")  # YYYY-MM-DD in committer's tz
-        return sha, date
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return "dev", "unknown"
+        iso = git("log", "-1", "--format=%cI")  # 2026-05-25T05:24:02+00:00
+        dt = _dt.datetime.fromisoformat(iso).astimezone(_dt.timezone.utc)
+        iso_attr = dt.strftime("%Y-%m-%dT%H:%MZ")
+        human = dt.strftime("%Y-%m-%d %H:%M UTC")
+        return sha, iso_attr, human
+    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+        return "dev", "unknown", "unknown"
 
 
-def stamp_html(text: str, sha: str, date: str) -> str:
+def stamp_html(text: str, sha: str, iso_attr: str, human: str) -> str:
     # 1. coi-serviceworker.js?v=<sha>
     text = re.sub(
         r'(<script src="coi-serviceworker\.js)(\?v=[^"]*)?(">)',
@@ -81,11 +105,26 @@ def stamp_html(text: str, sha: str, date: str) -> str:
         text,
     )
 
-    # 3. footer build stamp between markers — inline <span> so the whole
-    #    footer fits on one row alongside the credits line.
+    # 3. Project ES modules — every entry in JS_MODULES gets `?v=<sha>`
+    #    appended in both <script type="module" src="…"> and <link
+    #    rel="modulepreload" href="…"> contexts. The same regex handles
+    #    both because we anchor on the quote + filename + optional ?v=… +
+    #    closing quote.
+    for mod in JS_MODULES:
+        escaped = re.escape(mod)
+        text = re.sub(
+            rf'((?:src|href)=")({escaped})(\?v=[^"]*)?(")',
+            rf'\1\2?v={sha}\4',
+            text,
+        )
+
+    # 4. footer build stamp between markers — inline <span> so the whole
+    #    footer fits on one row alongside the credits line. <time> carries
+    #    the machine-readable ISO timestamp; visible text shows the human
+    #    form including minute-precision UTC time.
     stamp_inner = (
         f'<span class="build-stamp">updated '
-        f'<time datetime="{date}">{date}</time> &middot; '
+        f'<time datetime="{iso_attr}">{human}</time> &middot; '
         f'<a href="{REPO_URL}/commit/{sha}" rel="noopener">{sha}</a></span>'
     )
     block = f"{STAMP_START}{stamp_inner}{STAMP_END}"
@@ -115,14 +154,14 @@ def main() -> int:
                     help="exit 1 if any file would change (does not write)")
     args = ap.parse_args()
 
-    sha, date = build_info()
-    print(f"==> stamping with sha={sha} date={date}", file=sys.stderr)
+    sha, iso_attr, human = build_info()
+    print(f"==> stamping with sha={sha} time={human}", file=sys.stderr)
 
     dirty = False
     for name in HTML_FILES:
         path = ROOT / name
         before = path.read_text()
-        after = stamp_html(before, sha, date)
+        after = stamp_html(before, sha, iso_attr, human)
         if before == after:
             print(f"    {name}: clean")
             continue

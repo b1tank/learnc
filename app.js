@@ -117,10 +117,15 @@ function init() {
     { keys: ["?"], label: "show this help" },
     { keys: ["Esc"], label: "close help" }
   ]);
-  // Plain fetch (default cache mode). The manifest is the same JSON for
-  // every visitor; GitHub Pages already serves a short max-age. The old
-  // `no-cache` forced a 304 round-trip on every page view.
-  fetch(MANIFEST_URL)
+  // `cache: "no-cache"` issues a conditional request (If-None-Match /
+  // If-Modified-Since) every page load, so the progress badge always
+  // reflects the deployed manifest. The manifest is ~5 KB and fetched
+  // exactly once per visit, so the 304 round-trip cost is negligible;
+  // staleness, by contrast, is user-visible (the badge counts get stuck
+  // for up to 10 min behind GitHub Pages' default `max-age=600`).
+  // Lesson pages still use plain fetch — there the manifest only feeds
+  // the chapter-title breadcrumb, which is not freshness-sensitive.
+  fetch(MANIFEST_URL, { cache: "no-cache" })
     .then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
