@@ -368,20 +368,6 @@ function setupRunner(starter, expected) {
     showSharedBanner(container, sharedCode, localCode, starter);
   }
 
-  // If the WASM runtime has never finished a run on this device, tell the
-  // learner what's about to happen the first time they click "run" — the
-  // ~10MB Runno/clang bundle has to download. After the first success the
-  // bundle is cached and the runtime ready marker stays set forever.
-  var runtimeReady = false;
-  try { runtimeReady = localStorage.getItem("learnc.runtimeReady") === "1"; } catch (e) { /* private mode */ }
-  if (!runtimeReady) {
-    var term = document.getElementById("terminal");
-    if (term) {
-      term.innerHTML =
-        '<span class="terminal-empty">first <b>run</b> downloads ~10\u202fMB of clang/WASM (one-time, then cached). click <b>run</b> to start.</span>';
-    }
-  }
-
   document.getElementById("run-btn").addEventListener("click", async function () {
     var code = editorAPI.getValue();
     writeUrlCode(code);
@@ -419,7 +405,6 @@ function setupRunner(starter, expected) {
     try {
       var result = await runC(code);
       renderResult(result, expected);
-      try { localStorage.setItem("learnc.runtimeReady", "1"); } catch (e) { /* quota */ }
     } catch (e) {
       term.innerHTML = '<span class="terminal-error">' + escapeHTML(String(e && e.message || e)) + "</span>";
     } finally {
