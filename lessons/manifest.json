@@ -216,14 +216,14 @@
         { "kind": "section", "id": "08-05-example-fopen-and-getc",       "label": "8.5", "title": "Example — Fopen and Getc", "status": "done" },
         { "kind": "section", "id": "08-06-example-listing-directories",  "label": "8.6", "title": "Example — Listing Directories", "status": "done" },
         { "kind": "section", "id": "08-07-example-a-storage-allocator",  "label": "8.7", "title": "Example — A Storage Allocator", "status": "done" },
-        { "kind": "exercise", "id": "ex-8-1", "label": "8-1" },
-        { "kind": "exercise", "id": "ex-8-2", "label": "8-2" },
-        { "kind": "exercise", "id": "ex-8-3", "label": "8-3" },
-        { "kind": "exercise", "id": "ex-8-4", "label": "8-4" },
-        { "kind": "exercise", "id": "ex-8-5", "label": "8-5" },
-        { "kind": "exercise", "id": "ex-8-6", "label": "8-6" },
-        { "kind": "exercise", "id": "ex-8-7", "label": "8-7" },
-        { "kind": "exercise", "id": "ex-8-8", "label": "8-8" }
+        { "kind": "exercise", "id": "ex-8-1", "label": "8-1", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-2", "label": "8-2", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-3", "label": "8-3", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-4", "label": "8-4", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-5", "label": "8-5", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-6", "label": "8-6", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-7", "label": "8-7", "status": "done" },
+        { "kind": "exercise", "id": "ex-8-8", "label": "8-8", "status": "done" }
       ]
     }
   ]
