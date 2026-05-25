@@ -24,7 +24,7 @@
      on Safari) so cross-origin isolation works on iOS < 17.4. See lesson.html
      for the full rationale. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=6e23513b"></script>
+<script src="coi-serviceworker.js?v=4a1465da"></script>
 <!--
   Critical CSS, inlined.
   =====================
@@ -79,8 +79,8 @@ a:hover{background:var(--hl)}
   <noscript> covers users with JS disabled — they get the old
   render-blocking behaviour, which is still correct (just slower).
 -->
-<link rel="preload" href="style.css?v=6e23513b" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css?v=6e23513b"></noscript>
+<link rel="preload" href="style.css?v=4a1465da" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=4a1465da"></noscript>
 <!-- Warm the cache for the lesson page. We're an MPA, so the click-to-paint
      cost is dominated by loading CodeMirror + the lesson scripts on demand.
      marked is self-hosted (see vendor/) so no preconnect is needed for it.
@@ -91,12 +91,12 @@ a:hover{background:var(--hl)}
      fetching them at the same time as app.js (instead of after) eliminates
      one waterfall layer. The browser is the only thing that has to do real
      work here — same bytes, just earlier discovery. -->
-<link rel="modulepreload" href="theme.js?v=6e23513b">
-<link rel="modulepreload" href="shortcuts.js?v=6e23513b">
+<link rel="modulepreload" href="theme.js?v=4a1465da">
+<link rel="modulepreload" href="shortcuts.js?v=4a1465da">
 <link rel="prefetch" href="lesson.html">
-<link rel="prefetch" href="lesson.js?v=6e23513b" as="script" crossorigin>
+<link rel="prefetch" href="lesson.js?v=4a1465da" as="script" crossorigin>
 <link rel="prefetch" href="editor.js" as="script" crossorigin>
-<link rel="prefetch" href="runner.js?v=6e23513b" as="script" crossorigin>
+<link rel="prefetch" href="runner.js?v=4a1465da" as="script" crossorigin>
 <link rel="prefetch" href="vendor/marked-12.0.0.min.js" as="script">
 </head>
 <body>
@@ -125,9 +125,9 @@ a:hover{background:var(--hl)}
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-25T05:55Z">2026-05-25 05:55 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/6e23513b" rel="noopener">6e23513b</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-25T06:09Z">2026-05-25 06:09 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/4a1465da" rel="noopener">4a1465da</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
-<script type="module" src="app.js?v=6e23513b"></script>
+<script type="module" src="app.js?v=4a1465da"></script>
 </body>
 </html>
