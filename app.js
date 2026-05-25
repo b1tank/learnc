@@ -37,50 +37,10 @@ function statusLabel(s) {
 function renderIndex(manifest, root) {
   root.innerHTML = "";
   // Hide stubs by default — the index has hundreds of them and the eye
-  // glazes over. The chips below let the learner toggle them back on.
+  // glazes over. Future stub entries stay hidden unless a UI affordance
+  // is added back to toggle them; the per-status chips that used to live
+  // in this slot were removed once every lesson reached "done".
   root.classList.add("lesson-list--hide-stub");
-
-  // Progress row: one line containing a short summary on the left and the
-  // status filter chips on the right. Counts are shown on the chips, so the
-  // summary only carries the overall "done / total (pct)".
-  var counts = { done: 0, draft: 0, stub: 0, total: 0 };
-  manifest.chapters.forEach(function (ch) {
-    ch.items.forEach(function (it) {
-      counts.total++;
-      var s = it.status || "stub";
-      if (counts[s] != null) counts[s]++;
-    });
-  });
-  var pct = counts.total
-    ? Math.round((counts.done / counts.total) * 100)
-    : 0;
-  var row = el("div", { class: "progress-bar" });
-  var summary = el("span", { class: "progress-summary" }, [
-    el("strong", {}, [counts.done + " / " + counts.total + " done"]),
-    " (" + pct + "%)"
-  ]);
-  row.appendChild(summary);
-
-  // Filter chips. Each chip toggles a class on the root that hides the
-  // matching <li>s via CSS.
-  var chips = el("div", { class: "filter-chips", role: "group",
-    "aria-label": "filter lessons by status" });
-  function makeChip(label, key, on) {
-    var b = el("button", { type: "button", class: "chip" + (on ? " on" : ""),
-      "data-key": key, "aria-pressed": on ? "true" : "false" }, [label]);
-    b.addEventListener("click", function () {
-      var pressed = b.getAttribute("aria-pressed") === "true";
-      b.setAttribute("aria-pressed", pressed ? "false" : "true");
-      b.classList.toggle("on", !pressed);
-      root.classList.toggle("lesson-list--hide-" + key, pressed);
-    });
-    return b;
-  }
-  chips.appendChild(makeChip("done (" + counts.done + ")", "done", true));
-  chips.appendChild(makeChip("draft (" + counts.draft + ")", "draft", true));
-  chips.appendChild(makeChip("stubs (" + counts.stub + ")", "stub", false));
-  row.appendChild(chips);
-  root.appendChild(row);
 
   manifest.chapters.forEach(function (ch) {
     var sec = el("section", { class: "chapter" });
