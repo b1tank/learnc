@@ -84,12 +84,12 @@
         { "kind": "section", "id": "03-06-loops-do-while",         "label": "3.6", "title": "Loops — Do-While", "status": "done" },
         { "kind": "section", "id": "03-07-break-and-continue",     "label": "3.7", "title": "Break and Continue", "status": "done" },
         { "kind": "section", "id": "03-08-goto-and-labels",        "label": "3.8", "title": "Goto and Labels", "status": "done" },
-        { "kind": "exercise", "id": "ex-3-1", "label": "3-1" },
-        { "kind": "exercise", "id": "ex-3-2", "label": "3-2" },
-        { "kind": "exercise", "id": "ex-3-3", "label": "3-3" },
-        { "kind": "exercise", "id": "ex-3-4", "label": "3-4" },
-        { "kind": "exercise", "id": "ex-3-5", "label": "3-5" },
-        { "kind": "exercise", "id": "ex-3-6", "label": "3-6" }
+        { "kind": "exercise", "id": "ex-3-1", "label": "3-1", "status": "done" },
+        { "kind": "exercise", "id": "ex-3-2", "label": "3-2", "status": "done" },
+        { "kind": "exercise", "id": "ex-3-3", "label": "3-3", "status": "done" },
+        { "kind": "exercise", "id": "ex-3-4", "label": "3-4", "status": "done" },
+        { "kind": "exercise", "id": "ex-3-5", "label": "3-5", "status": "done" },
+        { "kind": "exercise", "id": "ex-3-6", "label": "3-6", "status": "done" }
       ]
     },
     {
