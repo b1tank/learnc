@@ -8,123 +8,42 @@ next: 04-01-basics-of-functions
 status: done
 ---
 
-C has `goto` and named labels:
+`goto label;` transfers control unconditionally to a `label:` elsewhere in the *same function*. It's the raw branch instruction all other control flow is built from — and the one the structured-programming movement spent decades teaching us to avoid, because unrestricted jumps create "spaghetti" code that's impossible to reason about. C keeps `goto` for the handful of cases where structured constructs are genuinely clumsier, but the default answer is: don't.
 
-```c
-goto target;
-...
-target:
-    statement
-```
+## The legitimate use: escaping nested loops
 
-Labels are local to the function; you can only `goto` within the same function. Forward and backward jumps are both allowed.
-
-For nearly every flow control task, *some* combination of `if`, `for`, `while`, `break`, `continue`, and `return` is better. `goto` is the **escape hatch** when those tools fall short.
-
-## The one defensible use case
-
-Breaking out of nested loops:
-
-```c:starter
+```c:run goto to break out of nested loops
 #include <stdio.h>
 
 int main(void) {
-    int matrix[3][3] = {
-        { 1, 2, 3 },
-        { 4, 0, 6 },     /* target is the zero */
-        { 7, 8, 9 },
-    };
-    int found_i = -1, found_j = -1;
+    int a[3][3] = {{1,2,3},{4,0,6},{7,8,9}};
+    int found = 0;
 
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            if (matrix[i][j] == 0) {
-                found_i = i;
-                found_j = j;
-                goto done;     /* exit both loops at once */
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            if (a[i][j] == 0) {       /* found it — abandon BOTH loops at once */
+                found = 1;
+                goto done;
             }
-        }
-    }
-    done:
-    if (found_i >= 0)
-        printf("zero at [%d][%d]\n", found_i, found_j);
-    else
-        printf("no zero\n");
+done:
+    if (found) printf("zero found, search aborted\n");
+    else       printf("no zero\n");
     return 0;
 }
 ```
 
 ```output
-zero at [1][1]
+zero found, search aborted
 ```
 
-The alternatives — a flag tested in the outer loop, or extracting the search into a function with a `return` — work but each has costs (extra variable, extra indirection). For a *local* multi-loop break, `goto done;` is the cleanest expression of intent.
+Because `break` only escapes *one* loop level, jumping to a label just past a nest of loops is the cleanest way to bail out completely. The label can only be reached deliberately, control flows strictly forward, and the exit point is obvious — none of the dangers that make `goto` notorious. The same pattern powers C's standard **error-cleanup idiom**: on failure, `goto cleanup;` where `cleanup:` frees buffers, closes files, and returns — letting many error paths share one teardown block instead of duplicating it.
 
-## The second defensible use case — error cleanup
+## The rules and the discipline
 
-In C, every resource (file handle, malloc'd buffer, lock) has to be released manually. A function that acquires three resources and needs to clean up after the third one fails looks like this:
+A label is function-scoped, so `goto` cannot jump into another function, into the middle of a block past a variable's initialization, or backward in ways that skip declarations. Restrict yourself to **forward** jumps to a single nearby exit/cleanup label and `goto` stays tame. The historical objection (Dijkstra's "Go To Statement Considered Harmful") is about jumping *backward* and *every which way* to build loops by hand — which is why you should use `for`/`while`/`break`/`continue` for ordinary control flow and reserve `goto` for the two patterns above: nested-loop exit and centralized cleanup.
 
-```c
-int do_work(void) {
-    FILE *fp = fopen("input", "r");
-    if (!fp) return -1;
-
-    char *buf = malloc(1024);
-    if (!buf) { fclose(fp); return -2; }
-
-    int *table = malloc(100 * sizeof(int));
-    if (!table) { free(buf); fclose(fp); return -3; }
-
-    /* ... do work ... */
-
-    free(table);
-    free(buf);
-    fclose(fp);
-    return 0;
-}
-```
-
-That repeated cleanup is fragile — easy to forget one call when you add a fourth resource. The `goto cleanup` pattern flattens it:
-
-```c
-int do_work(void) {
-    int     rc    = -1;
-    FILE   *fp    = NULL;
-    char   *buf   = NULL;
-    int    *table = NULL;
-
-    fp    = fopen("input", "r"); if (!fp)    goto out;
-    buf   = malloc(1024);         if (!buf)   goto out;
-    table = malloc(400);          if (!table) goto out;
-
-    /* ... do work, set rc = 0 ... */
-
-  out:
-    free(table);
-    free(buf);
-    if (fp) fclose(fp);
-    return rc;
-}
-```
-
-One cleanup path; adding a new resource means initialising it to NULL, allocating, and adding a `free` to the cleanup block. The Linux kernel uses this pattern *extensively*.
-
-## What `goto` cannot do
-
-- Jump into the middle of a block from outside (compilers may allow it, but variables inside that block won't be initialised — undefined behaviour).
-- Cross function boundaries (use `setjmp`/`longjmp` for that, sparingly).
-- Jump over a variable's declaration into its scope.
-
-## Modern note
-
-C23 adds `defer`-style cleanup proposals but none have landed yet. Until then the `goto cleanup` idiom is the cleanest way to write multi-resource functions. The "spaghetti goto" warning from Dijkstra was about *arbitrary* unstructured jumps, not the disciplined single-target cleanup we're using here.
-
-## Notes from the author
-
-- The Linux kernel coding style says "use `goto` for error handling" and is right. The cleanup-at-the-bottom pattern is sound. Banning `goto` entirely makes resource-tight code worse, not better.
-- Forward-only, single-target `goto` (jumping forward to a cleanup label) is fine. Backward `goto` to simulate a loop is what causes spaghetti — and that's exactly what `while`/`for` are for.
-- Modern C tooling (Clang's analyser, Coverity, etc.) understands the `goto cleanup` idiom and tracks resource state across it. You don't lose static analysis by using it.
-
-🎉 **You've finished Chapter 3's section walkthroughs.** Up next: six exercises that put the new control flow constructs through real workouts.
-
-*Click **next →** to start the Chapter 3 exercises.*
+## Go deeper
+- [`goto` statement (C)](https://en.cppreference.com/w/c/language/goto) — scope and restrictions
+- [Go To Statement Considered Harmful](https://en.wikipedia.org/wiki/Considered_harmful) — Dijkstra's famous critique
+- [Error handling with goto in the Linux kernel](https://www.kernel.org/doc/html/latest/process/coding-style.html#centralized-exiting-of-functions) — the cleanup idiom in real code
+- [Spaghetti code](https://en.wikipedia.org/wiki/Spaghetti_code) — what unrestricted `goto` produces
