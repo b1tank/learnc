@@ -8,108 +8,44 @@ next: ex-3-4
 status: done
 ---
 
-`do`/`while` is the **bottom-tested** loop:
+`while` and `for` test *before* the body, so they can run zero times. `do { ... } while (expr);` flips that: it runs the body **first**, then tests, so the body always executes **at least once**. It's the bottom-tested loop — a backward branch placed *after* the body instead of before. Use it exactly when "do the thing, then decide whether to repeat" is the natural shape: prompting for input, retrying an operation, or any algorithm that must produce at least one result.
 
-```c
-do
-    statement
-while (expression);
-```
+## Run-then-test
 
-The body runs first, then the condition is tested. The body therefore runs **at least once**, even if the condition starts out false.
-
-## When to reach for it
-
-Most loops want a top-tested form. The cases where bottom-testing wins are the ones where the work *has to happen before* you know whether to continue:
-
-- Reading at least one character before deciding to stop.
-- Prompting a user for input and re-prompting on bad answers.
-- Building a result whose final digit can only be computed during the build (like `itoa`).
-
-The classic example is integer-to-string conversion:
-
-```c:starter
+```c:run do-while runs at least once
 #include <stdio.h>
-#include <string.h>
-
-void itoa(int n, char s[]);
-void reverse(char s[]);
 
 int main(void) {
-    char buf[32];
-    itoa(0,     buf); printf("itoa(0)     = %s\n", buf);
-    itoa(42,    buf); printf("itoa(42)    = %s\n", buf);
-    itoa(-17,   buf); printf("itoa(-17)   = %s\n", buf);
-    itoa(12345, buf); printf("itoa(12345) = %s\n", buf);
+    int n = 0;
+    do {
+        printf("body runs, n=%d\n", n);
+        n++;
+    } while (n < 3);
+
+    /* reverse a number's digits — must emit a digit even for input 0 */
+    int x = 123, rev = 0;
+    do {
+        rev = rev * 10 + x % 10;   /* peel the last digit, append to rev */
+        x /= 10;
+    } while (x > 0);
+    printf("reversed = %d\n", rev);
     return 0;
 }
 ```
 
-## Solution sketch
-
-```c
-void itoa(int n, char s[]) {
-    int sign = n;
-    if (n < 0) n = -n;
-
-    int i = 0;
-    do {                         /* must run at least once — n==0 still produces "0" */
-        s[i++] = n % 10 + '0';
-    } while ((n /= 10) > 0);
-
-    if (sign < 0)
-        s[i++] = '-';
-
-    s[i] = '\0';
-    reverse(s);
-}
-
-void reverse(char s[]) {
-    int i = 0, j = (int)strlen(s) - 1;
-    while (i < j) {
-        char t = s[i]; s[i] = s[j]; s[j] = t;
-        ++i; --j;
-    }
-}
-```
-
 ```output
-itoa(0)     = 0
-itoa(42)    = 42
-itoa(-17)   = -17
-itoa(12345) = 12345
+body runs, n=0
+body runs, n=1
+body runs, n=2
+reversed = 321
 ```
 
-Why `do`/`while`? Because for `n == 0`, the body still needs to run once to emit the digit `'0'`. A top-tested `while (n > 0)` would skip the body entirely, leaving the buffer empty.
+The digit-reversal is the textbook case for `do-while`. With a plain `while (x > 0)`, an input of `0` would produce *no* output (the test fails immediately). `do-while` guarantees the loop emits at least one digit, so reversing `0` correctly yields `0`. Whenever "even the empty/zero case needs one pass" is true, `do-while` is the precise tool.
 
-## Don't forget the semicolon
+## Use it sparingly
 
-```c
-do { ... } while (cond);
-```
+`do-while` is the least-used of the three loops because most loops genuinely *should* be able to run zero times — processing a list that might be empty, scanning input that might be at EOF. Reaching for `do-while` when the body shouldn't run on empty input is a classic bug. And note the mandatory **semicolon** after `while (expr)` — it terminates the statement; leaving it off is a common compile error. When the "at least once" guarantee is real, `do-while` expresses it clearly; otherwise prefer `while`/`for`.
 
-The `;` after the `while (cond)` is part of the syntax. Missing it is a common typo, especially if you're translating from a top-tested loop.
-
-## Modern note
-
-`do`/`while` is the **least-used** of the three loop forms in real C code. A modern static analyser will sometimes flag `while(0)` as "did you mean a `do`/`while`?" because the `do { ... } while (0)` pattern is *exactly* the trick that makes a multi-statement macro safe (see chapter 4 on the preprocessor).
-
-```c
-#define INIT(x)  do { (x)->n = 0; (x)->s = NULL; } while (0)
-```
-
-The macro can be used as a statement (with semicolon) without breaking nearby `if`/`else` structures. It's the only standard idiom that *requires* `do`/`while (0)`.
-
-## Try it
-
-1. Rewrite the `itoa` above with a top-tested `while`. Notice you need an extra special case for `n == 0` (write the digit explicitly before entering the loop).
-2. Make a prompt loop: `do { print prompt; read input; } while (input is invalid);`. Bottom-tested fits the workflow naturally.
-3. Replace `do { ... } while (cond);` with `while (1) { ... if (!cond) break; }`. Same behaviour, more verbose — but it makes the exit condition explicit.
-
-## Notes from the author
-
-- `do`/`while` is a niche tool. If you find yourself reaching for it often, sit back and ask whether `for` or `while` with a leading "first iteration" line wouldn't read better.
-- The `itoa` example is interesting because the buffer is built in reverse — least-significant digit first. The final `reverse(s)` is essential. A natural alternative is to write into the buffer from the *high index downward*, eliminating the reverse step — try that as an extension.
-- The `do { ... } while (0)` macro idiom is a great reason to know `do`/`while` exists even if you never write a real bottom-tested loop. It's the only safe way to write a multi-statement macro that compiles cleanly inside an `if`/`else` chain.
-
-*Click **next →** for `break` and `continue`.*
+## Go deeper
+- [`do-while` loop (C)](https://en.cppreference.com/w/c/language/do) — syntax and the trailing semicolon
+- [Control flow loops](https://en.wikipedia.org/wiki/Control_flow#Loops) — pre-test vs post-test loops compared
