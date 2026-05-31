@@ -8,143 +8,36 @@ next: 06-08-unions
 status: done
 ---
 
-`typedef` creates a **type alias**. It doesn't introduce a new type, just a new name for an existing one.
+`typedef` creates a **new name for an existing type**. It introduces no new type and generates no code — it's purely an alias the compiler substitutes at compile time. Its two big uses are readability (giving a clean name to a verbose or ugly type, especially `struct`s and function pointers) and portability (defining a type alias you can change in one place). The standard library leans on it constantly: `size_t`, `FILE`, `time_t`, and the fixed-width `int32_t`/`uint8_t` are all `typedef`s.
 
-```c
-typedef int  Length;          /* Length is an alias for int */
-typedef char *String;         /* String is an alias for char* */
+## Naming structs and builtins
 
-Length n = 5;                  /* same as int n = 5; */
-String s = "hello";            /* same as char *s = "hello"; */
-```
-
-## Why use `typedef`
-
-1. **Readability**: `Length` documents intent that `int` doesn't.
-2. **Portability**: `typedef long long Int64;` lets you change the underlying type by editing one line.
-3. **Abstraction**: hide complex types behind a friendly name.
-4. **Tagged structs**: drop the `struct` keyword.
-
-## Typedef'd structs
-
-```c
-typedef struct point {
-    int x;
-    int y;
-} Point;
-
-Point p;        /* not 'struct point p' */
-```
-
-You can even leave out the tag if you don't need to forward-declare or self-reference:
-
-```c
-typedef struct {
-    int x;
-    int y;
-} Point;
-```
-
-But for self-referential types you DO need the tag:
-
-```c
-typedef struct tnode {
-    int          value;
-    struct tnode *next;     /* the struct keyword and tag are required here */
-} TNode;
-```
-
-## Function pointer typedefs
-
-This is where `typedef` is invaluable:
-
-```c
-typedef int (*Comparator)(const void *, const void *);
-
-void sort(void *base, size_t n, size_t sz, Comparator cmp);
-```
-
-Without the typedef:
-
-```c
-void sort(void *base, size_t n, size_t sz, int (*cmp)(const void *, const void *));
-```
-
-The second form is much harder to read.
-
-## Putting it together
-
-```c:starter
+```c:run a typedef'd struct drops the 'struct' keyword
 #include <stdio.h>
 
-typedef int Length;
-typedef char *String;
-
-typedef struct {
-    Length x;
-    Length y;
-} Point;
-
-typedef int (*BinaryOp)(int, int);
-
-int add(int a, int b) { return a + b; }
-int mul(int a, int b) { return a * b; }
-
-int apply(BinaryOp op, int a, int b) {
-    return op(a, b);
-}
+typedef struct { int x, y; } Point;   /* Point is now a type name */
+typedef int Length;                   /* an alias for a builtin */
 
 int main(void) {
-    String greeting = "hello";
-    Point  origin   = {0, 0};
-    printf("%s — origin (%d, %d)\n", greeting, origin.x, origin.y);
-    printf("3+4 via apply = %d\n", apply(add, 3, 4));
-    printf("3*4 via apply = %d\n", apply(mul, 3, 4));
+    Point  p  = { 3, 4 };             /* no 'struct' needed */
+    Length d2 = p.x * p.x + p.y * p.y;
+    printf("p=(%d,%d) dist^2=%d\n", p.x, p.y, d2);
     return 0;
 }
 ```
 
 ```output
-hello — origin (0, 0)
-3+4 via apply = 7
-3*4 via apply = 12
+p=(3,4) dist^2=25
 ```
 
-## Style debates
+`typedef struct { int x, y; } Point;` defines an anonymous struct *and* names it `Point` in one stroke, so you can write `Point p` instead of `struct point p` everywhere after. This is the most common C idiom for structs — it removes the repetitive `struct` keyword and makes declarations read like other languages' types. `typedef int Length;` shows the simpler form: `Length` is just another spelling of `int`, but the name documents *intent* (this number is a length, not an arbitrary int). Note `Length` doesn't create a *distinct* type — the compiler still treats it as `int`, so it won't stop you mixing a `Length` with a plain `int`; the benefit is purely documentation and one-place-to-change.
 
-- **Capitalised typedef names** (e.g. `Point`, `Length`) make it visually obvious that the identifier is a type. K&R uses this style.
-- **`_t` suffix** (e.g. `size_t`, `int32_t`) is the POSIX convention. POSIX has reserved `_t` for itself; user code arguably shouldn't.
-- **No typedef** at all is the Linux kernel style for most struct types — they prefer `struct foo` to keep the kindness explicit. Both views are defensible.
+## Portability, function pointers, and a caution
 
-## Caveat: typedef doesn't enforce types
+`typedef`'s portability payoff is real: define `typedef long MyInt;` once, and switching every `MyInt` in the program to `long long` is a one-line edit. This is exactly how `<stdint.h>` works — `int32_t` is a `typedef` that each platform maps to whatever native type is 32 bits wide, so your code says what it *means* (a 32-bit integer) and stays correct everywhere. `typedef` also tames the [complicated declarations](lesson.html?id=05-12-complicated-declarations) from earlier: `typedef int (*BinOp)(int, int);` names "pointer to a function taking two ints, returning int," turning unreadable declarations into `BinOp op = add;`. One stylistic caution: don't `typedef` away pointer-ness (e.g. `typedef struct node *NodeP;`) carelessly — hiding the `*` makes `const`-qualification and the fact that you're passing a pointer non-obvious to readers, which is why many style guides (notably the Linux kernel's) restrict `typedef` to opaque handles and genuinely complex types. Used judiciously, though, it's one of C's best readability tools.
 
-```c
-typedef int Length;
-typedef int Mass;
-
-Length L = 5;
-Mass   M = 3;
-M = L;        /* compiles fine — typedef is just an alias */
-```
-
-There's no type safety. `Length` and `Mass` are both `int` — the compiler can't tell them apart. To get real type safety, wrap in a struct:
-
-```c
-typedef struct { int v; } Length;
-typedef struct { int v; } Mass;
-```
-
-Now `M = L` fails to compile. The cost: you write `L.v` instead of `L`.
-
-## Try it
-
-1. Define `typedef unsigned char Byte;` and `typedef Byte *ByteString;`. Use them to write a hex dumper.
-2. Try `typedef int Array[10];` — what does `Array a;` declare?
-
-## Notes from the author
-
-- The newer `<stdint.h>` header is full of useful typedefs: `int32_t`, `uint64_t`, `int_fast16_t`. Use these instead of `int`/`long` when the exact bit-width matters.
-- `typedef struct { ... } Foo;` (anonymous struct, named via typedef) is the most common modern style. Tag names are only needed for self-references or forward declarations.
-- `typedef` is *not* `#define`. The preprocessor doesn't know types; `typedef` is parsed by the C compiler and respects scope. Always prefer it over `#define` for type aliases.
-
-*Click **next →** for unions.*
+## Go deeper
+- [`typedef` (C)](https://en.cppreference.com/w/c/language/typedef) — semantics and forms
+- [`<stdint.h>` fixed-width types](https://en.cppreference.com/w/c/types/integer) — portability via typedef
+- [`size_t`, `time_t`, `FILE`](https://en.cppreference.com/w/c/types) — standard typedefs
+- [Linux kernel typedef policy](https://www.kernel.org/doc/html/latest/process/coding-style.html#typedefs) — when *not* to use it
