@@ -8,156 +8,44 @@ next: ex-7-9
 status: done
 ---
 
-The standard library has dozens of useful odds-and-ends. This section is a quick tour of the ones you'll reach for most.
+The standard library is more than I/O. A handful of headers cover the everyday chores of almost every C program: `<string.h>` for copying, comparing, and searching memory and text; `<ctype.h>` for classifying and converting characters; `<stdlib.h>` for converting strings to numbers, allocating memory, sorting, and random numbers; and `<math.h>` for floating-point math. Knowing what's already written for you — correct, portable, and often hand-optimized — is what keeps you from re-implementing (and mis-implementing) the basics.
 
-## `<string.h>` — string utilities
+## A sampler across the headers
 
-| Function       | Does                                       |
-|----------------|--------------------------------------------|
-| `strlen(s)`    | length (not including `\0`)                 |
-| `strcpy(d,s)`  | copy (NO bounds; prefer `snprintf`)         |
-| `strncpy(d,s,n)` | bounded copy (NOT guaranteed null-term)  |
-| `strcat(d,s)`  | append                                      |
-| `strcmp(a,b)`  | compare; 0 if equal                         |
-| `strncmp(a,b,n)` | compare up to n                          |
-| `strchr(s,c)`  | first occurrence of `c` in `s`              |
-| `strrchr(s,c)` | last occurrence                              |
-| `strstr(s,t)`  | first occurrence of substring `t`           |
-| `strtok(s,delim)` | tokenise (stateful; not thread-safe)     |
-| `memcpy(d,s,n)` | copy n bytes (no overlap)                  |
-| `memmove(d,s,n)` | copy n bytes (overlap OK)                 |
-| `memset(d,c,n)` | fill n bytes with c                        |
-| `memcmp(a,b,n)` | compare n bytes                            |
-
-## `<ctype.h>` — character classification
-
-| Function        | True for                              |
-|-----------------|---------------------------------------|
-| `isalpha(c)`    | letter                                 |
-| `isdigit(c)`    | `0`–`9`                                |
-| `isalnum(c)`    | letter or digit                        |
-| `isspace(c)`    | space, `\t`, `\n`, `\v`, `\f`, `\r`     |
-| `isupper`/`islower` | case checks                       |
-| `tolower`/`toupper` | case conversion                  |
-| `iscntrl`       | control char                           |
-| `isprint`       | printable (incl. space)                |
-| `isgraph`       | printable, NOT space                    |
-| `isxdigit`      | hex digit                               |
-
-**Always cast to `unsigned char`** when passing to these — they expect a value in `0..UCHAR_MAX` or `EOF`. A negative `char` is undefined behaviour:
-
-```c
-char c = getchar();         /* might be negative on signed-char platforms */
-if (isalpha((unsigned char)c)) ...
-```
-
-## `<stdlib.h>` — general utilities
-
-| Function           | Does                                  |
-|--------------------|---------------------------------------|
-| `atoi(s)`          | string → int (no error reporting)    |
-| `atof(s)`          | string → double                       |
-| `strtol(s, &end, base)` | string → long, with error reporting |
-| `strtod(s, &end)`   | string → double, with error reporting |
-| `rand()` / `srand` | pseudo-random integers                |
-| `qsort(...)`       | sort an array                          |
-| `bsearch(...)`     | binary search                           |
-| `malloc` / `calloc` / `realloc` / `free` | heap |
-| `abs(n)` / `labs` / `llabs` | absolute value                 |
-| `div(a, b)`        | quotient AND remainder in one call    |
-| `getenv("NAME")`   | environment variable                   |
-| `system("cmd")`    | run a shell command                    |
-
-## `<math.h>` — math
-
-| Function           | Does                                  |
-|--------------------|---------------------------------------|
-| `sqrt`, `cbrt`     | square / cube root                     |
-| `pow(x, y)`        | x^y                                    |
-| `exp`, `log`, `log2`, `log10` | exp and logs              |
-| `sin`, `cos`, `tan` (and `a*`, `*h` variants) | trig + hyperbolic |
-| `ceil`, `floor`, `round`, `trunc` | rounding              |
-| `fabs(x)`          | absolute value (double)                 |
-| `fmod(x, y)`       | floating-point remainder                 |
-
-Link with `-lm` on Linux:
-
-```bash
-$ gcc prog.c -lm
-```
-
-## Putting some of it together
-
-```c:starter
+```c:run string, character, and conversion helpers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <math.h>
 
 int main(void) {
-    /* string operations */
-    const char *s = "Hello, World!";
-    printf("length: %zu\n", strlen(s));
-    printf("upper:  ");
-    for (const char *p = s; *p; ++p) putchar(toupper((unsigned char)*p));
-    putchar('\n');
-
-    /* strtol with error checking */
-    char *end;
-    long v = strtol("  -42abc", &end, 10);
-    printf("strtol: %ld, stopped at '%s'\n", v, end);
-
-    /* math */
-    printf("sqrt(2) = %.6f\n", sqrt(2.0));
-    printf("3^4     = %.0f\n", pow(3.0, 4.0));
-
-    /* random */
-    srand(42);          /* fixed seed → reproducible */
-    for (int i = 0; i < 5; ++i) printf("%d ", rand() % 100);
-    putchar('\n');
-
+    printf("atoi(\"42abc\")   = %d\n", atoi("42abc"));      /* parse leading int */
+    printf("atof(\"3.14\")    = %.2f\n", atof("3.14"));     /* parse a double    */
+    printf("strlen(\"hello\") = %zu\n", strlen("hello"));   /* length, no '\0'   */
+    printf("strcmp(ab,ac)   = %d\n", strcmp("ab","ac") < 0 ? -1 : 1);
+    printf("toupper('c')    = %c\n", toupper('c'));         /* classify/convert  */
+    printf("isdigit('7')    = %d\n", isdigit('7') ? 1 : 0);
     return 0;
 }
 ```
 
 ```output
-length: 13
-upper:  HELLO, WORLD!
-strtol: -42, stopped at 'abc'
-sqrt(2) = 1.414214
-3^4     = 81
-0 7 49 73 58
+atoi("42abc")   = 42
+atof("3.14")    = 3.14
+strlen("hello") = 5
+strcmp(ab,ac)   = -1
+toupper('c')    = C
+isdigit('7')    = 1
 ```
 
-## `qsort` and `bsearch` — generic sort and search
+`atoi`/`atof` (in `<stdlib.h>`) parse a number from the front of a string, stopping at the first non-numeric character — `"42abc"` yields `42`. `strlen` counts characters *up to but not including* the `'\0'` terminator (so `"hello"` is 5, even though the array holds 6 bytes). `strcmp` returns negative, zero, or positive as its first argument sorts before, equal to, or after the second — here `"ab" < "ac"` so it's negative (shown normalized to -1). The `<ctype.h>` functions classify (`isdigit`, `isalpha`, `isspace`) and convert (`toupper`, `tolower`) single characters.
 
-```c
-int cmp_int(const void *a, const void *b) {
-    int x = *(const int *)a, y = *(const int *)b;
-    return (x > y) - (x < y);     /* avoid x - y overflow */
-}
+## What's in the toolbox — and the upgrades worth knowing
 
-int arr[] = {3, 1, 4, 1, 5, 9, 2, 6};
-qsort(arr, 8, sizeof(int), cmp_int);
-int key = 4;
-int *found = bsearch(&key, arr, 8, sizeof(int), cmp_int);
-```
+A quick map of the most-used pieces. From **`<string.h>`**: `strcpy`/`strncpy` (copy), `strcat`/`strncat` (concatenate), `strcmp`/`strncmp` (compare), `strchr`/`strstr` (search for a character/substring), and the raw-memory cousins `memcpy`, `memmove` (overlap-safe), and `memset`. From **`<stdlib.h>`**: `malloc`/`calloc`/`realloc`/`free` (heap memory), [`qsort`](https://en.cppreference.com/w/c/algorithm/qsort) and `bsearch` (generic sort/search driven by a comparison-function pointer — a real-world use of the [function pointers](05-11-pointers-to-functions.md) from chapter 5), `rand`/`srand` (pseudo-random numbers), and `abs`/`labs`. From **`<math.h>`**: `sqrt`, `pow`, `sin`/`cos`, `floor`/`ceil`, `fabs` (link with `-lm` on Unix). Two cautions worth internalizing. The `atoi`/`atof` family **cannot report errors** — they return 0 for unparseable input, indistinguishable from a real 0 — so production code prefers [`strtol`/`strtod`](https://en.cppreference.com/w/c/string/byte/strtol), which tell you exactly where parsing stopped and flag overflow. And the unbounded `strcpy`/`strcat` overflow if the destination is too small (the same hazard as `gets`); reach for the size-bounded `strncpy`/`snprintf` when handling untrusted lengths. The meta-lesson of this chapter: **read the library before writing your own** — `<string.h>` and friends are battle-tested, portable, and usually faster than anything you'd hand-roll.
 
-The `(x > y) - (x < y)` trick gives `-1`, `0`, or `1` without risk of overflow that `x - y` has.
-
-## Try it
-
-1. Write your own `safer_atoi(const char *s, int *out)` that returns 0 on success, -1 on failure, using `strtol`.
-2. Use `qsort` to sort an array of strings (`char **`).
-3. Generate a histogram of `rand() % 10` over 10 000 calls. Is it uniform?
-
-## Notes from the author
-
-- The standard library is much bigger than 1978-era C. Modern additions: `<stdint.h>`, `<stdbool.h>`, `<inttypes.h>`, `<complex.h>`, `<threads.h>` (C11), and `<stdatomic.h>` (C11).
-- For string handling beyond ASCII, you'll want `<wchar.h>` for wide characters or external libraries (ICU, utf8proc). C's string functions are fundamentally byte-oriented and don't know about UTF-8.
-- The "everything is in stdlib" property of C makes for small executables but verbose code. A typical Python one-liner takes 20 lines in C — but the C version runs 100x faster and uses 10x less memory.
-
-🎉 You've finished the I/O chapter. Nine exercises follow that exercise these patterns: filters, file copies, custom printf, and more.
-
-*Click **next →** for exercise 7-1.*
+## Go deeper
+- [`<string.h>`](https://en.cppreference.com/w/c/string/byte) — string and memory functions
+- [`<ctype.h>`](https://en.cppreference.com/w/c/string/byte#Character_classification) — character classification
+- [`<stdlib.h>`](https://en.cppreference.com/w/c/header/stdlib) — conversions, memory, `qsort`, random
+- [`qsort` / `bsearch`](https://en.cppreference.com/w/c/algorithm/qsort) — generic sort and search
