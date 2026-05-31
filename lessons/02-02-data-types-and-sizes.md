@@ -31,13 +31,13 @@ int main(void) {
 
 ```output
 CHAR_BIT = 8 bits per byte
-char=1 short=2 int=4 long=8
+char=1 short=2 int=4 long=4
 float=4 double=8
 int range: -2147483648 .. 2147483647
 unsigned char max: 255
 ```
 
-`%zu` is the correct format for `sizeof`'s result (`size_t`). `CHAR_BIT` is 8 on every machine you'll meet, but the standard only requires it be *at least* 8 — a reminder that "byte" in C means "smallest addressable unit," not "exactly 8 bits."
+`%zu` is the correct format for `sizeof`'s result (`size_t`). On this WebAssembly target `long` is 4 bytes (the ILP32 model — same width as `int`); on a 64-bit native Linux build (LP64) `long` would be 8. That's exactly the point: widths are platform-dependent. `CHAR_BIT` is 8 on every machine you'll meet, but the standard only requires it be *at least* 8 — a reminder that "byte" in C means "smallest addressable unit," not "exactly 8 bits."
 
 ## signed vs unsigned, and why it bites
 
