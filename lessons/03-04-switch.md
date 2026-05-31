@@ -8,106 +8,50 @@ next: ex-3-2
 status: done
 ---
 
-`switch` is a multiway branch over a single integer expression compared against integer constants. The general form:
+`switch` dispatches on the value of a single integer expression, jumping straight to the matching `case` label. Unlike an `else if` ladder it doesn't test conditions one by one — the compiler can build a **jump table** (an array of addresses indexed by the value) or a balanced search, giving near-constant dispatch over many cases. The labels must be integer (or character) *constant expressions*, all distinct; `default` catches anything unmatched.
 
-```c
-switch (expression) {
-    case constant1:
-        statements
-        break;
-    case constant2:
-        statements
-        break;
-    default:
-        statements
-}
-```
+## Cases, fall-through, and `break`
 
-The expression is evaluated once, and control jumps to the matching `case` label. The `default` is optional — if no case matches and there's no `default`, the entire `switch` is skipped.
-
-## The fall-through trap
-
-C's `switch` does **not** stop at the next `case` automatically. Without an explicit `break`, control falls through into the next case:
-
-```c
-switch (n) {
-    case 1: printf("one ");
-    case 2: printf("two ");
-    case 3: printf("three "); break;
-    default: printf("other ");
-}
-```
-
-For `n == 1` this prints `one two three ` because there are no `break`s between cases 1 and 3. This is occasionally what you want (multiple labels sharing one body) but more often it's a bug. **Every case should normally end with `break` or `return`.**
-
-```c:starter
+```c:run switch with intentional fall-through
 #include <stdio.h>
 
-void count_char(int c, int *digits, int *whitespace, int *other);
-
 int main(void) {
-    int d = 0, w = 0, o = 0;
-    char *s = "Hello 123 World\n";
-    for (int i = 0; s[i] != '\0'; ++i)
-        count_char(s[i], &d, &w, &o);
-    printf("digits=%d  whitespace=%d  other=%d\n", d, w, o);
-    return 0;
-}
-
-void count_char(int c, int *digits, int *whitespace, int *other) {
-    switch (c) {
-        case '0': case '1': case '2': case '3': case '4':
-        case '5': case '6': case '7': case '8': case '9':
-            (*digits)++;
-            break;
-        case ' ': case '\t': case '\n':
-            (*whitespace)++;
-            break;
-        default:
-            (*other)++;
-            break;
+    for (char c = 'a'; c <= 'e'; c++) {
+        switch (c) {
+            case 'a':
+            case 'e':
+            case 'i':
+            case 'o':
+            case 'u':
+                printf("%c is a vowel\n", c);
+                break;
+            default:
+                printf("%c is a consonant\n", c);
+                break;
+        }
     }
+    return 0;
 }
 ```
 
 ```output
-digits=3  whitespace=4  other=10
+a is a vowel
+b is a consonant
+c is a consonant
+d is a consonant
+e is a vowel
 ```
 
-Multiple `case` labels stacked above one body is the **intentional** fall-through pattern.
+The key behavior — and C's most infamous footgun — is **fall-through**: once execution jumps to a `case`, it keeps running into the *next* case unless a `break` stops it. Here that's used deliberately: `case 'a':` through `case 'u':` stack up with no code between them, so all five vowels share one body. But forget a `break` between two cases that *do* have bodies and you'll silently run both — the bug behind countless production incidents.
 
-## What `switch` is good at
+## Why it exists and how it compiles
 
-- **Discrete integer values** — character classification, enum dispatch, opcode interpretation.
-- **Compiler-generated jump tables** — for dense case ranges, modern compilers emit a single indirect jump (O(1) regardless of case count).
+A `switch` is really "compute a value, then `goto` the right label." For dense case values (`0,1,2,3,...`) the compiler emits a jump table: index into an address array and branch — O(1), no comparisons. For sparse values it may emit a binary search or just a comparison chain. That's why `switch` on an `enum` of states is the standard shape for parsers, virtual machines, and protocol handlers.
 
-## What `switch` cannot do
+Style discipline: always end each non-empty case with `break` (or `return`), put `default` last, and when you *intend* fall-through, mark it with a comment like `/* fall through */` so reviewers know it wasn't an accident. `switch` only compares for *equality* against constants — for ranges or non-constant tests, you still need `if`/`else if`.
 
-- Test ranges (`case 1..10:` is not standard C — GCC has it as an extension).
-- Switch on strings, floats, or arbitrary expressions.
-- Capture the matching value into a variable (no Rust-style `match`).
-
-For string dispatch, build an `if`-chain with `strcmp`, or hash strings to integers.
-
-## Modern note
-
-For intentional fall-through, GCC/Clang understand the `__attribute__((fallthrough))` annotation (and C23 standardises `[[fallthrough]];`). It signals "the missing break is on purpose" to both compiler warnings and human readers:
-
-```c
-case 'a':
-    do_a();
-    [[fallthrough]];   /* C23, or: __attribute__((fallthrough)) before */
-case 'b':
-    do_b();
-    break;
-```
-
-Always-`break` style is even simpler: never let fall-through happen unless multiple labels share *exactly* one body.
-
-## Notes from the author
-
-- The fall-through behaviour is the canonical "C surprise". Modern languages (Rust, Go, Swift) all switched to "no fall-through by default" and require explicit opt-in. C kept it for backward compatibility.
-- The "stack labels, no body" pattern for character classes is the prettiest use of `switch`. Compare to an `else if` chain for the same task: the `switch` reads as a *table* of inputs, which is much closer to how the human brain processes it.
-- Compilers can transform a dense `switch` into a jump table (single indirect-branch lookup). For sparse cases they fall back to binary or linear search. Either way, the `switch` is usually faster than the equivalent `if` chain.
-
-*Click **next →** for `while` and `for` loops.*
+## Go deeper
+- [`switch` statement (C)](https://en.cppreference.com/w/c/language/switch) — labels, `default`, and fall-through
+- [Switch fallthrough](https://en.wikipedia.org/wiki/Switch_statement#Fallthrough) — the behavior and its dangers
+- [Branch table / jump table](https://en.wikipedia.org/wiki/Branch_table) — how `switch` reaches O(1) dispatch
+- [Duff's device](https://en.wikipedia.org/wiki/Duff%27s_device) — fall-through taken to its wild extreme
