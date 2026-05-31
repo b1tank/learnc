@@ -8,134 +8,55 @@ next: ex-8-2
 status: done
 ---
 
-How does stdio actually work? Let's reimplement a tiny `fopen` and `getc` on top of the `open`/`read` system calls.
+The whole point of the standard library's buffered streams is to sit *between* you and the raw `read`/`write` syscalls, so you can call `getc` a million times while the library makes only a handful of expensive kernel trips. This lesson builds a **miniature version of that machinery** — a `getc` that owns a small buffer, refills it with one `read` when empty, and then hands out bytes one at a time. Seeing this implemented demystifies `<stdio.h>`: `FILE` is essentially "a descriptor + a buffer + a position into the buffer," and `getc` is "return the next buffered byte, refilling via `read` when needed."
 
-The pattern: maintain a struct with a fd, a buffer, a pointer into the buffer, and a remaining count. `getc` returns the next byte from the buffer; when the buffer is empty, refill it with one `read` call.
+## Implementing getc over a syscall
 
-```c:starter
-#include <stdio.h>
+```c:run a hand-rolled buffered getc
 #include <unistd.h>
-#include <fcntl.h>
-#include <stdlib.h>
+#include <stdio.h>
 
-#define BUFSIZE 1024
+static char buf[8];           /* the stream's private buffer  */
+static int  n_in = 0;         /* bytes currently in the buffer */
+static int  pos  = 0;         /* next byte to hand out         */
 
-typedef struct {
-    int   fd;
-    char  buf[BUFSIZE];
-    int   pos;          /* next byte to return */
-    int   end;          /* one past the last buffered byte */
-    int   eof;
-    int   err;
-} my_FILE;
-
-static my_FILE *my_fopen(const char *path, const char *mode) {
-    int flags;
-    if      (mode[0] == 'r') flags = O_RDONLY;
-    else if (mode[0] == 'w') flags = O_WRONLY | O_CREAT | O_TRUNC;
-    else if (mode[0] == 'a') flags = O_WRONLY | O_CREAT | O_APPEND;
-    else return NULL;
-
-    int fd = open(path, flags, 0644);
-    if (fd < 0) return NULL;
-
-    my_FILE *fp = calloc(1, sizeof *fp);
-    if (!fp) { close(fd); return NULL; }
-    fp->fd = fd;
-    return fp;
-}
-
-static int my_getc(my_FILE *fp) {
-    if (fp->pos >= fp->end) {
-        if (fp->eof) return EOF;
-        ssize_t n = read(fp->fd, fp->buf, BUFSIZE);
-        if (n <= 0) {
-            if (n < 0) fp->err = 1;
-            fp->eof = 1;
-            return EOF;
-        }
-        fp->pos = 0;
-        fp->end = (int)n;
+int mygetc(void) {
+    if (pos >= n_in) {                    /* buffer drained? refill it */
+        n_in = read(0, buf, sizeof buf);  /* ONE syscall per 8 bytes   */
+        pos  = 0;
+        if (n_in <= 0) return -1;         /* 0 => EOF, <0 => error      */
     }
-    return (unsigned char)fp->buf[fp->pos++];
+    return (unsigned char) buf[pos++];    /* serve next byte, advance   */
 }
 
-static int my_fclose(my_FILE *fp) {
-    if (!fp) return 0;
-    int rc = close(fp->fd);
-    free(fp);
-    return rc;
-}
-
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "usage: %s FILE\n", argv[0]);
-        return 1;
+int main(void) {
+    int c, vowels = 0;
+    while ((c = mygetc()) != -1) {
+        putchar(c);
+        if (c=='a'||c=='e'||c=='i'||c=='o'||c=='u') vowels++;
     }
-    my_FILE *fp = my_fopen(argv[1], "r");
-    if (!fp) { perror(argv[1]); return 1; }
-
-    int c, n = 0;
-    while ((c = my_getc(fp)) != EOF) { putchar(c); ++n; }
-    fprintf(stderr, "\n--- read %d bytes ---\n", n);
-    my_fclose(fp);
+    printf("[%d vowels]\n", vowels);
     return 0;
 }
 ```
 
+```stdin
+education
+```
+
 ```output
-(awaits CLI args)
+education
+[5 vowels]
 ```
 
-## The buffering win
+Trace the buffering: `mygetc` checks whether the buffer still has unserved bytes (`pos < n_in`). If not, it issues *one* `read` of up to 8 bytes and resets `pos`. Every subsequent call just returns `buf[pos++]` with no syscall at all — so reading the 9-character input "education\n" costs only two `read` calls (8 bytes, then the rest) instead of ten. The cast to `unsigned char` before returning matters: it guarantees a byte value in 0–255 that never collides with the `-1` EOF sentinel, the same reason real `getc` returns `int`. This is, in miniature, exactly how the library's `getc` works.
 
-Without the buffer:
+## What real fopen/FILE add on top
 
-```c
-char ch;
-while (read(fd, &ch, 1) == 1) /* one syscall per byte */
-    putchar(ch);
-```
+A production `FILE` is this idea plus a lot of robustness. `fopen` calls [`open`](08-03-open-creat-close-unlink.md) to get the descriptor, then `malloc`s a buffer (typically `BUFSIZ`, often 4–8 KB, sized near the filesystem block size) and wraps both in a `FILE` struct that also records the mode, an error flag, an EOF flag, and — for writable streams — a *write* buffer flushed by the symmetric mechanism (`putc` fills it; a full buffer, a newline on line-buffered streams, `fflush`, or `fclose` drains it with one `write`). Real implementations also handle pushback ([`ungetc`](https://en.cppreference.com/w/c/io/ungetc)), the three buffering modes (unbuffered, line-buffered, fully-buffered — set via [`setvbuf`](https://en.cppreference.com/w/c/io/setvbuf)), thread-safety locking, and the buffer/offset reconciliation that makes `fseek` correct. But the core insight is the one you just coded: **buffering trades a little memory for a massive reduction in system calls**, and that trade is why `getchar`-style code can be both convenient *and* fast. Understanding this layer means you know when to bypass it — high-throughput code that already moves data in large blocks may call `read`/`write` directly to skip the copy through stdio's buffer entirely.
 
-Every `getc` call would do a system call. Buffering means one syscall per 1024 bytes — three orders of magnitude fewer.
-
-This is exactly how real `<stdio.h>` is implemented. `FILE` is a struct of fd + buffer + position + flags. `fgetc` is "return next buffered byte; refill if empty". `fputc` is "append to buffer; flush if full".
-
-## Variants of buffering
-
-stdio supports three buffering modes (set with `setvbuf`):
-
-| Mode      | When buffer flushes               | Default for     |
-|-----------|----------------------------------|-----------------|
-| `_IOFBF`  | when full                         | files            |
-| `_IOLBF`  | on newline or when full           | terminals        |
-| `_IONBF`  | never (every write goes through) | stderr            |
-
-The full-buffer default for files explains why a long-running pipe `prog1 | prog2` may not show `prog1`'s output until `prog1` exits: stdout is fully buffered to the pipe.
-
-## The TODO list of features we skipped
-
-A real `FILE *` also has:
-
-- `ungetc` — one-character pushback.
-- Bidirectional buffering for `r+` mode.
-- Wide-character (`wchar_t`) support.
-- Locale-aware reads.
-- Thread-safety via internal locks.
-- `fileno()` to recover the underlying fd.
-
-The ~80-line stub above captures the *core idea* — buffered reads on top of `read` — and that's the most important thing to learn.
-
-## Try it
-
-1. Add an `my_ungetc` that pushes back one character.
-2. Add a `my_fread(buf, sz, n, fp)` that batches buffered bytes for binary I/O.
-3. Compare timings: byte-at-a-time `read` vs buffered `my_getc`. Expect ~100x speedup.
-
-## Notes from the author
-
-- glibc's `FILE` is ~120 fields. Most of it is layered: thread lock, lock owner, wide-char state, transformation state, etc. The kernel of it is still "buffer + position + fd".
-- Reimplementing stdio is a rite of passage — you understand it forever after.
-- Buffering hides the kernel boundary. Knowing where the buffer lives helps you reason about `fflush`, `setvbuf`, and the surprises that come from mixing stdio with raw `read`/`write` on the same fd.
-
-*Click **next →** for directory listing.*
+## Go deeper
+- [`getc` / `getchar`](https://en.cppreference.com/w/c/io/getchar) — the real buffered readers
+- [`setvbuf`](https://en.cppreference.com/w/c/io/setvbuf) — choosing the buffering mode and size
+- [Data buffer](https://en.wikipedia.org/wiki/Data_buffer) — the space-for-syscalls trade
+- [`fopen(3)`](https://man7.org/linux/man-pages/man3/fopen.3.html) — what a real FILE wraps
