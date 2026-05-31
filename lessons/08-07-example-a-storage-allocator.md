@@ -8,167 +8,51 @@ next: ex-8-6
 status: done
 ---
 
-Where does `malloc` get its memory? On Unix, ultimately from the kernel via `sbrk` (legacy) or `mmap` (modern). The C library sits in between, managing free lists so that hundreds of small allocations don't each turn into a system call.
+Where does the memory from `malloc` actually come from, and how does `free` give it back? This final example pulls back the curtain on the **storage allocator** — the library code that hands out and reclaims heap memory. An allocator's job is to manage one big region of memory obtained from the operating system, carving it into pieces on `malloc` and stitching freed pieces back together on `free`. We'll build the simplest possible allocator — a **bump allocator** — to see the core mechanic, then explain what a real `malloc` adds.
 
-K&R's allocator is a **circular free list with first-fit allocation**. It's small (~60 lines) and pedagogically perfect.
+## A bump allocator from one static pool
 
-## The data structure
-
-Every block (free or in use) carries a header:
-
-```c
-typedef long Align;     /* for alignment */
-
-union header {
-    struct {
-        union header *ptr;   /* next free block */
-        unsigned      size;   /* size in header-units */
-    } s;
-    Align x;                  /* force alignment */
-};
-typedef union header Header;
-```
-
-The `union` ensures the header is aligned for any type. The user gets a pointer to the byte just past the header.
-
-Free blocks form a **circular linked list** sorted by address. `malloc` walks the list looking for a block big enough; `free` finds the right insertion point and stitches the new free block in (merging with neighbours if adjacent).
-
-## The full code (skeleton)
-
-```c:starter
+```c:run hand out chunks from a fixed pool
 #include <stdio.h>
-#include <unistd.h>
+#include <stddef.h>
 
-typedef long Align;
+#define POOL 1024
+static char   pool[POOL];     /* the entire arena, one static array */
+static size_t used = 0;       /* high-water mark: next free byte     */
 
-union header {
-    struct {
-        union header *ptr;
-        unsigned      size;
-    } s;
-    Align x;
-};
-typedef union header Header;
-
-#define NALLOC 1024              /* min units to request from OS */
-
-static Header  base;             /* empty list anchor */
-static Header *freep = NULL;     /* start-of-free-list */
-
-static Header *morecore(unsigned nu);
-void  my_free(void *ap);
-void *my_malloc(unsigned nbytes);
-
-void *my_malloc(unsigned nbytes) {
-    unsigned nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
-
-    Header *prevp = freep;
-    if (prevp == NULL) {
-        base.s.ptr = freep = prevp = &base;
-        base.s.size = 0;
-    }
-
-    for (Header *p = prevp->s.ptr; ; prevp = p, p = p->s.ptr) {
-        if (p->s.size >= nunits) {
-            if (p->s.size == nunits) {
-                prevp->s.ptr = p->s.ptr;
-            } else {
-                p->s.size -= nunits;
-                p        += p->s.size;
-                p->s.size = nunits;
-            }
-            freep = prevp;
-            return (void *)(p + 1);
-        }
-        if (p == freep) {
-            if ((p = morecore(nunits)) == NULL) return NULL;
-        }
-    }
-}
-
-static Header *morecore(unsigned nu) {
-    if (nu < NALLOC) nu = NALLOC;
-    void *cp = sbrk(nu * sizeof(Header));
-    if (cp == (void *)-1) return NULL;
-    Header *up = (Header *)cp;
-    up->s.size = nu;
-    my_free((void *)(up + 1));
-    return freep;
-}
-
-void my_free(void *ap) {
-    Header *bp = (Header *)ap - 1;       /* point to header */
-    Header *p;
-    for (p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
-        if (p >= p->s.ptr && (bp > p || bp < p->s.ptr))
-            break;                       /* freed block at start or end */
-    if (bp + bp->s.size == p->s.ptr) {
-        bp->s.size += p->s.ptr->s.size;
-        bp->s.ptr   = p->s.ptr->s.ptr;
-    } else {
-        bp->s.ptr = p->s.ptr;
-    }
-    if (p + p->s.size == bp) {
-        p->s.size += bp->s.size;
-        p->s.ptr   = bp->s.ptr;
-    } else {
-        p->s.ptr = bp;
-    }
-    freep = p;
+void *bump_alloc(size_t n) {
+    n = (n + 7) & ~(size_t)7;          /* round up to 8-byte alignment */
+    if (used + n > POOL) return NULL;  /* out of memory                */
+    void *p = &pool[used];
+    used += n;                          /* "bump" the pointer forward   */
+    return p;
 }
 
 int main(void) {
-    int *a = (int *)my_malloc(10 * sizeof *a);
-    char *s = (char *)my_malloc(64);
-    for (int i = 0; i < 10; ++i) a[i] = i * i;
-    for (int i = 0; i < 10; ++i) printf("%d ", a[i]);
-    putchar('\n');
-    my_free(a);
-    my_free(s);
+    char *a = bump_alloc(10);
+    int  *b = bump_alloc(sizeof(int) * 4);
+    printf("a at offset %ld\n", (long)(a - pool));
+    printf("b at offset %ld\n", (long)((char*)b - pool));
+    b[0] = 42;
+    printf("b[0] = %d, used = %zu bytes\n", b[0], used);
     return 0;
 }
 ```
 
 ```output
-0 1 4 9 16 25 36 49 64 81
+a at offset 0
+b at offset 16
+b[0] = 42, used = 32 bytes
 ```
 
-## What's happening
+The whole allocator is one pointer (`used`) into one array. Each request bumps that pointer forward by the (rounded-up) size and returns the old position. `a` lands at offset 0; the 10-byte request is rounded up to 16, so `b` starts at offset 16; `b`'s 16 bytes bring `used` to 32. The **alignment rounding** `(n + 7) & ~7` is essential and easy to overlook: CPUs require (or strongly prefer) that an `int`, pointer, or `double` sit at an address that's a multiple of its size, so a real allocator always returns suitably aligned blocks. A bump allocator is blazing fast and has zero per-block overhead — but it has no `free`: you can only reclaim everything at once by resetting `used` to 0. That limitation is exactly what real allocators solve.
 
-1. `my_malloc` rounds the request up to whole `Header` units.
-2. Walks the free list looking for a block ≥ that size (first-fit).
-3. If the block is exact, unlink it. Otherwise carve off the tail and return that.
-4. If no block fits, call `morecore` to grow the heap via `sbrk`, then retry.
+## What a real malloc adds — free lists, and where memory comes from
 
-`my_free` inserts the freed block into the address-sorted list, coalescing with neighbours that are adjacent in memory.
+A general-purpose `malloc`/`free` must let *individual* blocks be returned in any order and reused, which means tracking which regions are free. The classic K&R design (and most real allocators) keeps a **free list**: each block carries a small hidden **header** — storing its size and a pointer to the next free block — that lives just *before* the address handed back to you. `free(p)` looks at `p[-header]` to learn the block's size, links it back into the free list, and **coalesces** it with adjacent free blocks to fight [fragmentation](https://en.wikipedia.org/wiki/Fragmentation_(computing)) (the scattering of free space into too-small gaps). `malloc(n)` walks the free list for a block big enough (first-fit / best-fit strategies), splitting it if there's leftover. When the free list can't satisfy a request, the allocator asks the **operating system** for more memory via [`sbrk`](https://man7.org/linux/man-pages/man2/sbrk.2.html) (grow the heap's "program break" — the classic Unix mechanism) or [`mmap`](https://man7.org/linux/man-pages/man2/mmap.2.html) (map fresh pages, used by modern allocators for large requests). That hidden header is why `free` needs only the pointer, never the size; why writing *before* the returned pointer or past a block's end corrupts the allocator's bookkeeping (a [heap overflow](https://en.wikipedia.org/wiki/Heap_overflow)); and why `free`-ing a non-`malloc` pointer or double-freeing crashes — you're scribbling on metadata. Production allocators (glibc's ptmalloc, jemalloc, tcmalloc) layer on size-class bins, per-thread arenas to avoid lock contention, and hardening against exploitation, but every one of them rests on these two ideas: **a structure tracking free space, replenished from the kernel one big region at a time.** And that ties the whole book together — `malloc` is ordinary C built on the system calls of this chapter, sitting between your program and the kernel's raw memory.
 
-## Limitations of first-fit
-
-- **Fragmentation**: many small holes too small for any future request.
-- **`O(n)` per malloc** as the free list grows.
-- **No size classes**: a 16-byte allocation and a 1 MB allocation share the same list.
-
-Modern allocators (tcmalloc, jemalloc, glibc's ptmalloc) use:
-
-- Multiple **size classes** with per-class free lists.
-- Per-thread caches to avoid locking.
-- Slab/region allocators for very large objects via `mmap`.
-- Hugepage support.
-
-But they all build on the same idea: track free blocks and reuse them.
-
-## Try it
-
-1. Print the free list before and after each alloc/free. Watch the carve and coalesce in action.
-2. Run a benchmark: 10,000 random `malloc`/`free` pairs with random sizes. Compare against glibc's `malloc`.
-3. What's the worst-case behaviour? (Hint: alternate large and small allocations, free only the small ones.)
-
-## Notes from the author
-
-- This allocator is two paychecks of subtle code in one page. Reading it carefully — the carve, the merge, the wraparound condition — teaches more about pointers than any textbook chapter.
-- `sbrk` is deprecated in modern POSIX. Real allocators use `mmap` for large blocks and a managed arena for small ones. The interface to the user (`malloc`/`free`) is unchanged.
-- Writing your own allocator is a famous performance technique for special-purpose programs — game engines (per-frame allocators), parsers (arena allocators), database internals. The "one allocator fits all" is a myth.
-
-🎉 **You've finished K&R Chapter 8** — and the textbook proper. The remaining lessons are eight exercises that put the system-call API to work: a memory-safe `tail`, a `cat` clone, your own `fopen`/`fclose`/`getc`, and more.
-
-*Click **next →** for exercise 8-1.*
+## Go deeper
+- [`malloc` internals (K&R-style)](https://en.wikipedia.org/wiki/C_dynamic_memory_allocation) — free lists and headers
+- [`sbrk(2)`](https://man7.org/linux/man-pages/man2/sbrk.2.html) / [`mmap(2)`](https://man7.org/linux/man-pages/man2/mmap.2.html) — getting memory from the kernel
+- [Memory fragmentation](https://en.wikipedia.org/wiki/Fragmentation_(computing)) — why coalescing matters
+- [Data structure alignment](https://en.wikipedia.org/wiki/Data_structure_alignment) — why allocators round sizes up
