@@ -8,99 +8,42 @@ next: 02-04-declarations
 status: done
 ---
 
-A *constant* is a literal value you write directly in source code: `42`, `3.14`, `'A'`, `"hello"`. Every constant has a type, and the syntax of the literal often determines that type.
+A constant is a literal value baked into the program text. Its *type* and *spelling* tell the compiler how to encode the bytes. Integer constants can be written in decimal, **octal** (leading `0`), or **hexadecimal** (leading `0x`); suffixes (`U`, `L`) pin down the type; floating constants use a decimal point or exponent; character constants like `'A'` are small integers (the [ASCII](https://en.wikipedia.org/wiki/ASCII) code); and string literals are `'\0'`-terminated `char` arrays.
 
-## Integer constants
+## Three bases, one value
 
-- `123` — `int`
-- `123L` — `long`
-- `123U` — `unsigned int`
-- `123UL` — `unsigned long`
-- `0x1F` — hexadecimal `int` (31)
-- `017` — **octal** `int` (15) — note the leading zero
-- `123LL` — `long long` (C99+)
+`31`, `037`, and `0x1f` are the *same* integer written three ways. The base is a lexical convention; the stored bits are identical. Suffixes change the type, which matters for overflow and format strings:
 
-The octal trap: `010` is **eight**, not ten. Stripping accidental leading zeros from numeric literals is a common bug source.
-
-## Floating-point constants
-
-- `3.14` — `double`
-- `3.14f` — `float`
-- `3.14L` — `long double`
-- `1e6` — `double` (one million)
-- `2.5e-3` — `double` (0.0025)
-
-## Character constants
-
-A character constant is a single quote around a character: `'A'`, `'\n'`, `'\t'`. Its type is **`int`**, not `char` — this is a subtle but important inheritance from K&R-era C. Its value is the character's encoding (usually ASCII): `'A'` is `65`, `'0'` is `48`.
-
-Escape sequences cover the non-printable ones: `\n` `\t` `\\` `\'` `\"` `\0` `\a` `\b` `\r` `\v` `\f` and `\xNN` for arbitrary hex.
-
-## String literals
-
-A string literal is double-quoted: `"hello"`. It is a `char` array, automatically terminated with `'\0'`. So `"hello"` is six bytes, not five. Adjacent string literals are concatenated at compile time: `"foo" "bar"` is exactly `"foobar"`.
-
-## Enumeration constants
-
-```c
-enum colors { RED, GREEN, BLUE };
-```
-
-Gives you three integer constants — `RED = 0`, `GREEN = 1`, `BLUE = 2`. You can override: `enum { TWO = 2, FOUR = 4 };`. Enum values are `int`.
-
-```c:starter
+```c:run literals and their spellings
 #include <stdio.h>
 
-enum colors { RED, GREEN, BLUE };
-
 int main(void) {
-    int  hex_val  = 0xFF;
-    int  oct_val  = 0777;      /* octal 0777 = 511 decimal */
-    long big      = 1000000L;
-    double pi     = 3.14159;
-    char letter   = 'A';
-    char *greet   = "hello";   /* string literal */
+    int dec = 31, oct = 037, hex = 0x1f;     /* all equal 31 */
+    printf("%d %d %d\n", dec, oct, hex);
 
-    printf("hex 0xFF      = %d\n", hex_val);
-    printf("oct 0777      = %d\n", oct_val);
-    printf("'A'           = %d (its ASCII code)\n", letter);
-    printf("GREEN         = %d\n", GREEN);
-    printf("string        = %s (length %zu, sizeof %zu)\n",
-           greet, sizeof(greet), sizeof("hello"));
-    printf("big number    = %ld\n", big);
-    printf("pi            = %f\n", pi);
+    long big = 123456789L;     /* L -> long */
+    unsigned u = 40000U;       /* U -> unsigned */
+    double d = 1.5e3;          /* exponent form: 1500.0 */
+    printf("%ld %u %g\n", big, u, d);
     return 0;
 }
 ```
 
 ```output
-hex 0xFF      = 255
-oct 0777      = 511
-'A'           = 65 (its ASCII code)
-GREEN         = 1
-string        = hello (length 8, sizeof 6)
-big number    = 1000000
-pi            = 3.141590
+31 31 31
+123456789 40000 1500
 ```
 
-(The string's `sizeof` includes the trailing `\0`; `sizeof(greet)` here prints 8 because `greet` is a pointer, not the array — see chapter 5.)
+The octal trap: a stray leading zero changes meaning. `010` is **8**, not 10 — a real bug when people pad numbers with zeros. Hex is the everyday tool for bit patterns because each digit maps to exactly 4 bits.
 
-## Modern note
+## Character constants are integers
 
-In new C code, prefer `enum` over `#define` for related integer constants. The enum names participate in the type system and can be inspected by a debugger; macros are textual substitutions invisible after preprocessing.
+`'A'` is not a "character object" — it's the `int` value 65. That's why `'0'` through `'9'` being contiguous lets you do `digit - '0'`, and why `'\n'`, `'\t'`, `'\0'` (escape sequences) are just compact ways to write specific byte values. A string constant `"hi"` is different: it's an array of those bytes plus a terminating `'\0'`, stored in read-only memory and represented at use by the address of its first byte.
 
-For "named values that aren't a small enum," `static const int MAX = 100;` works in C99+ and gives proper scoping and types.
+The `#define` and `enum` mechanisms create *named* constants — covered in [Symbolic Constants](lesson.html?id=01-04-symbolic-constants) and the preprocessor section — so magic numbers get meaningful names.
 
-## Try it
-
-1. Print `0123` vs `123`. The first one is octal, the second decimal.
-2. Compute `sizeof("hello")`. The answer should be 6.
-3. Define an enum with an explicit value in the middle: `enum { A, B = 10, C };`. Print all three.
-
-## Notes from the author
-
-- The fact that `'A'` is `int` and not `char` is one of those K&R-era decisions that was sensible at the time and now causes confusion. It's why `sizeof('A')` is 4 (or whatever `sizeof(int)` is on your box), not 1.
-- Adjacent-string concatenation is the cleanest way to write long string literals: each line stays under 80 chars and the compiler joins them. C++ users sometimes use raw string literals; C99 doesn't have them.
-- Watch the octal trap. If you write an IP-like literal `192.168.0.001`, the `001` is a separate token (decimal 1, since it has no operator following), but `0001` in something like an array initialiser would be octal-1, which equals decimal 1 — luckily the same. Try `0x0123` instead; never a surprise.
-
-*Click **next →** to look at the syntax of declarations.*
+## Go deeper
+- [Integer constants](https://en.cppreference.com/w/c/language/integer_constant) — bases, suffixes, and resulting types
+- [Floating constants](https://en.cppreference.com/w/c/language/floating_constant) — decimal vs exponent forms
+- [Escape sequences](https://en.cppreference.com/w/c/language/escape) — `\n`, `\t`, `\0`, `\xHH`, and friends
+- [String literals](https://en.cppreference.com/w/c/language/string_literal) — storage, terminator, and immutability
