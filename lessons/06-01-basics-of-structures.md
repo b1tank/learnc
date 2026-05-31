@@ -8,94 +8,40 @@ next: 06-02-structures-and-functions
 status: done
 ---
 
-A **structure** in C bundles named members of (possibly different) types into one composite. The classical example is a 2-D point:
+A **structure** groups several variables — possibly of different types — into a single named object, laid out as one contiguous block in memory. Where an array is a row of *identical* elements indexed by number, a struct is a bundle of *named* members accessed by the `.` operator. This is how C models real-world records: a point has an `x` and a `y`, a date has a day/month/year, an employee has a name and a salary. The struct is the foundation for every aggregate data type and, ultimately, for how the kernel and libraries describe complex objects to your program.
 
-```c
-struct point {
-    int x;
-    int y;
-};
-```
+## Defining and using a struct
 
-This declares a *type* `struct point`. It does not allocate storage; it tells the compiler "a `struct point` is two `int`s named `x` and `y`".
-
-To create an instance:
-
-```c
-struct point pt;             /* uninitialised */
-struct point origin = {0, 0}; /* member-by-member initialiser */
-pt.x = 3;
-pt.y = 4;
-```
-
-Access members with `.` (dot operator).
-
-```c:starter
+```c:run members, nesting, and dot access
 #include <stdio.h>
 
-struct point {
-    int x;
-    int y;
-};
+struct point { int x, y; };               /* a type: two ints, named */
+struct rect  { struct point lo, hi; };    /* structs nest inside structs */
 
 int main(void) {
-    struct point a = {3, 4};
-    struct point b;
-    b.x = a.x + 1;
-    b.y = a.y - 1;
-    printf("a = (%d, %d)\n", a.x, a.y);
-    printf("b = (%d, %d)\n", b.x, b.y);
+    struct point p = { 3, 4 };            /* initialize members in order */
+    struct rect  r = { {0, 0}, {10, 5} };
+    printf("p = (%d, %d)\n", p.x, p.y);
+    printf("rect area = %d\n", (r.hi.x - r.lo.x) * (r.hi.y - r.lo.y));
+    printf("sizeof(struct point) = %zu\n", sizeof(struct point));
     return 0;
 }
 ```
 
 ```output
-a = (3, 4)
-b = (3, 5)
+p = (3, 4)
+rect area = 50
+sizeof(struct point) = 8
 ```
 
-## Naming: tags vs. types
+`struct point { int x, y; };` declares a *type*, not a variable — it's a template. `struct point p = {3, 4};` then creates an actual object and initializes `x` to 3, `y` to 4 in declaration order. Members are reached with `.`: `p.x`, `r.hi.y`. Structs nest naturally — a `rect` contains two `point`s — and `.` chains: `r.hi.x` means "the `x` of the `hi` of `r`." `sizeof(struct point)` is 8 here: two 4-byte ints laid side by side, with no gaps needed.
 
-The `point` after `struct` is a **tag**. It lets you refer to the type later as `struct point`. The tag is in its own namespace — `struct point` and a variable named `point` don't collide.
+## Memory layout and padding
 
-You can declare and define variables in one go:
+A struct's members are stored *in order*, but the compiler may insert invisible **padding** bytes between them so each member lands on its natural [alignment](https://en.wikipedia.org/wiki/Data_structure_alignment) boundary — most CPUs read a 4-byte `int` fastest when its address is a multiple of 4, and some fault on misaligned access. So `struct { char c; int n; }` is usually **8** bytes, not 5: three padding bytes sit after `c` to align `n`. That's why you should never assume `sizeof(struct)` equals the sum of its members, and why reordering members from largest to smallest can shrink a struct. Two consequences worth remembering: the *first* member always sits at offset 0 (so a pointer to the struct is also a pointer to its first member), and you can't portably compare two structs with `==` — you must compare member by member, because the padding bytes hold indeterminate garbage. The exact layout (offsets, total size) is fixed by the platform's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface), which is what lets your code and the operating system agree on the shape of shared structures.
 
-```c
-struct point { int x; int y; } pt1, pt2;
-```
-
-This declares the type `struct point` AND two variables `pt1`/`pt2`. The tag is optional if you're not going to refer to the type by name later.
-
-## Sizes and alignment
-
-```c
-sizeof(struct point)
-```
-
-returns the storage in bytes. It may be more than the sum of member sizes due to **padding** for alignment. On most 64-bit platforms, two `int`s give `sizeof == 8` with no padding; mixing an `int` and a `double` typically pads to satisfy alignment.
-
-## What you CAN do with a struct
-
-- Assign one struct to another (`a = b;`) — copies all members.
-- Pass to a function (passed by value — the whole struct is copied).
-- Return from a function.
-- Take its address (`&a`).
-- Access a member (`a.x`).
-
-## What you CANNOT do
-
-- Compare with `==` — C doesn't define equality on structs. Compare member-by-member.
-- Hash directly — same reason; no built-in operation.
-
-## Try it
-
-1. Add a `struct rect { struct point ll, ur; };` (lower-left and upper-right corners) and print its dimensions.
-2. Check the value of `sizeof(struct point)` and explain it.
-
-## Notes from the author
-
-- C structs are *plain data*: no methods, no inheritance, no automatic constructors. That's a feature — the layout is exactly what you wrote. C++ added methods and access modifiers; C kept it bare.
-- "Struct assignment copies all members" was added in K&R 2e. Original C couldn't even assign one struct to another — you had to copy member-by-member. Modern C makes this trivial.
-- Padding rules differ by platform. The pragmatic check is `sizeof` and `offsetof` (from `<stddef.h>`); never assume.
-
-*Click **next →** to pass structs to functions.*
+## Go deeper
+- [Structures (C)](https://en.cppreference.com/w/c/language/struct) — declaration, members, initialization
+- [Data structure alignment & padding](https://en.wikipedia.org/wiki/Data_structure_alignment) — why `sizeof` surprises you
+- [`offsetof`](https://en.cppreference.com/w/c/types/offsetof) — query a member's byte offset
+- [Application binary interface](https://en.wikipedia.org/wiki/Application_binary_interface) — who decides the layout
