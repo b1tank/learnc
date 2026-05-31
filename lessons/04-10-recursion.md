@@ -8,100 +8,44 @@ next: ex-4-12
 status: done
 ---
 
-A function that calls itself is *recursive*. C allows it without ceremony — every function in C may call itself or any other function.
+A **recursive** function is one that calls itself. It works because every call gets its own fresh [stack frame](https://en.wikipedia.org/wiki/Call_stack) — its own copies of parameters and locals — so the in-progress calls don't clobber each other. Each call pushes a frame; each return pops one. Recursion suits problems that are naturally *self-similar*: factorial, tree traversal, divide-and-conquer. Two ingredients are mandatory: a **base case** that returns without recursing (or the stack grows forever and you hit [stack overflow](https://en.wikipedia.org/wiki/Stack_overflow)), and a **recursive step** that moves toward that base case.
 
-## A recursive `itoa`
+## Two flavors of self-call
 
-In §3.6 we used a `do`/`while` loop and `reverse(s)` to print integer digits in the right order. Recursion eliminates the reverse step: emit the high-order digits first by recursing before printing.
-
-```c:starter
+```c:run factorial and a countdown
 #include <stdio.h>
 
-void print_digits(int n);
-
-int main(void) {
-    print_digits(0);     printf("\n");
-    print_digits(7);     printf("\n");
-    print_digits(12345); printf("\n");
-    print_digits(-42);   printf("\n");
-    return 0;
+long fact(int n) {
+    if (n <= 1) return 1;           /* base case: stop recursing */
+    return n * fact(n - 1);         /* recursive step: shrink n */
 }
 
-void print_digits(int n) {
-    if (n < 0) {
-        putchar('-');
-        n = -n;          /* leaves INT_MIN as a known bug; see §3-4 */
-    }
-    if (n / 10 != 0)
-        print_digits(n / 10);   /* recurse first */
-    putchar(n % 10 + '0');      /* then print our digit */
+void countdown(int n) {
+    if (n == 0) { printf("liftoff\n"); return; }   /* base case */
+    printf("%d ", n);
+    countdown(n - 1);               /* tail call: nothing happens after it */
+}
+
+int main(void) {
+    printf("5! = %ld\n", fact(5));
+    countdown(3);
+    return 0;
 }
 ```
 
 ```output
-0
-7
-12345
--42
+5! = 120
+3 2 1 liftoff
 ```
 
-Each call handles **one digit**: the most significant decimal digit on the way *down* the call stack, the rest emitted by deeper calls. As the recursion unwinds, the digits come out left-to-right.
+Trace `fact(5)`: it suspends waiting on `fact(4)`, which waits on `fact(3)`, down to `fact(1)` which returns 1 — then the stack *unwinds*, each frame multiplying its `n` on the way out: `1→2→6→24→120`. Five frames were live at the deepest point, each holding its own `n`. `countdown` is a **tail-recursive** function: the recursive call is the very last thing it does, so there's no pending work to return to.
 
-## When recursion shines
+## What it costs, and the iteration trade-off
 
-- **Tree-shaped data**: parsers, file system walkers, AST evaluators, expression evaluators.
-- **Divide-and-conquer**: quicksort, mergesort, binary search.
-- **Naturally recursive math**: factorial, Fibonacci, Ackermann, GCD.
+Recursion isn't free: every call consumes a stack frame, and the stack is finite (often a few MB). Recurse a million deep on `fact` and you'll overflow the stack and crash — whereas an iterative `for` loop computing the same factorial uses **one** frame and no such limit. So anything *naturally* iterative (summing an array, a simple counter) should be a loop; reach for recursion when the problem itself is recursive and the code is dramatically clearer (parsing, trees, graph search). For tail-recursive functions like `countdown`, optimizing compilers can perform **tail-call optimization** — reusing the single frame instead of stacking new ones — turning the recursion into a loop under the hood at `-O2`. Even so, C doesn't *guarantee* TCO, so don't rely on it for unbounded depth.
 
-In each case, the recursive structure mirrors the data or algorithm structure, and the code reads close to the math.
-
-## The cost of recursion
-
-Each call consumes a stack frame: space for parameters, return address, and locals. The OS gives you a fixed-size stack (typically 1–8 MB). Recursing 100,000 levels deep will overflow it and your program crashes.
-
-Two strategies:
-
-1. **Bound the depth.** For balanced trees and divide-and-conquer, depth is `O(log n)` — safe even for huge inputs.
-2. **Tail recursion / convert to iteration.** If the recursive call is the *last* thing the function does, the compiler can sometimes replace it with a jump, reusing the same stack frame ("tail-call optimisation"). GCC/Clang do this with `-O2` for plain recursive tail calls. Not guaranteed by the standard, so for production code where stack depth is unbounded, convert to a `while` loop explicitly.
-
-## Quicksort sketch
-
-```c
-void quicksort(int v[], int lo, int hi) {
-    if (lo >= hi) return;
-    int pivot = v[lo + (hi - lo) / 2];
-    int i = lo, j = hi;
-    while (i <= j) {
-        while (v[i] < pivot) ++i;
-        while (v[j] > pivot) --j;
-        if (i <= j) {
-            int tmp = v[i]; v[i] = v[j]; v[j] = tmp;
-            ++i; --j;
-        }
-    }
-    quicksort(v, lo, j);
-    quicksort(v, i, hi);
-}
-```
-
-Two recursive calls each shrink the work by half (on average). Depth is `O(log n)` for random inputs but `O(n)` for already-sorted inputs (worst case) — a classic gotcha that motivates "randomised pivot" or median-of-three pivot selection.
-
-## Modern note
-
-- **Stack overflow is undetectable** in pure standard C. Linux/macOS will SEGV, Windows will crash differently. Tools like AddressSanitizer can detect it; for production code with unknown input sizes, prefer iteration or hand-rolled stack allocation.
-- **Indirect recursion** — `f` calls `g` calls `f` — also counts. The compiler can analyse it but can't eliminate it as cleanly as direct tail calls.
-- For complex recursive algorithms, instrumenting `printf("depth=%d\n", depth)` at the top is the simplest debugging trick. Most real recursion bugs are "I forgot a base case" or "I'm not making progress".
-
-## Try it
-
-1. Write a recursive `int factorial(int n)`. Test it for `n=10`, `n=20`. Notice it overflows `int` around `n=12`; use `long long` (or `uint64_t`) for larger ranges.
-2. Implement `int gcd(int a, int b)` using Euclid's algorithm: `gcd(a, b) = gcd(b, a%b)`, with `gcd(a, 0) = a`. Two lines, one recursive call.
-3. Convert `print_digits` to iteration without using a reverse step. Hint: compute the highest power of 10 ≤ n first, then peel digits from the high end. Compare readability — the recursive version is shorter and clearer.
-
-## Notes from the author
-
-- The "recurse first, print after" pattern in `print_digits` is the classical example of using recursion to *reverse* the order of operations without an explicit data structure. The call stack IS the reverse-storage.
-- Tail recursion is a beautiful concept that the C standard doesn't quite specify. GCC and Clang try hard but it's not portable. For real "infinite-depth-safe" recursive code, write iteratively.
-- Many recursive functions (especially Fibonacci) have exponential time complexity due to recomputation. Memoisation or dynamic programming fixes it but is a separate topic. The recursion *itself* isn't slow; the *redundant work* is.
-
-*Click **next →** for the C preprocessor — the final piece of Chapter 4.*
+## Go deeper
+- [Recursion (computer science)](https://en.wikipedia.org/wiki/Recursion_(computer_science)) — base case, recursive step
+- [Call stack](https://en.wikipedia.org/wiki/Call_stack) — the frames that make it work
+- [Tail call](https://en.wikipedia.org/wiki/Tail_call) — when recursion costs no extra frame
+- [Stack overflow](https://en.wikipedia.org/wiki/Stack_overflow) — what unbounded recursion hits
