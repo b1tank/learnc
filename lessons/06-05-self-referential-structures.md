@@ -8,138 +8,43 @@ next: ex-6-2
 status: done
 ---
 
-A **self-referential structure** contains pointers to its own type. This unlocks linked lists, trees, and graphs. The classic example is a binary tree of words:
+A structure can contain a **pointer to its own type** — `struct node { int val; struct node *next; };`. A struct can't contain *itself* by value (that would be infinitely large), but it can hold a pointer to another struct of the same kind. This single idea is the foundation of every **linked data structure**: linked lists, binary trees, graphs. Instead of storing elements in one contiguous block like an array, you scatter individual nodes anywhere in memory and thread them together by address, which makes inserting and deleting cheap.
 
-```c
-struct tnode {
-    const char  *word;
-    int          count;
-    struct tnode *left;
-    struct tnode *right;
-};
-```
+## Building a linked list
 
-The struct refers to itself **through a pointer**, never by value. A struct can't contain an instance of itself (that would be infinite recursion in the layout), but it can hold a pointer to one.
-
-## A word-counter binary tree
-
-```c:starter
+```c:run nodes linked by self-pointers
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 
-struct tnode {
-    const char   *word;
-    int           count;
-    struct tnode *left;
-    struct tnode *right;
-};
-
-static struct tnode *addtree(struct tnode *p, const char *w);
-static void          treeprint(struct tnode *p);
+struct node { int val; struct node *next; };   /* points to its own type */
 
 int main(void) {
-    /* feed a few sample words */
-    const char *words[] = { "now", "is", "the", "time", "for", "all",
-                            "good", "men", "to", "the", "is", "now", NULL };
-    struct tnode *root = NULL;
-    for (int i = 0; words[i]; ++i)
-        root = addtree(root, words[i]);
-    treeprint(root);
+    struct node *head = NULL;                   /* empty list */
+    for (int i = 3; i >= 1; i--) {              /* prepend 3, then 2, then 1 */
+        struct node *n = malloc(sizeof *n);     /* allocate one node */
+        n->val  = i;
+        n->next = head;                         /* link it in front */
+        head    = n;                            /* it becomes the new head */
+    }
+    for (struct node *p = head; p; p = p->next) /* walk until NULL */
+        printf("%s%d", p == head ? "" : " -> ", p->val);
+    printf("\n");
     return 0;
 }
-
-static struct tnode *talloc(void) {
-    return malloc(sizeof(struct tnode));
-}
-
-static struct tnode *addtree(struct tnode *p, const char *w) {
-    if (p == NULL) {
-        p = talloc();
-        p->word  = strdup(w);
-        p->count = 1;
-        p->left  = p->right = NULL;
-    } else {
-        int cond = strcmp(w, p->word);
-        if      (cond == 0) p->count++;
-        else if (cond  < 0) p->left  = addtree(p->left,  w);
-        else                p->right = addtree(p->right, w);
-    }
-    return p;
-}
-
-static void treeprint(struct tnode *p) {
-    if (p != NULL) {
-        treeprint(p->left);
-        printf("%4d %s\n", p->count, p->word);
-        treeprint(p->right);
-    }
-}
 ```
 
 ```output
-   1 all
-   1 for
-   1 good
-   2 is
-   1 men
-   2 now
-   1 the
-   1 the
-   1 time
-   1 to
+1 -> 2 -> 3
 ```
 
-Wait — "the" appears twice because we added "the" twice but the dedup logic should have caught it... Let me re-check. Actually the output should be `2 the`, `2 is`, `2 now`. The output above had an extra "the" — that was a typo. The correct output is dedup'd.
+Each `malloc(sizeof *n)` carves a fresh node out of the [heap](https://en.wikipedia.org/wiki/Memory_management#HEAP) and returns its address. Prepending is two pointer assignments: point the new node's `next` at the current head, then make the new node the head — O(1), no shifting of other elements. Traversal is the canonical idiom `for (p = head; p != NULL; p = p->next)`: follow the chain of `next` pointers until you hit the `NULL` that marks the end. The list prints `1 -> 2 -> 3` because we prepended in the order 3, 2, 1. Note `sizeof *n` (the size of the *pointed-to* node) is the idiomatic argument to `malloc` — it stays correct even if the struct type changes.
 
-```output
-   1 all
-   1 for
-   1 good
-   2 is
-   1 men
-   2 now
-   2 the
-   1 time
-   1 to
-```
+## Why linked, and what it costs
 
-## Why it works
+Linked structures trade away the array's strengths for different ones. Inserting or deleting in the middle of a linked list is O(1) once you hold the spot (just rewire two pointers) — no mass shifting — and the structure can grow one node at a time without ever reallocating and copying the whole thing. The price: you **lose random access** (reaching the i-th element means walking i links, O(n)), each node costs an extra pointer of memory, and the nodes are scattered across the heap rather than packed contiguously, so traversal suffers more [cache misses](https://en.wikipedia.org/wiki/CPU_cache) than marching through an array. There's also a responsibility arrays-on-the-stack don't have: every `malloc` must eventually be matched by a `free`, or the program **leaks memory** — for a list you free node by node, capturing `next` *before* freeing each node (freeing first would leave you holding a dangling pointer). Self-referential structs generalize directly: give a node *two* child pointers and you have a binary tree; give it a list of pointers and you have a graph.
 
-- An empty tree is `NULL` (a null pointer). The base case for recursion.
-- Insertion descends left or right based on string comparison; equal words bump `count`.
-- In-order traversal (`left`, self, `right`) prints alphabetically.
-
-The recursive structure mirrors the tree structure exactly. This is one of those moments where C's pointer types fit the problem perfectly.
-
-## Memory management
-
-Each `talloc` is a `malloc`. To free the whole tree:
-
-```c
-void treefree(struct tnode *p) {
-    if (p) {
-        treefree(p->left);
-        treefree(p->right);
-        free((char *)p->word);    /* strdup'd, free it */
-        free(p);
-    }
-}
-```
-
-Post-order traversal — free children before the parent.
-
-## Try it
-
-1. Add `treesize(p)` returning the number of distinct words.
-2. Modify the tree to print in reverse order (largest first by count, not alphabetic).
-3. What happens if the input is already sorted? (Hint: degenerate tree, `O(n²)` insertion.)
-
-## Notes from the author
-
-- "Struct holds pointers to itself" is the building block for every dynamic data structure. Lists, trees, hash tables with chaining, graphs — all rely on it.
-- Binary search trees degenerate to linked lists on sorted input. Real-world structures use balancing (AVL, red-black) or skip lists. K&R's plain BST is teaching code, not production code.
-- Recursion is the natural way to *use* a recursive structure. Iterative tree walks exist but require an explicit stack — usually less clear than the recursion.
-
-*Click **next →** for hash-table lookup.*
+## Go deeper
+- [Linked list](https://en.wikipedia.org/wiki/Linked_list) — operations and trade-offs
+- [`malloc`/`free`](https://en.cppreference.com/w/c/memory/malloc) — heap allocation
+- [Memory leak](https://en.wikipedia.org/wiki/Memory_leak) — the cost of forgetting `free`
+- [The heap](https://en.wikipedia.org/wiki/Manual_memory_management) — where nodes live
