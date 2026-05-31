@@ -328,6 +328,10 @@ button.primary {
 button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); filter: none; }
 button.primary:active { filter: brightness(0.92); }
 
+/* Tertiary toolbar actions (reset, share) — compact and quiet. */
+.runner-bar button.ghost { padding: 0.2rem 0.6rem; color: var(--muted); }
+.runner-bar button.ghost:hover { color: var(--fg); }
+
 /* Editor: light mode falls through to CodeMirror's default white; in dark
    mode the oneDark extension applies its own background. */
 .editor { min-height: 8em; }

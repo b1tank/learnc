@@ -398,6 +398,12 @@ function buildRunnable(block) {
 
   var bar = el("div", { class: "runner-bar" }, []);
   bar.appendChild(el("span", { class: "title" }, [block.title || "main.c"]));
+  var resetBtn = el("button", { type: "button", class: "ghost",
+    title: "Restore the original code" }, ["reset"]);
+  bar.appendChild(resetBtn);
+  var shareBtn = el("button", { type: "button", class: "ghost",
+    title: "Copy this snippet to the clipboard" }, ["share"]);
+  bar.appendChild(shareBtn);
   var runBtn = el("button", { type: "button", class: "primary" }, ["run"]);
   bar.appendChild(runBtn);
   root.appendChild(bar);
@@ -420,6 +426,32 @@ function buildRunnable(block) {
 
   runBtn.addEventListener("click", function () {
     compileAndRun(api.getValue(), term, badge, block.expected, runBtn);
+  });
+
+  // Reset restores the original code shipped with the lesson. No confirm
+  // prompt: inline drafts aren't persisted, so a stray click costs nothing.
+  resetBtn.addEventListener("click", function () {
+    api.setValue(block.code);
+    api.focus();
+  });
+
+  // Share copies the *current* editor contents to the clipboard. Inline blocks
+  // aren't tied to a URL (a page has many), so a copy-the-code share is the
+  // unambiguous, link-rot-free thing to hand to someone else.
+  shareBtn.addEventListener("click", function () {
+    var code = api.getValue();
+    var orig = shareBtn.textContent;
+    var done = function () {
+      shareBtn.textContent = "copied!";
+      setTimeout(function () { shareBtn.textContent = orig; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done, function () {
+        prompt("Copy this code:", code);
+      });
+    } else {
+      prompt("Copy this code:", code);
+    }
   });
 
   return { element: root, setDark: api.setDark };
