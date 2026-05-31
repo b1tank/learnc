@@ -8,124 +8,53 @@ next: 07-06-error-handling-stderr-and-exit
 status: done
 ---
 
-The standard streams (`stdin`, `stdout`, `stderr`) are convenient, but real programs read and write arbitrary files. The tool is the `FILE *` and the function pair `fopen`/`fclose`.
+So far our programs only touched `stdin` and `stdout`. To work with *named files* you open your own streams. `fopen(name, mode)` asks the operating system to open a file and hands back a `FILE *` — an opaque pointer to the library's bookkeeping for that stream (its buffer, current position, and the underlying file descriptor). Every later call (`fgetc`, `fputc`, `fprintf`, `fscanf`, `fgets`) takes that `FILE *` as its first or last argument. When done you `fclose` it, which flushes the buffer and releases the descriptor. The three standard streams are simply pre-opened `FILE *`s — and that means the `stdin` your shell handed you behaves exactly like a file you opened yourself.
 
-```c
-FILE *fp = fopen("data.txt", "r");
-if (!fp) {
-    perror("fopen");
-    return 1;
-}
-/* ... read or write through fp ... */
-fclose(fp);
-```
+## A stream is a stream — copying stdin to stdout
 
-## Mode strings
-
-| Mode  | Action                                                    |
-|-------|-----------------------------------------------------------|
-| `"r"` | open existing file for reading                             |
-| `"w"` | create / truncate file for writing                          |
-| `"a"` | open file for appending (creates if missing)               |
-| `"r+"`| open for reading AND writing (must exist)                  |
-| `"w+"`| create / truncate for reading AND writing                  |
-| `"a+"`| open for read + append                                      |
-| append `b` | binary mode (`"rb"`, `"wb+"`, etc.) — only matters on Windows |
-
-Always check `fopen` for `NULL`. The most common failure modes:
-
-- File doesn't exist (mode `"r"`).
-- No permission.
-- Path traversal you didn't expect (`"/etc/shadow"`).
-
-## A file-copy program
-
-```c:starter
+```c:run treat stdin/stdout as the FILE* streams they are
 #include <stdio.h>
-#include <stdlib.h>
 
-static int copy_file(const char *src, const char *dst) {
-    FILE *in  = fopen(src, "rb");
-    if (!in) { perror(src); return 1; }
-    FILE *out = fopen(dst, "wb");
-    if (!out) { perror(dst); fclose(in); return 1; }
-
-    char buf[4096];
-    size_t n;
-    while ((n = fread(buf, 1, sizeof buf, in)) > 0) {
-        if (fwrite(buf, 1, n, out) != n) {
-            perror("fwrite");
-            fclose(in); fclose(out);
-            return 1;
-        }
+int main(void) {
+    int c, lines = 0;
+    while ((c = getc(stdin)) != EOF) {  /* getc works on any FILE*  */
+        putc(c, stdout);                /* ...so does putc          */
+        if (c == '\n') lines++;
     }
-    if (ferror(in)) { perror("fread"); fclose(in); fclose(out); return 1; }
-
-    fclose(in);
-    if (fclose(out) != 0) { perror("close out"); return 1; }
+    fprintf(stdout, "[copied %d lines]\n", lines);   /* fprintf to a stream */
     return 0;
 }
+```
 
-int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "usage: %s SRC DST\n", argv[0]);
-        return 1;
-    }
-    return copy_file(argv[1], argv[2]);
-}
+```stdin
+alpha
+beta
 ```
 
 ```output
-(awaits CLI args)
+alpha
+beta
+[copied 2 lines]
 ```
 
-Run it: `./cp infile outfile`.
+`getc(stdin)` and `putc(c, stdout)` are the general forms of `getchar()`/`putchar()` — the latter are just shorthands fixed to the standard streams. `fprintf(stdout, …)` is `printf` aimed at an explicit stream. The point of this example is that **nothing about the code changes** when the stream is a file you opened versus a standard stream: the same functions operate on any `FILE *`. (Real file I/O with `fopen` needs a filesystem, which this in-browser WASM sandbox doesn't provide, so we demonstrate with `stdin` — itself a perfectly good stream.)
 
-## `fread` / `fwrite` — binary I/O
+## The fopen/fclose lifecycle and what's underneath
+
+With a real filesystem the pattern is always the same shape:
 
 ```c
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *fp);
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *fp);
+FILE *fp = fopen("data.txt", "r");      /* "r" read, "w" write, "a" append, + "b" binary */
+if (fp == NULL) { perror("data.txt"); return 1; }   /* ALWAYS check for NULL */
+int c;
+while ((c = getc(fp)) != EOF) putc(c, stdout);
+fclose(fp);                              /* flush buffer, release the fd */
 ```
 
-- `size` = bytes per element.
-- `nmemb` = number of elements.
-- Returns: actual number of *elements* read/written.
+The mode string is essential: `"r"` reads an existing file, `"w"` creates/**truncates** for writing (it destroys existing contents!), `"a"` appends, and a `+` adds the other direction; append a `b` for binary on systems that distinguish text mode. `fopen` returns `NULL` on failure — file missing, no permission, too many open files — and you must check it, because using a `NULL` `FILE *` crashes. Underneath, `fopen` performs the [`open(2)`](https://man7.org/linux/man-pages/man2/open.2.html) system call to get a small integer **file descriptor** from the kernel, then wraps it in a buffered `FILE`. That buffering is why `fclose` (or `fflush`) matters: written bytes may sit in the library's buffer and only reach the disk when the buffer fills, you flush, or you close — forget to close and you can lose the tail of your output. Descriptors are a finite resource, so every `fopen` should be paired with an `fclose`. This `FILE *` layer is the *portable, buffered* face of the kernel's raw, unbuffered [file-descriptor I/O](08-01-file-descriptors.md) you'll meet in the next chapter.
 
-The two-argument design is for arrays of structures: `fread(arr, sizeof(struct foo), 100, fp)`. For raw byte I/O, set `size = 1` and `nmemb` to your buffer size.
-
-## Other reads
-
-| Function                            | Use                                  |
-|-------------------------------------|--------------------------------------|
-| `fgetc(fp)`                          | one byte (returns `int`, `EOF` on end) |
-| `fgets(buf, n, fp)`                   | one line (up to `n-1` bytes, includes `\n`) |
-| `fread(buf, sz, n, fp)`              | binary block                            |
-| `fscanf(fp, "%d", &x)`               | parse like `scanf`                       |
-
-| Function                            | Use                                  |
-|-------------------------------------|--------------------------------------|
-| `fputc(c, fp)`                       | one byte                                |
-| `fputs(s, fp)`                        | a string (no trailing newline)          |
-| `fwrite(buf, sz, n, fp)`             | binary block                            |
-| `fprintf(fp, "%d\n", x)`             | format like `printf`                    |
-
-## Always close
-
-Forgetting `fclose` leaks the file descriptor AND may lose buffered data (`stdout`-style buffering). On exit, the runtime flushes and closes; but a long-running program that doesn't `fclose` will eventually exhaust descriptors (`Too many open files`).
-
-`fclose` itself can fail — most commonly when its buffered data couldn't be written (disk full). Always check the return.
-
-## Try it
-
-1. Modify `copy_file` to also count bytes copied and print a summary.
-2. Try copying a file to itself (`./cp x x`). What happens? Why?
-3. Replace the buffer with `getline` + `fputs` and compare performance.
-
-## Notes from the author
-
-- The `FILE *` abstraction predates Unix's "everything is a file descriptor" model — it's a level above `read`/`write` system calls. The C runtime handles buffering; the OS handles the actual I/O.
-- For very large files or streaming data, `fread`/`fwrite` in a fixed buffer is the fast path. Line-based `fgets` is great for text but slower for binary.
-- `freopen` re-opens an existing stream with a different file or mode. `freopen("log.txt", "w", stdout)` makes all `printf` go to `log.txt` — useful for redirecting output without changing every call.
-
-*Click **next →** for error handling.*
+## Go deeper
+- [`fopen` / `fclose`](https://en.cppreference.com/w/c/io/fopen) — opening and closing streams
+- [`fopen(3)`](https://man7.org/linux/man-pages/man3/fopen.3.html) — modes and semantics
+- [File descriptor](https://en.wikipedia.org/wiki/File_descriptor) — the kernel handle under a `FILE *`
+- [`open(2)`](https://man7.org/linux/man-pages/man2/open.2.html) — the syscall `fopen` calls
