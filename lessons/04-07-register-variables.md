@@ -8,36 +8,19 @@ next: 04-08-block-structure
 status: done
 ---
 
-`register` was a hint to the compiler that a variable would be used heavily and should, if possible, live in a CPU register rather than memory.
+`register` is a **hint** to the compiler: "this variable is used so heavily, try to keep it in a [CPU register](https://en.wikipedia.org/wiki/Processor_register) instead of [main memory](https://en.wikipedia.org/wiki/Random-access_memory)." Registers are the fastest storage a processor has — a handful of slots right inside the CPU — so a hot loop counter living in a register avoids a memory round-trip on every iteration. The one hard rule the keyword enforces: you may **not** take the address (`&`) of a `register` variable, because a value in a register has no memory address.
 
-```c
-register int i;
-for (i = 0; i < n; ++i) {
-    /* tight loop */
-}
-```
+## A hint, not a command
 
-In 1978 (and well into the 1990s) this was a meaningful optimisation hint — compilers were primitive, and humans could often pick register-friendly variables better than the compiler's register allocator could.
-
-## Why it's largely obsolete now
-
-Modern C compilers (GCC, Clang, MSVC) all use sophisticated register-allocation algorithms — usually some flavour of graph colouring or linear-scan allocation. They look at *every* variable in scope and pick the best registers globally. A single `register` hint is just noise.
-
-The standard still mandates one effect: **you cannot take the address of a `register` variable**. `&i` where `i` is `register` is a compile error. That's the only behaviour difference today.
-
-```c:starter
+```c:run register-qualified loop counter
 #include <stdio.h>
 
-int sum_to(int n) {
-    register int sum = 0;       /* hint: keep in register if you can */
-    register int i;
-    for (i = 1; i <= n; ++i)
-        sum += i;
-    return sum;
-}
-
 int main(void) {
-    printf("sum 1..100 = %d\n", sum_to(100));
+    register int i;             /* "keep i in a register if you can" */
+    long sum = 0;
+    for (i = 1; i <= 100; i++)
+        sum += i;
+    printf("sum 1..100 = %ld\n", sum);
     return 0;
 }
 ```
@@ -46,36 +29,14 @@ int main(void) {
 sum 1..100 = 5050
 ```
 
-The compiler will produce the same code with or without the `register` keywords on any non-trivial target.
+Functionally this is identical to a plain `int i` — the result is the same; `register` only *suggests* faster placement. Crucially, the compiler is free to ignore it, and on any modern compiler it *does* ignore it: optimizers already perform [register allocation](https://en.wikipedia.org/wiki/Register_allocation) far better than a human annotation could, deciding per-region which variables live in which registers. So in practice `register` changes nothing about the generated code at `-O2`.
 
-## When (if ever) to use it
+## Why it's effectively obsolete
 
-- **Never** for performance reasons in new code. Trust the compiler.
-- **Sometimes** as a "don't let me accidentally take the address of this" hint. If you mark a hot-loop counter `register`, you cannot accidentally `&i` it.
-- **In documentation** of intent. Reading `register int i` in a tight loop signals "I cared about this being in a register". For some style guides that's worth it; for most it's archaic.
+The keyword dates to the 1970s, when compilers were simple and a programmer's hint genuinely helped. Today its only observable effect is the `&`-is-forbidden restriction; for performance it's dead weight, and C++17 even removed it from that language. Treat it as historical: understand what it *meant* (a placement hint reflecting the CPU/memory speed gap) so you recognize it in old code, but don't reach for it — write clear code and let the optimizer allocate registers. If you ever want to *see* register allocation happen, compile with optimization and read the assembly on [Compiler Explorer](https://godbolt.org/).
 
-C++17 *deprecated* `register`. C23 has discussed it but the keyword survives as a no-op-with-address-restriction.
-
-## Modern note
-
-If you want to coerce a value into a register today:
-
-- Make the function `static inline` and let the compiler inline it.
-- Use `restrict`-qualified pointers (C99) to let the compiler skip aliasing analysis.
-- Compile with `-O2` or `-O3` and check the disassembly. The compiler probably did exactly what you wanted.
-
-If you have a hot loop, profile first. Often the bottleneck is memory bandwidth or cache misses, not register usage.
-
-## Try it
-
-1. Compile `sum_to` above with `-O0`, `-O1`, `-O2`. Inspect the assembly (`gcc -S -O2 -o - file.c`). Notice that with `-O2` the function is fully inlined and `register` makes no difference.
-2. Try `int *p = &i;` for a `register int i` variable. Read the error.
-3. Look at the disassembly of a Linux kernel function. Kernel code uses `register` for ABI-pinning specific variables to specific registers (e.g. `register unsigned long r3 asm("r3")` in PowerPC) — that's a GCC extension, not standard C.
-
-## Notes from the author
-
-- `register` is one of those keywords every C tutorial covers but almost no modern code uses. Read it as "historical context"; don't add it to new code.
-- The "no address-of" restriction is the only modern reason to write `register`. It can serve as a "this is a pure value, don't pointer-alias me" marker, but `restrict` and `const` cover that ground better.
-- Modern register allocators are good enough that micro-optimisation at the C level rarely beats `-O2`. The lesson generalises: write clear code, profile, and only intervene where the profiler points.
-
-*Click **next →** for block structure and shadowing.*
+## Go deeper
+- [`register` storage class (C)](https://en.cppreference.com/w/c/language/storage_duration) — the hint and its one rule
+- [Register allocation](https://en.wikipedia.org/wiki/Register_allocation) — what the compiler does instead
+- [Processor register](https://en.wikipedia.org/wiki/Processor_register) — the hardware being hinted at
+- [Compiler Explorer](https://godbolt.org/) — watch variables land in registers
