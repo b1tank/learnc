@@ -8,93 +8,50 @@ next: ex-2-9
 status: done
 ---
 
-`=` is the basic assignment. For every binary arithmetic or bitwise operator, C also provides a **compound** form:
+In C, **assignment is an expression**, not just a statement — `x = 5` has a value (5) as well as the side effect of storing it. That's what lets you write `a = b = c = 0` (assignment is right-associative) or fold an assignment into a condition like `while ((c = getchar()) != EOF)`. C also offers compound assignment operators — `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=` — where `x op= y` means `x = x op (y)`, evaluating `x` only once.
 
-`+=`  `-=`  `*=`  `/=`  `%=`  `<<=`  `>>=`  `&=`  `^=`  `|=`
+## Compound assignment in action
 
-```c
-x += 3;     /* same as x = x + 3 */
-y *= 2;     /* same as y = y * 2 */
-flags |= MASK;
-n &= ~MASK;
-```
-
-## Why they matter beyond brevity
-
-- They evaluate the left-hand expression **once**. With `arr[expensive_index()] += 1`, the index is computed only one time. The plain rewrite `arr[expensive_index()] = arr[expensive_index()] + 1` would compute it twice.
-- They communicate intent: `total += x` reads as "accumulate x into total."
-- For multi-byte left sides (struct fields, indexed array elements), they're often the only ergonomic form.
-
-## Assignment is an expression
-
-C's assignment **returns the value being stored**. So `x = y = z = 0` parses right-to-left: `z = 0` returns `0`, then `y = 0`, then `x = 0`. All three get zero.
-
-This is why the read-loop idiom works:
-
-```c
-int c;
-while ((c = getchar()) != EOF) { ... }
-```
-
-`c = getchar()` is itself an expression with the value `getchar()` returned. The surrounding `!= EOF` then tests that value. Without assignment-as-expression you'd need to read twice or use an extra variable.
-
-```c:starter
+```c:run op-assign and a bit-count trick
 #include <stdio.h>
 
+/* count 1-bits by clearing the lowest set bit each pass: x &= (x-1) */
+int bitcount(unsigned x) {
+    int n = 0;
+    while (x != 0) {
+        x &= (x - 1);   /* turn off the rightmost 1 */
+        n++;
+    }
+    return n;
+}
+
 int main(void) {
-    int total = 0;
-    for (int i = 1; i <= 10; ++i)
-        total += i;
-    printf("sum 1..10 = %d\n", total);
-
-    /* multi-assign chain */
-    int a, b, c;
-    a = b = c = 7;
-    printf("a=%d b=%d c=%d\n", a, b, c);
-
-    /* assignment as expression in a condition */
-    int n;
-    /* On real input this reads until EOF; for the embedded demo we
-       just initialise and stop. */
-    n = 42;
-    if ((n = n + 1) > 0)
-        printf("after increment, n = %d\n", n);
-
+    int n = 10;
+    n += 5;  printf("n += 5 -> %d\n", n);
+    n *= 2;  printf("n *= 2 -> %d\n", n);
+    n >>= 1; printf("n >>= 1 -> %d\n", n);
+    printf("bitcount(0xF0) = %d\n", bitcount(0xF0));
+    printf("bitcount(255)  = %d\n", bitcount(255));
     return 0;
 }
 ```
 
 ```output
-sum 1..10 = 55
-a=7 b=7 c=7
-after increment, n = 43
+n += 5 -> 15
+n *= 2 -> 30
+n >>= 1 -> 15
+bitcount(0xF0) = 4
+bitcount(255)  = 8
 ```
 
-## Don't accidentally test an assignment
+`x &= (x - 1)` is a beautiful piece of bit lore: subtracting 1 flips the lowest set bit to 0 and all bits below it to 1, so ANDing clears exactly that one bit. The loop runs once per set bit, making `bitcount` proportional to the number of 1s, not the word width. (Kernighan's algorithm — the same Kernighan as K&R.)
 
-The classic typo:
+## Why compound assignment exists
 
-```c
-if (x = 0) ...   /* assigns 0, then tests 0; branch never taken */
-if (x == 0) ...  /* equality test */
-```
+Beyond brevity, `x op= y` evaluates the left-hand side **once**. That's not just tidier — it's *correct* when the left side has side effects or is expensive: `table[hash(key)] += 1` computes the slot a single time, whereas `table[hash(key)] = table[hash(key)] + 1` calls `hash` twice and may even index a different slot if `hash` isn't pure. The compiler also gets a cleaner picture for optimization. Treat `+=` and friends as the default; spell out `x = x + y` only when clarity demands it.
 
-Modern compilers warn at `-Wall`. The "Yoda comparison" style — `if (0 == x)` — protects against the typo because `0 = x` won't compile. Some teams require it; most prefer to lean on `-Werror`.
-
-## Modern note
-
-Compound operators interact well with explicitly-sized types: `uint32_t value; value |= flag_bit;` keeps the result in the same width. Use them throughout numeric code — they're not just syntactic sugar.
-
-## Try it
-
-1. Rewrite the §1.5 character counter with `++nc` replaced by `nc += 1`. Identical machine code, slightly different reading rhythm.
-2. Use `total *= 2;` inside a loop to double a value 10 times. Watch it overflow `int` (around iteration 31 from `1`).
-3. Chain assignments: `a = b = c = readNumber();`. The function is called once; all three variables share the value.
-
-## Notes from the author
-
-- The "evaluates the LHS once" property is the **most underrated** reason to prefer compound forms. Once you've debugged a `arr[get_idx()] = arr[get_idx()] + 1` bug where the index function had side effects, you never write it the long way again.
-- "Assignment is an expression" is a C-family characteristic. Some newer languages (Python, Rust, Swift) deliberately make assignment a statement to prevent the `if (x = 0)` bug. C's tradeoff: more expressive, requires more care.
-- The chained `a = b = c = 0` works because of right-to-left associativity. Don't confuse it with **comma expressions** `a = 0, b = 0, c = 0`, which use the comma operator and have left-to-right evaluation.
-
-*Click **next →** to write conditional expressions with `?:`.*
+## Go deeper
+- [Assignment operators (C)](https://en.cppreference.com/w/c/language/operator_assignment) — simple and compound forms
+- [Expressions vs statements](https://en.wikipedia.org/wiki/Expression_(computer_science)) — why `a = b = c` works
+- [Kernighan's bit-count](https://en.wikipedia.org/wiki/Hamming_weight) — counting set bits efficiently
+- [lvalues and rvalues](https://en.cppreference.com/w/c/language/value_category) — what can appear on the left of `=`
