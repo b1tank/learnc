@@ -80,17 +80,61 @@ function parseFrontmatter(text) {
   return { meta: meta, body: m[2] };
 }
 
+// Pull out the legacy single bottom-runner starter (```c:starter```) and its
+// expected output (```output```). Only the FIRST output fence is consumed —
+// and only when a starter exists — so that lessons built on the newer inline
+// `c:run` blocks (which use their own ```output``` fences) keep theirs intact.
 function extractFences(markdown) {
   var starterMatch = markdown.match(/```c:starter\r?\n([\s\S]*?)```/);
+  if (!starterMatch) {
+    // No bottom playground. Leave everything (including any c:run / output
+    // fences) in the body for the inline runnable renderer below.
+    return { starter: null, expected: null, body: markdown };
+  }
   var expectedMatch = markdown.match(/```output\r?\n([\s\S]*?)```/);
   var cleaned = markdown
-    .replace(/```c:starter\r?\n[\s\S]*?```\r?\n?/g, "")
-    .replace(/```output\r?\n[\s\S]*?```\r?\n?/g, "");
+    .replace(/```c:starter\r?\n[\s\S]*?```\r?\n?/, "")
+    .replace(/```output\r?\n[\s\S]*?```\r?\n?/, "");
   return {
     starter: starterMatch ? starterMatch[1].replace(/\r?\n$/, "") : null,
     expected: expectedMatch ? expectedMatch[1].replace(/\r?\n$/, "") : null,
     body: cleaned
   };
+}
+
+// Inline runnable blocks. A lesson can embed any number of self-contained,
+// editable, runnable C programs with the fence:
+//
+//   ```c:run optional title here
+//   ...full C program...
+//   ```
+//   ```output            <- optional; enables a pass/fail badge
+//   ...expected stdout...
+//   ```
+//
+// We pre-parse these out of the markdown BEFORE marked runs (marked drops
+// everything after the first word of an info string, so a title couldn't
+// survive in the class name) and swap each for a placeholder <div> that the
+// inline renderer fills in after the prose is in the DOM.
+function extractRunnables(markdown) {
+  var blocks = [];
+  // Match one `c:run` fence, then an OPTIONAL `output` fence right after it.
+  // The output must be optional within a *single* alternative: with two
+  // separate alternatives the code body's non-greedy `[\s\S]*?` backtracks
+  // across its own closing fence to reach a later block's `output`, swallowing
+  // the block in between. Anchoring the code close to `\n``` ` and making the
+  // output group optional keeps each block self-contained.
+  var re = /```c:run([^\n]*)\r?\n([\s\S]*?)\r?\n```[ \t]*(?:(?:[ \t]*\r?\n)+```output[^\n]*\r?\n([\s\S]*?)\r?\n```)?/g;
+  var body = markdown.replace(re, function (whole, title, code, out) {
+    title = (title || "").trim();
+    code = (code || "").replace(/\r?\n$/, "");
+    var expected = out != null ? out.replace(/\r?\n$/, "") : null;
+    var idx = blocks.length;
+    blocks.push({ title: title, code: code, expected: expected });
+    // Blank lines keep marked from folding the div into a paragraph.
+    return "\n\n<div class=\"runnable-slot\" data-idx=\"" + idx + "\"></div>\n\n";
+  });
+  return { body: body, blocks: blocks };
 }
 
 // Shareable code state in URL hash: #code=<urlsafe-base64(utf8(code))>.
@@ -275,28 +319,130 @@ function addCopyButtons(root) {
 
 var editorAPI = null;
 
-function renderResult(result, expected) {
-  var term = document.getElementById("terminal");
+// Render a {stdout, stderr} result into a terminal element, and (when an
+// expected string is supplied) flip a pass/fail badge. Shared by the legacy
+// bottom runner and every inline runnable block.
+function renderInto(termEl, badgeEl, result, expected) {
   var html = "";
   if (result.stdout) html += escapeHTML(result.stdout);
   if (result.stderr) html += '<span class="terminal-error">' + escapeHTML(result.stderr) + "</span>";
   if (!html) html = '<span class="terminal-empty">(no output)</span>';
-  term.innerHTML = html;
+  termEl.innerHTML = html;
 
-  var badge = document.getElementById("diff-badge");
+  if (!badgeEl) return;
   if (expected != null && result.stdout != null) {
     var norm = function (s) { return String(s || "").replace(/\r\n/g, "\n").replace(/\s+$/, ""); };
     if (norm(result.stdout) === norm(expected)) {
-      badge.textContent = "\u2713 output matches expected";
-      badge.className = "diff-badge diff-ok";
+      badgeEl.textContent = "\u2713 output matches expected";
+      badgeEl.className = "diff-badge diff-ok";
     } else {
-      badge.textContent = "\u2717 output does not match expected";
-      badge.className = "diff-badge diff-bad";
+      badgeEl.textContent = "\u2717 output does not match expected";
+      badgeEl.className = "diff-badge diff-bad";
     }
   } else {
-    badge.textContent = "";
-    badge.className = "diff-badge";
+    badgeEl.textContent = "";
+    badgeEl.className = "diff-badge";
   }
+}
+
+// The WASM C runtime needs SharedArrayBuffer, which only exists when the page
+// is crossOriginIsolated. If it isn't, explain exactly what's wrong instead of
+// letting Runno throw an opaque "Can't find variable: SharedArrayBuffer".
+// Returns true when it's safe to run.
+function ensureCrossOriginIsolated(termEl) {
+  if (typeof SharedArrayBuffer !== "undefined" && self.crossOriginIsolated) return true;
+  termEl.innerHTML =
+    '<span class="terminal-error">' +
+    escapeHTML(
+      "this browser is not cross-origin-isolated, so the WASM C " +
+      "runtime can't start.\n\n" +
+      "crossOriginIsolated: " + self.crossOriginIsolated + "\n" +
+      "SharedArrayBuffer:   " + (typeof SharedArrayBuffer !== "undefined") + "\n" +
+      "isSecureContext:     " + self.isSecureContext + "\n\n" +
+      "if you're on a phone over the LAN, open the site at " +
+      "https://b1tank.github.io/learnc/ instead — the COOP/COEP " +
+      "service worker only registers over HTTPS.\n" +
+      "if you're on localhost, try a hard refresh."
+    ) +
+    "</span>";
+  return false;
+}
+
+// Compile + run `code`, streaming progress into `termEl` and final output
+// into termEl/badgeEl. `btn` is disabled for the duration. Self-contained so
+// inline blocks and the bottom runner share one code path.
+async function compileAndRun(code, termEl, badgeEl, expected, btn) {
+  if (!ensureCrossOriginIsolated(termEl)) return;
+  termEl.innerHTML = '<span class="terminal-empty">compiling and running\u2026</span>';
+  if (badgeEl) badgeEl.textContent = "";
+  if (btn) btn.disabled = true;
+  runOnProgress(function (msg) {
+    termEl.innerHTML = '<span class="terminal-empty">' + escapeHTML(msg) + "</span>";
+  });
+  try {
+    var result = await runC(code);
+    renderInto(termEl, badgeEl, result, expected);
+  } catch (e) {
+    termEl.innerHTML = '<span class="terminal-error">' + escapeHTML(String(e && e.message || e)) + "</span>";
+  } finally {
+    if (btn) btn.disabled = false;
+    runOnProgress(null);
+  }
+}
+
+// Build one inline runnable widget (toolbar + editor + terminal + optional
+// badge) from a parsed { title, code, expected } block. Returns the root
+// element plus a setDark hook for theme syncing.
+function buildRunnable(block) {
+  var root = el("div", { class: "runner runnable" }, []);
+
+  var bar = el("div", { class: "runner-bar" }, []);
+  bar.appendChild(el("span", { class: "title" }, [block.title || "main.c"]));
+  var runBtn = el("button", { type: "button", class: "primary" }, ["run"]);
+  bar.appendChild(runBtn);
+  root.appendChild(bar);
+
+  var editorHost = el("div", { class: "editor" }, []);
+  root.appendChild(editorHost);
+
+  var term = el("div", { class: "terminal" }, [
+    el("span", { class: "terminal-empty" }, ['click "run" to compile and execute'])
+  ]);
+  root.appendChild(term);
+
+  var badge = null;
+  if (block.expected != null) {
+    badge = el("div", { class: "diff-badge" }, []);
+    root.appendChild(badge);
+  }
+
+  var api = mountEditor(editorHost, block.code, null);
+
+  runBtn.addEventListener("click", function () {
+    compileAndRun(api.getValue(), term, badge, block.expected, runBtn);
+  });
+
+  return { element: root, setDark: api.setDark };
+}
+
+// Replace every <div.runnable-slot> placeholder left by extractRunnables with
+// a live runnable widget, and keep all their editors in theme sync.
+function mountInlineRunnables(prose, blocks) {
+  if (!blocks || !blocks.length) return;
+  var apis = [];
+  var slots = prose.querySelectorAll("div.runnable-slot");
+  for (var i = 0; i < slots.length; i++) {
+    var slot = slots[i];
+    var idx = Number(slot.getAttribute("data-idx"));
+    var block = blocks[idx];
+    if (!block) continue;
+    var widget = buildRunnable(block);
+    slot.parentNode.replaceChild(widget.element, slot);
+    apis.push(widget);
+  }
+  document.addEventListener("learnc:theme", function (e) {
+    apis.forEach(function (a) { if (a.setDark) a.setDark(!!e.detail.isDark); });
+  });
 }
 
 // Insert a dismissible banner above the editor when the editor was filled
@@ -372,45 +518,9 @@ function setupRunner(starter, expected) {
     var code = editorAPI.getValue();
     writeUrlCode(code);
     var term = document.getElementById("terminal");
+    var badge = document.getElementById("diff-badge");
     var btn = document.getElementById("run-btn");
-    // The WASM C runtime needs SharedArrayBuffer, which only exists when
-    // the page is crossOriginIsolated. Without this guard the user just
-    // sees an unhelpful "Can't find variable: SharedArrayBuffer" thrown
-    // from somewhere deep inside Runno. Tell them exactly what's wrong
-    // and how to fix it (most common case: a mobile-Safari LAN visit
-    // where coi-serviceworker can't register over plain HTTP).
-    if (typeof SharedArrayBuffer === "undefined" || !self.crossOriginIsolated) {
-      term.innerHTML =
-        '<span class="terminal-error">' +
-        escapeHTML(
-          "this browser is not cross-origin-isolated, so the WASM C " +
-          "runtime can't start.\n\n" +
-          "crossOriginIsolated: " + self.crossOriginIsolated + "\n" +
-          "SharedArrayBuffer:   " + (typeof SharedArrayBuffer !== "undefined") + "\n" +
-          "isSecureContext:     " + self.isSecureContext + "\n\n" +
-          "if you're on a phone over the LAN, open the site at " +
-          "https://b1tank.github.io/learnc/ instead — the COOP/COEP " +
-          "service worker only registers over HTTPS.\n" +
-          "if you're on localhost, try a hard refresh."
-        ) +
-        "</span>";
-      return;
-    }
-    term.innerHTML = '<span class="terminal-empty">compiling and running\u2026</span>';
-    document.getElementById("diff-badge").textContent = "";
-    btn.disabled = true;
-    runOnProgress(function (msg) {
-      term.innerHTML = '<span class="terminal-empty">' + escapeHTML(msg) + "</span>";
-    });
-    try {
-      var result = await runC(code);
-      renderResult(result, expected);
-    } catch (e) {
-      term.innerHTML = '<span class="terminal-error">' + escapeHTML(String(e && e.message || e)) + "</span>";
-    } finally {
-      btn.disabled = false;
-      runOnProgress(null);
-    }
+    await compileAndRun(code, term, badge, expected, btn);
   });
 
   document.getElementById("reset-btn").addEventListener("click", function () {
@@ -497,6 +607,9 @@ async function loadLesson() {
   var parsed = parseFrontmatter(text);
   var meta = parsed.meta;
   var fences = extractFences(parsed.body);
+  // Pull inline `c:run` blocks out of the prose and replace them with
+  // placeholder slots that mountInlineRunnables fills in after render.
+  var runnables = extractRunnables(fences.body);
 
   document.title = (meta.title || lessonId) + " · learnc";
   var titleEl = document.getElementById("lesson-title");
@@ -508,11 +621,12 @@ async function loadLesson() {
   var prose = document.getElementById("lesson-prose");
   if (typeof marked !== "undefined") {
     marked.setOptions({ headerIds: false, mangle: false });
-    prose.innerHTML = marked.parse(fences.body);
+    prose.innerHTML = marked.parse(runnables.body);
   } else {
-    prose.innerHTML = "<pre>" + escapeHTML(fences.body) + "</pre>";
+    prose.innerHTML = "<pre>" + escapeHTML(runnables.body) + "</pre>";
   }
   addCopyButtons(prose);
+  mountInlineRunnables(prose, runnables.blocks);
 
   if (fences.starter !== null) {
     setupRunner(fences.starter, fences.expected);

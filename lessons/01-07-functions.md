@@ -8,14 +8,18 @@ next: ex-1-15
 status: done
 ---
 
-Until now every program has been one big `main`. That works for twenty lines and falls apart at two hundred. A **function** is a named block of code that takes inputs, does work, and returns an output — a black box whose contract is "give me arguments of these types, get back a value of this type, don't worry about the inside." Functions are how you turn a script into a vocabulary.
+You already know what a function is. In C only a few things differ from the high-level languages you came from, and each one bites if you ignore it:
 
-The classic first function is integer power: raise `base` to the `exponent`. Below, `power(base, n)` is a function `main` calls twice — once per row of a small table.
+- **Declaration vs definition.** A *prototype* declares the signature; the *definition* supplies the body. Calls are checked against whatever declaration is in scope — and if there is none, older C silently invents one.
+- **Pass by value, always.** Every argument is *copied*. The only way a function changes the caller's data is through a pointer (next lesson).
+- **One return value, by value.** No tuples, no multiple returns. A non-`void` function that falls off the end without returning is undefined behaviour.
 
-```c:starter
+The canonical first function is integer power. `power(base, n)` is called twice per row to build a small table.
+
+```c:run power.c
 #include <stdio.h>
 
-int power(int base, int n);   /* prototype: tell the compiler the shape */
+int power(int base, int n);   /* prototype: declare the shape up front */
 
 int main(void) {
     for (int i = 0; i < 10; ++i)
@@ -23,7 +27,7 @@ int main(void) {
     return 0;
 }
 
-/* power: raise base to the n-th power; n >= 0 */
+/* power: raise base to the n-th power, n >= 0 */
 int power(int base, int n) {
     int result = 1;
     for (int i = 0; i < n; ++i)
@@ -45,40 +49,216 @@ int power(int base, int n) {
 9    512 -19683
 ```
 
-## What's going on
+## Declaration vs definition
 
-- **A function definition has four parts.** `int power(int base, int n) { … }` reads "function named `power` returning `int`, taking an `int` called `base` and an `int` called `n`, body in braces." The names `base` and `n` are *local* to the function — they are fresh variables the caller's arguments are copied into.
-- **The return statement.** `return result;` ends the function and hands `result` back to whoever called it. The expression you return must match (or be convertible to) the declared return type. A function declared `int` that falls off the end without `return` invokes undefined behaviour.
-- **The prototype above `main`.** `int power(int base, int n);` (note the semicolon, no body) tells the compiler the function's shape so calls to `power` inside `main` can be checked against it. Prototypes give you type safety across the boundary — call `power("hi", 3.5)` and the compiler refuses. Without a prototype, K&R's pre-ANSI dialect would let almost anything through and silently produce garbage.
-- **Order doesn't matter when prototypes exist.** With the prototype, `power` can be defined *after* `main`. Without it, `power` would have to come before `main` — or the compiler would invent an implicit `int power()` declaration and shrug at the argument types.
-- **Calls produce values, like any expression.** `power(2, i)` evaluates to the int result. You can use it as a `printf` argument, assign it to a variable, pass it to another function — anywhere an `int` is expected. This is what makes functions composable.
-- **Two `for` loops, two `i`s.** The `i` inside `power` is a different variable from the `i` inside `main`. Each lives in its own *stack frame*; when `power` returns, its frame is discarded. Scope, lifetime, and storage are the next several lessons; here, the takeaway is: locals don't leak.
+The signature can appear twice: once as a *prototype* (no body, ends in `;`), once as the *definition* (with body). The prototype is what lets `main` call `power` before `power` is defined, and it is what makes the call type-checked.
 
-## Modern note
+```c
+int power(int base, int n);          /* declaration — a promise */
+int power(int base, int n) { ... }   /* definition — the body   */
+```
 
-K&R-style declarations look like `int power(base, n) int base, n;` (parameter types *between* the header and the body). ANSI C, C99, and onward use the prototype form shown above: types live with the names inside the parens. The old form still compiles in many toolchains for backwards compatibility, but C23 finally removes it. Use prototype form.
+Delete the prototype, call a function before it is defined, and pre-ANSI C would assume it returns `int` and accept any arguments. Modern compilers reject this (`-Werror=implicit-function-declaration`) — run it and read the diagnostic:
 
-Two more habits modern C codebases adopt:
+```c:run missing prototype → error
+#include <stdio.h>
 
-- **`static` for file-local helpers.** If `power` is only used inside this `.c` file, declare it `static int power(...)`. The function becomes invisible to the linker, which lets you reuse short names across files without collisions and gives the optimiser more freedom.
-- **`const` for parameters you won't modify.** `int power(const int base, const int n)` is legal — it says "I promise not to reassign these inside the body." Common on pointer parameters (`const char *s` = "I'll read this string, not change it"); less useful on scalars, since copies of scalars can't be observed by anyone else anyway.
+int main(void) {
+    printf("%d\n", cube(3));   /* no declaration of cube in scope */
+    return 0;
+}
 
-The void-vs-empty-parameters footnote from §1.1 applies here too: `int power(void)` means "no parameters"; `int power()` historically meant "unknown — figure it out." Always write `void` when you mean it.
+int cube(int x) { return x * x * x; }
+```
 
-## Try it
+## Pass by value
 
-1. Replace the prototype with no prototype at all and move `power` below `main`. What warning or error does the compiler give? (Modern compilers usually escalate this to an error under `-Werror=implicit-function-declaration`.)
-2. Make `power` `static`. Recompile — does anything change? (It shouldn't, in a single-file program.)
-3. Add a third argument, `int mod`, and return `(base^n) mod m`. This is the building block of RSA encryption. Watch out for integer overflow on large exponents.
-4. Write a separate `int square(int x)` function and rewrite the inner loop body as `result = result * base;` ↦ `result = result * base;` — no change required. Now write `int square(int x) { return x * x; }` and use it: rewrite `power(2, n)` calls to use `square` where possible. Where can you *not* use it? Why?
-5. Negative exponents: what happens if you call `power(2, -1)`? Modify the function to handle `n < 0` (return `0`, since integer division would give zero anyway, and a real fix requires floats).
-6. Tail recursion: rewrite `power` recursively — `power(b, 0) = 1; power(b, n) = b * power(b, n-1);`. Run it. The two versions should agree for all reasonable inputs.
+A function receives *copies* of its arguments. Assigning to a parameter changes only the local copy; the caller never sees it. This is the single most important thing to internalise before pointers.
 
-## Notes from the author
+```c:run pass-by-value
+#include <stdio.h>
 
-- The function example here is `power` because that's K&R's choice and it's a clean illustration. If you want to push the modern angle harder when you revise, swap it for a function that does string manipulation (`strlen` reimplemented) or hashing — both feel more like real code and segue better into pointers in chapter 5.
-- I deliberately gave the prototype its own bullet rather than burying it in the explanation. Pre-ANSI vs ANSI prototypes are the *first* place K&R-the-book diverges most sharply from K&R-the-language-as-used-today, and most modern bugs (implicit `int`, no argument checking) are downstream of getting this wrong.
-- The recursion experiment at the end is a teaser for §4.10. If you want to introduce recursion gently here, expand it; otherwise leave the bait.
-- Worth a future callout: function pointers exist (`int (*fp)(int, int)`), and the syntax is famously gnarly. K&R covers them in §5.11. A one-liner here — "every function has an address, you can take it" — would help motivate that later.
+void try_reset(int x) { x = 0; }   /* x is a private copy */
 
-*Click **next →** to learn what C does and does not do with the arguments you pass.*
+int main(void) {
+    int a = 5;
+    try_reset(a);
+    printf("%d\n", a);   /* still 5 — the copy was thrown away */
+    return 0;
+}
+```
+
+```output
+5
+```
+
+## Return type and `void`
+
+`return expr;` ends the function and hands `expr` back; its type must match (or convert to) the declared return type. Two rules with sharp edges:
+
+- A non-`void` function that runs off the end and whose result is then used is undefined behaviour. Turn on `-Wreturn-type`.
+- `int f(void)` means *no parameters*. `int f()` means *unspecified parameters* (a pre-ANSI relic), not "no parameters". Always write `void` when you mean none — calling `answer(1)` below is a compile error precisely because of the `void`.
+
+```c:run void means no args
+#include <stdio.h>
+
+int answer(void) { return 42; }   /* (void): takes nothing */
+
+int main(void) {
+    printf("%d\n", answer(1));     /* error: too many arguments */
+    return 0;
+}
+```
+
+## `static`: internal linkage
+
+By default a top-level function has *external* linkage — its name is visible to the linker and to every other `.c` file. Mark it `static` to give it *internal* linkage: private to this translation unit. That lets short helper names live in many files without colliding, and gives the optimiser a closed world to inline into.
+
+```c:run static helper
+#include <stdio.h>
+
+static int twice(int x) { return 2 * x; }   /* invisible to the linker */
+
+int main(void) {
+    printf("%d\n", twice(21));
+    return 0;
+}
+```
+
+```output
+42
+```
+
+## `const` parameters
+
+`const` on a parameter is a promise not to reassign it inside the body. On a scalar it is only documentation — the copy is yours to mutate harmlessly — but on a *pointer* it is load-bearing: `const char *s` means "I read this string, I do not write it", and the compiler enforces it.
+
+```c:run const parameter
+#include <stdio.h>
+#include <stddef.h>
+
+size_t my_strlen(const char *s) {   /* won't modify the caller's bytes */
+    size_t n = 0;
+    while (*s++) ++n;
+    return n;
+}
+
+int main(void) {
+    printf("%zu\n", my_strlen("hello, world"));
+    return 0;
+}
+```
+
+```output
+12
+```
+
+## Old-style declarations (don't write these)
+
+K&R's original syntax put parameter types *between* the header and the body:
+
+```c
+int power(base, n)
+int base, n;
+{ ... }
+```
+
+It still compiles in many toolchains for backward compatibility, but it does no argument checking and C23 finally removes it. Always use prototype form.
+
+## Variations
+
+Each block below is a complete, runnable program — edit and re-run any of them.
+
+Modular exponentiation, `(base^n) mod m` — the kernel of RSA. Reducing every step keeps the intermediate product small:
+
+```c:run modular exponentiation
+#include <stdio.h>
+
+long powmod(long base, int n, long m) {
+    long r = 1 % m;
+    base %= m;
+    for (int i = 0; i < n; ++i)
+        r = (r * base) % m;
+    return r;
+}
+
+int main(void) {
+    printf("%ld\n", powmod(2, 10, 1000));   /* 1024 mod 1000 */
+    printf("%ld\n", powmod(7, 128, 13));
+    return 0;
+}
+```
+
+```output
+24
+3
+```
+
+Negative exponents can't be represented as an `int`, so clamp instead of returning garbage:
+
+```c:run negative exponent
+#include <stdio.h>
+
+int power(int base, int n) {
+    if (n < 0) return 0;          /* base^-n is a fraction, not an int */
+    int r = 1;
+    while (n-- > 0) r *= base;
+    return r;
+}
+
+int main(void) {
+    printf("%d %d %d\n", power(2, 3), power(2, 0), power(2, -1));
+    return 0;
+}
+```
+
+```output
+8 1 0
+```
+
+The recursive definition — `power(b, 0) = 1`, `power(b, n) = b * power(b, n-1)` — is a one-liner and a teaser for §4.10:
+
+```c:run recursive power
+#include <stdio.h>
+
+int power(int base, int n) {
+    return n == 0 ? 1 : base * power(base, n - 1);
+}
+
+int main(void) {
+    for (int i = 0; i < 6; ++i)
+        printf("2^%d = %d\n", i, power(2, i));
+    return 0;
+}
+```
+
+```output
+2^0 = 1
+2^1 = 2
+2^2 = 4
+2^3 = 8
+2^4 = 16
+2^5 = 32
+```
+
+Functions compose like any expression — the result of one is an argument to the next:
+
+```c:run compose with square
+#include <stdio.h>
+
+int square(int x) { return x * x; }
+
+int main(void) {
+    printf("%d\n", square(square(2)));   /* (2^2)^2 = 16 */
+    printf("%d\n", square(8));           /* 8^2 = 64     */
+    return 0;
+}
+```
+
+```output
+16
+64
+```
+
+*Click **next →** to see exactly what C does — and doesn't do — with the arguments you pass.*
+

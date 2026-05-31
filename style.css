@@ -353,6 +353,13 @@ button.primary:active { filter: brightness(0.92); }
 .diff-ok { color: #0a0; }
 .diff-bad { color: #c00; }
 
+/* Inline runnable blocks embedded in lesson prose. They reuse the .runner
+   chrome but sit closer in the text flow and cap the editor height so a long
+   program scrolls instead of pushing the prose far down the page. */
+.runnable { margin: 1.1rem 0; }
+.runnable .editor { max-height: 22em; overflow: auto; }
+.runnable .terminal { min-height: 2.2em; }
+
 /* Keyboard shortcut help overlay. Hidden by default; revealed by pressing `?`.
    `[hidden]` from the HTML attribute does the heavy lifting; the rest is just
    layout for the modal centered above a dim backdrop. */
