@@ -8,141 +8,47 @@ next: 07-07-line-input-and-output
 status: done
 ---
 
-Programs need to report errors and quit. C provides two stream conventions and one function:
+When something goes wrong, a program needs to tell *someone* and stop cleanly. C splits this into two channels. **`stderr`** is a second output stream, separate from `stdout`, dedicated to diagnostics — it exists so that error messages still reach the user even when `stdout` is redirected into a file or pipe (`prog > out.txt` sends results to the file but errors to the screen). And the program's **exit status** — the small integer returned from `main` or passed to `exit()` — tells the *parent process* (usually the shell) whether the run succeeded: `0` means success, non-zero means failure, by universal Unix convention.
 
-- **`stderr`** — the dedicated error stream. Unbuffered by default. Even when `stdout` is redirected to a file, `stderr` still goes to the terminal.
-- **`exit(status)`** — terminate the program with the given status code. By convention, `0` = success, anything else = failure.
+## Reporting an error and signalling failure
 
-```c
+```c:run validate input, compute, and exit with a status
 #include <stdio.h>
 #include <stdlib.h>
 
-if (errno_condition) {
-    fprintf(stderr, "%s: cannot open %s\n", argv[0], filename);
-    exit(EXIT_FAILURE);     /* defined as 1 on most systems */
-}
-```
-
-## Why a separate stream?
-
-The shell pipe `prog1 | prog2` connects `prog1`'s **stdout** to `prog2`'s stdin. If `prog1` writes errors to stdout, they go *into the pipe* — `prog2` sees them as data, not as errors. Errors go to `stderr` so they appear on the terminal regardless of how stdout is wired.
-
-```bash
-$ ./mygrep pattern file > out.txt    # errors still show on terminal
-$ ./mygrep pattern file 2> err.txt   # redirect ONLY errors
-$ ./mygrep pattern file > out 2>&1   # merge stderr into stdout
-```
-
-## The `perror` helper
-
-When a C library call fails, it sets the global `errno` to a numeric error code. `perror` prints a human-readable message:
-
-```c
-FILE *fp = fopen("missing.txt", "r");
-if (!fp) {
-    perror("missing.txt");
-    /* prints e.g.: "missing.txt: No such file or directory" */
-    exit(EXIT_FAILURE);
-}
-```
-
-`perror(s)` prints `s: error_message\n` to `stderr`.
-
-The modern alternative is `strerror(errno)`:
-
-```c
-fprintf(stderr, "fopen failed: %s\n", strerror(errno));
-```
-
-## `exit` vs. `return`
-
-From `main`:
-
-- `return 0;` and `exit(0);` are equivalent.
-- `return 1;` and `exit(1);` are equivalent.
-
-From any other function, `exit` quits the whole program; `return` only returns from that function.
-
-`exit` does:
-
-1. Run any functions registered with `atexit`.
-2. Flush and close all open `FILE *` streams (including `stdout`).
-3. Terminate the process with the given status.
-
-There's also `_Exit` (no underscore prefix in plain C: `_Exit`) which skips the cleanup — useful in signal handlers and forked-child situations.
-
-## Putting it together
-
-```c:starter
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
-static int cat_file(const char *name) {
-    FILE *fp = fopen(name, "rb");
-    if (!fp) {
-        fprintf(stderr, "cat: %s: %s\n", name, strerror(errno));
+int main(void) {
+    int n;
+    if (scanf("%d", &n) != 1) {
+        fprintf(stderr, "error: expected an integer\n");   /* diagnostics -> stderr */
+        exit(1);                                           /* fail */
+    }
+    if (n < 0) {
+        fprintf(stderr, "error: %d is negative\n", n);
         return 1;
     }
-    char buf[4096];
-    size_t n;
-    while ((n = fread(buf, 1, sizeof buf, fp)) > 0)
-        fwrite(buf, 1, n, stdout);
-    if (ferror(fp)) {
-        fprintf(stderr, "cat: read error on %s\n", name);
-        fclose(fp);
-        return 1;
-    }
-    fclose(fp);
-    return 0;
+    long fact = 1;
+    for (int i = 2; i <= n; i++) fact *= i;
+    printf("%d! = %ld\n", n, fact);                        /* results -> stdout */
+    return 0;                                              /* success */
 }
+```
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "usage: %s FILE [FILE...]\n", argv[0]);
-        return EXIT_FAILURE;
-    }
-    int rc = 0;
-    for (int i = 1; i < argc; ++i)
-        if (cat_file(argv[i]) != 0)
-            rc = 1;
-    return rc;
-}
+```stdin
+5
 ```
 
 ```output
-(simple cat — needs CLI args)
+5! = 120
 ```
 
-## Exit status conventions
+Notice the deliberate split: the *result* `5! = 120` goes to `stdout` via `printf`, while *error messages* would go to `stderr` via `fprintf(stderr, …)`. With the valid input `5` no error fires, so you see only the result. Had the input been `abc`, `scanf` would return 0, the program would write `error: expected an integer` to stderr and `exit(1)`. The exit code is invisible in the output but very real: the shell exposes it as `$?`, and `make`, CI pipelines, and shell `&&`/`||` chains all branch on it.
 
-| Status | Meaning                                |
-|--------|----------------------------------------|
-| 0      | success                                |
-| 1      | general error                          |
-| 2      | shell builtin / misuse (often)         |
-| 64–78  | sysexits.h codes (BSD heritage)         |
-| 126    | command found but not executable       |
-| 127    | command not found                      |
-| 128+N  | terminated by signal N                  |
+## Why two streams, and how to exit cleanly
 
-Shell scripts and other programs read `$?` to check. Always emit a meaningful status code; `return 0;` on every code path is a sign you forgot to think about errors.
+The separation of `stdout` and `stderr` is what makes Unix pipelines robust: in `grep foo data | sort`, the *data* flows through the pipe while any error messages bypass it and land on your terminal, so they neither corrupt the piped data nor vanish silently. `stderr` is also typically **unbuffered** (or line-buffered), so error text appears immediately rather than getting stuck in a buffer that's lost if the program then crashes. For exiting, you have three tools. Returning from `main` is the normal path. [`exit(status)`](https://en.cppreference.com/w/c/program/exit) ends the program *from anywhere*, and it runs cleanup — flushing all stream buffers and invoking functions registered with `atexit` — so buffered output isn't lost; the standard names `EXIT_SUCCESS` (0) and `EXIT_FAILURE` (non-zero) for portability. Its blunt sibling [`_exit`/`abort`](https://man7.org/linux/man-pages/man3/abort.3.html) terminates *without* flushing. A convenient helper is [`perror("context")`](https://en.cppreference.com/w/c/io/perror), which prints your message plus a human-readable description of the global `errno` set by the last failed library/system call (e.g. `data.txt: No such file or directory`) — far friendlier than a bare error code. The discipline to internalize: **results to stdout, errors to stderr, and a meaningful non-zero exit status on failure** so the programs and people downstream of you can react.
 
-## Try it
-
-1. Modify `cat_file` so it prints filename + line number prefix for each input line (like `grep -n`).
-2. Add a `--silent` flag that suppresses stderr output.
-3. Run `./cat /etc/passwd /etc/missing 2> err.log > out.txt` and inspect both files.
-
-## Notes from the author
-
-- "Print error, exit with non-zero" is the most common pattern in CLI tools. Wrap it in a helper:
-  ```c
-  static void die(const char *msg) { perror(msg); exit(EXIT_FAILURE); }
-  ```
-  Used everywhere, you'll save thousands of lines.
-- `errno` is thread-local in modern compilers — a good thing. Older code that assumed `errno` was a single global may behave wrongly in threaded contexts.
-- Programs that need detailed error reporting often define their own status codes and a global "last error" struct. The Unix convention is "small integers"; richer error types are layered on top.
-
-*Click **next →** for line I/O patterns.*
+## Go deeper
+- [Standard streams](https://en.wikipedia.org/wiki/Standard_streams) — why stderr is separate from stdout
+- [`exit` / `EXIT_FAILURE`](https://en.cppreference.com/w/c/program/exit) — clean termination and cleanup
+- [`perror` / `errno`](https://en.cppreference.com/w/c/io/perror) — turning error codes into messages
+- [Exit status](https://en.wikipedia.org/wiki/Exit_status) — the convention the shell relies on
