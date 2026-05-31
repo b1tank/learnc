@@ -8,118 +8,39 @@ next: ex-7-2
 status: done
 ---
 
-`printf` is the workhorse of C output. Its first argument is a **format string** with `%`-conversions that pull values from the rest of the arguments.
+`printf` converts typed values into text according to a **format string** sprinkled with *conversion specifications* that begin with `%`. Each `%` directive consumes one argument and controls exactly how it's rendered: which type to read it as (`d`, `f`, `s`, `x`, …), how wide the field is, how many digits of precision, and how to pad and align. Mastering the format string means you rarely need manual string-building. The full anatomy of a directive is `%[flags][width][.precision][length]conversion`.
 
-```c
-printf("Hello, %s! You are %d years old.\n", "Alice", 30);
-```
+## The conversion zoo
 
-The `%s` consumes the next argument as a string; `%d` consumes the next as a decimal int.
-
-## The common conversions
-
-| Spec   | Meaning                                  | Example              |
-|--------|------------------------------------------|----------------------|
-| `%d`   | signed decimal int                       | `printf("%d", 42)`   |
-| `%u`   | unsigned decimal                         | `printf("%u", 42u)`  |
-| `%o`   | octal                                    | `printf("%o", 8)` → `10` |
-| `%x`   | lowercase hex                            | `printf("%x", 255)` → `ff` |
-| `%X`   | uppercase hex                            | `printf("%X", 255)` → `FF` |
-| `%f`   | float (decimal notation)                 | `printf("%f", 3.14)` → `3.140000` |
-| `%e`   | float (exponential)                      | `printf("%e", 3.14)` → `3.140000e+00` |
-| `%g`   | float (compact)                          | `printf("%g", 3.14)` → `3.14` |
-| `%c`   | char                                     | `printf("%c", 'A')`  |
-| `%s`   | string                                   | `printf("%s", "hi")` |
-| `%p`   | pointer (impl-defined)                   | `printf("%p", &x)`   |
-| `%%`   | a literal `%`                            | `printf("%%")` → `%` |
-
-## Width, precision, flags
-
-The full conversion syntax: `% [flags] [width] [.precision] [length] specifier`.
-
-```c
-printf("[%5d]\n",   42);      /* width 5, right-align:    "[   42]" */
-printf("[%-5d]\n",  42);      /* width 5, left-align:     "[42   ]" */
-printf("[%05d]\n",  42);      /* width 5, zero-pad:       "[00042]" */
-printf("[%+d]\n",   42);      /* force sign:              "[+42]"   */
-printf("[%.2f]\n",  3.14159); /* 2 decimal places:        "[3.14]"  */
-printf("[%10.2f]\n",3.14159); /* width 10, 2 decimals:    "[      3.14]" */
-printf("[%.5s]\n",  "hello world"); /* max 5 chars of s: "[hello]" */
-```
-
-## Putting it together
-
-```c:starter
+```c:run width, precision, flags, and bases
 #include <stdio.h>
 
 int main(void) {
-    printf("decimal:    %d\n",    42);
-    printf("hex:        %#x\n",   255);
-    printf("octal:      %o\n",    8);
-    printf("float:      %f\n",    3.14);
-    printf("scientific: %e\n",    1234.5);
-    printf("compact:    %g\n",    1234.5);
-    printf("padded:     [%10.3f]\n", 3.14159);
-    printf("string cut: [%.5s]\n", "hello, world");
-    printf("right-pad:  [%-10s]X\n", "hi");
+    printf("|%d|%5d|%-5d|%05d|\n", 42, 42, 42, 42);
+    printf("|%.3f|%10.3f|%-10.3f|\n", 3.14159, 3.14159, 3.14159);
+    printf("|%x|%o|%e|\n", 255, 255, 12345.678);
+    printf("|%s|%10s|%-10s|%.3s|\n", "hi", "hi", "hi", "hello");
+    printf("|%c|%%|\n", 'A');
     return 0;
 }
 ```
 
 ```output
-decimal:    42
-hex:        0xff
-octal:      10
-float:      3.140000
-scientific: 1.234500e+03
-compact:    1234.5
-padded:     [     3.142]
-string cut: [hello]
-right-pad:  [hi        ]X
+|42|   42|42   |00042|
+|3.142|     3.142|3.142     |
+|ff|377|1.234568e+04|
+|hi|        hi|hi        |hel|
+|A|%|
 ```
 
-## Length modifiers for size
+Read the bars as field boundaries. `%5d` right-justifies in a 5-wide field (3 leading spaces); `%-5d` left-justifies (trailing spaces); `%05d` pads with zeros. For floats, `.3` is *precision* — `%.3f` keeps 3 digits after the point (rounding `3.14159` to `3.142`), and width and precision combine in `%10.3f`. `%x` and `%o` print in hex and octal; `%e` uses scientific notation. For strings, width sets a minimum field while `.3` *truncates* to at most 3 characters (`hello` → `hel`). And `%%` is how you print a literal percent sign, since a bare `%` starts a directive.
 
-When you have `long`, `short`, `long long`, etc., add a length modifier:
+## Type matching is on you — and the security trap
 
-| Modifier | Use with        | Type                |
-|----------|------------------|---------------------|
-| `h`      | `d`/`u`/`x`/`o`  | `short`              |
-| `l`      | `d`/`u`/`x`/`o`  | `long`               |
-| `ll`     | `d`/`u`/`x`/`o`  | `long long`          |
-| `j`      | `d`/`u`/`x`/`o`  | `intmax_t`           |
-| `z`      | `d`/`u`/`x`/`o`  | `size_t`             |
-| `L`      | `f`/`e`/`g`      | `long double`        |
+`printf` is **variadic**: it discovers its argument types only by *parsing the format string at runtime*, then pulls each argument off the stack/registers assuming the matching type. There's no compile-time check that your `%d` actually received an `int` — pass a `double` to `%d`, or forget an argument, and `printf` reads the wrong bytes and prints garbage or crashes. The matching length modifiers matter for the same reason: use `%ld` for `long`, `%lld` for `long long`, `%zu` for `size_t`, `%f` for `double` (which is also correct for a `float`, since floats are promoted to double when passed to a variadic function). The gravest mistake is `printf(user_string)` — passing untrusted text *as* the format. If that text contains `%x` or `%n`, an attacker can read your stack or even write to memory; this is the classic [format-string vulnerability](https://en.wikipedia.org/wiki/Uncontrolled_format_string). The fix is trivial and absolute: always write `printf("%s", user_string)`. Two siblings round out the family: `sprintf(buf, fmt, …)` formats into a string (prefer `snprintf` with a size limit to avoid overflow), and `fprintf(stream, fmt, …)` writes to any stream, such as `stderr`.
 
-```c
-size_t n = sizeof(int);
-printf("size = %zu\n", n);      /* %zu, not %d or %u! */
-```
-
-Mismatching the conversion and the argument type is **undefined behaviour**. Enable compiler warnings (`-Wformat`) to catch it.
-
-## printf vs. variants
-
-| Function       | Output destination          |
-|----------------|-----------------------------|
-| `printf`       | `stdout`                    |
-| `fprintf(fp, ...)` | a specific `FILE *`       |
-| `sprintf(buf, ...)` | a string buffer (**unsafe — no bound!**) |
-| `snprintf(buf, n, ...)` | a string buffer with bound (**use this**) |
-| `vprintf` / `vfprintf` / `vsnprintf` | take a `va_list` (see next section) |
-
-**Always prefer `snprintf` over `sprintf`.** `sprintf` has caused decades of buffer-overflow CVEs.
-
-## Try it
-
-1. Print the same number in decimal, hex, and octal in one `printf` call.
-2. Build a table-aligned output: name in a 12-char field, age in a 4-char right-aligned field.
-3. Try `%*d` — the `*` reads the width from the argument list. `printf("%*d\n", 10, 42)`.
-
-## Notes from the author
-
-- `printf`'s format string is its own little language. Knowing it well is a real productivity win — you can format a complete table report in one call.
-- The variadic nature makes `printf` impossible for the compiler to fully type-check unless the format string is a compile-time constant. GCC's `-Wformat` works for literals; format strings built at runtime are unchecked.
-- For numerical output that needs locale formatting (commas, locale decimals), `printf` is too low-level. Use `<locale.h>` and `printf`'s `'` flag, or build a small helper.
-
-*Click **next →** for variadic functions.*
+## Go deeper
+- [`printf` format spec](https://en.cppreference.com/w/c/io/fprintf) — every flag, width, and conversion
+- [`printf(3)` man page](https://man7.org/linux/man-pages/man3/printf.3.html) — the canonical reference
+- [Variadic functions](https://en.wikipedia.org/wiki/Variadic_function) — how `printf` reads its args
+- [Format string attack](https://owasp.org/www-community/attacks/Format_string_attack) — why never to pass user text as the format
