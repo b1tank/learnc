@@ -8,120 +8,92 @@ next: ex-1-6
 status: done
 ---
 
-Up to now your programs have only produced output. This section teaches them to *consume* input. The model is dead simple: the standard library treats text as a one-way **stream** of characters. `getchar()` pulls the next character off the stream, `putchar()` pushes one onto the output stream. That one model — read a character, do something, repeat — is enough to build file copiers, line counters, word counters, primitive compilers, anything that processes text.
+Text is just a stream of bytes. `getchar()` pulls the next byte from [standard input](https://en.wikipedia.org/wiki/Standard_streams); `putchar()` pushes one to standard output. Under both is the kernel's notion of a file descriptor (0 = stdin, 1 = stdout) and a userspace [stdio buffer](https://en.wikipedia.org/wiki/Data_buffer) so you aren't making one `read(2)`/`write(2)` syscall per character.
 
-The starter program is the smallest meaningful one: copy input to output, character by character, until end-of-file. Type some text into the **stdin** pane below the editor, click run, and watch your input echo back.
+The runnable blocks below pipe their input via the **stdin** panel — that's the byte stream the program reads until end‑of‑file.
 
-```c:starter
+```c:run copy input to output
 #include <stdio.h>
 
-/* copy stdin to stdout, one character at a time */
 int main(void) {
     int c;
+    while ((c = getchar()) != EOF)   /* read a byte; stop at end of input */
+        putchar(c);                  /* echo it back */
+    return 0;
+}
+```
 
-    while ((c = getchar()) != EOF)
-        putchar(c);
+```stdin
+ground up
+```
 
+```output
+ground up
+```
+
+## Why `int c`, not `char c`
+
+This is the most important detail in the section. `getchar()` returns an `int`, not a `char`, so it can return every possible byte value (`0`–`255`) **plus** a distinct out-of-band sentinel, [`EOF`](https://en.wikipedia.org/wiki/End-of-file) (usually `-1`). If you store the result in a `char` first, you collapse that 257th value into the byte range and either lose `EOF` or mistake a legitimate byte `0xFF` for end of input. `EOF` is not a byte sitting in the stream — it's the signal the library returns when `read(2)` reports zero bytes left.
+
+```c:run EOF is an int sentinel
+#include <stdio.h>
+
+int main(void) {
+    printf("EOF = %d\n", EOF);           /* -1 on virtually every system */
+    printf("sizeof(getchar()) = %zu\n", sizeof(getchar()));  /* 4: it's int */
     return 0;
 }
 ```
 
 ```output
+EOF = -1
+sizeof(getchar()) = 4
 ```
 
-## What's going on
+## The assignment-inside-the-condition idiom
 
-- **The stream model.** Programs see input as an unbounded sequence of bytes: keyboard typing, a redirected file, a pipe from another program. The OS hands them to you one at a time through `getchar()`. There is no rewinding (that comes in chapter 7) and no peek-ahead — once you've read a character, the next call to `getchar()` returns whatever is after it.
-- **`getchar()` returns `int`, not `char`.** This is one of C's classic gotchas. To read a character you write `int c; c = getchar();` — never `char c;`. The reason is `EOF`: the sentinel value that means "the stream is exhausted." `EOF` is `-1` in every implementation you'll meet, and it has to be distinguishable from every legal byte value (0–255). A `char` can't represent both 256 distinct byte values and `EOF` — only an `int` can.
-- **Assignment is an expression.** `(c = getchar()) != EOF` does three things in one line: call `getchar`, assign the result to `c`, compare the same result against `EOF`. The outer parentheses are mandatory — `!=` binds tighter than `=`, so without them you'd get `c = (getchar() != EOF)` which assigns `0` or `1` to `c`. Read that twice; this idiom appears in literally every K&R-style C program.
-- **`EOF` comes from `<stdio.h>`** as a `#define`. It is not a character that can appear in a file — it is a signal value returned only by I/O functions when the stream ends. Hitting Ctrl-D on Linux/macOS or Ctrl-Z on Windows from a terminal sends EOF to a running program's stdin.
-- **`putchar(c)`** writes the single character `c` to stdout. There's no buffering control here — by default stdout is line-buffered when connected to a terminal and fully buffered when piped. If you want to see output immediately, call `fflush(stdout)` (introduced in chapter 7).
+`while ((c = getchar()) != EOF)` packs three steps into one line: read, store, compare. The inner parentheses matter — `!=` binds tighter than `=`, so `c = getchar() != EOF` would assign the *boolean* result to `c`. This idiom is everywhere in C; learn to read it fluently.
 
-### Variations
+## A state machine: counting lines, words, characters
 
-Once you have the read-character/write-character skeleton, the body of the loop can do anything. Here are the four shapes K&R walks through. Try replacing the loop body above with each in turn.
+K&R's famous word counter is a two-state machine (`IN` a word / `OUT` of one). It never stores the text — it processes the stream one byte at a time in **O(1) memory**, the model behind every real tokenizer and lexer (including the ones in a JS engine):
 
-**1. Count characters** — the smallest counter program. Notice we don't `putchar` anything until the loop ends.
-
-```c
-long nc = 0;
-while (getchar() != EOF)
-    ++nc;
-printf("%ld\n", nc);
-```
-
-**2. Count lines** — the byte that ends a line is `\n`, so counting newlines counts lines.
-
-```c
-int c, nl = 0;
-while ((c = getchar()) != EOF)
-    if (c == '\n')
-        ++nl;
-printf("%d\n", nl);
-```
-
-**3. Count blanks, tabs, newlines together** — three counters, one pass.
-
-```c
-int c, nb = 0, nt = 0, nl = 0;
-while ((c = getchar()) != EOF) {
-    if (c == ' ')  ++nb;
-    if (c == '\t') ++nt;
-    if (c == '\n') ++nl;
-}
-printf("blanks=%d tabs=%d newlines=%d\n", nb, nt, nl);
-```
-
-**4. Count words** — a *word* here is a run of non-whitespace characters. We use a state variable to know whether we're currently inside a word.
-
-```c
+```c:run word count
 #include <stdio.h>
 
-#define IN  1   /* inside a word */
-#define OUT 0   /* outside a word */
+#define IN  1   /* inside a word  */
+#define OUT 0   /* between words  */
 
 int main(void) {
     int c, nl = 0, nw = 0, nc = 0, state = OUT;
-
     while ((c = getchar()) != EOF) {
         ++nc;
-        if (c == '\n')
-            ++nl;
+        if (c == '\n') ++nl;
         if (c == ' ' || c == '\n' || c == '\t')
             state = OUT;
         else if (state == OUT) {
             state = IN;
-            ++nw;
+            ++nw;             /* count each word once, on its first letter */
         }
     }
-    printf("%d lines, %d words, %d chars\n", nl, nw, nc);
+    printf("%d %d %d\n", nl, nw, nc);   /* lines words chars */
     return 0;
 }
 ```
 
-This is the kernel of the Unix `wc` command, in seventeen lines.
+```stdin
+the quick brown fox
+jumps over
+```
 
-## Modern note
+```output
+2 6 31
+```
 
-A real-world version of `getchar` is the family of `read(2)` system calls: instead of one byte at a time, you ask the kernel for up to `N` bytes into a buffer. `getchar` is `read` with a hidden buffer, called *standard I/O buffering*, that the C runtime manages for you. Modern C programs handling lots of text — log parsers, JSON streams, web servers — use `fread` or `getline` for the same reason: one syscall per chunk is dramatically cheaper than one syscall per byte.
+The character count is 31 because both newlines are bytes too. This is exactly how the Unix `wc` command works.
 
-Unicode also complicates this picture. `getchar` reads a *byte*, not a *character* in the human sense. The character "é" might be one byte (Latin-1), two (UTF-8), or four (UTF-32) depending on encoding. C99 added `wchar_t` and `<wctype.h>`; C11 added `char16_t`/`char32_t`. K&R's character-counting programs are still correct if you read "characters" as "bytes" — but if you tell a colleague "I wrote a word counter," they probably expect it to work on Unicode. That's a longer story; for now, ASCII-clean input is the assumption.
-
-## Try it
-
-1. Run the starter. Type two lines, then press **Enter** and **Ctrl-D** (the wasm runtime here treats end-of-input as EOF). The program should echo your text and exit.
-2. Replace the loop body with the character-counting snippet above. Type a paragraph; verify it reports the right count. (Newline characters count too!)
-3. Now the line counter. What happens if your input doesn't end with a newline? Test it.
-4. Word counter: try `the quick brown fox`. Then try `the    quick   brown   fox` (extra spaces). Then `the\tquick\nbrown\nfox` (tabs and newlines). The count should be `4` in all three cases.
-5. Break the word counter on purpose: change `state == OUT` to `state = OUT` (single `=`). What does it now report? Why? (This is a classic typo bug — the compiler should warn under `-Wall`.)
-6. Add a fourth counter for *digits* (0–9) to the combined version. Hint: `c >= '0' && c <= '9'`.
-
-## Notes from the author
-
-- The book builds this section as four separate programs. I merged them into one lesson with the file-copy as the headline and the four counters as variations. If you want each as its own page when you revise, the manifest already supports more granular ids — split `01-05` into `01-05a-copy`, `01-05b-count-chars`, etc.
-- The `(c = getchar()) != EOF` idiom is *the* C idiom. If you write tutorials of your own, you'll come back to it more than once. I deliberately spent a whole bullet on it.
-- The Unicode digression in the modern note is the kind of thing K&R never had to address. Worth its own callout box once Chapter 7 lands.
-- I picked the `IN`/`OUT` state machine over a single `int prev_was_space` boolean because the named states read better. Both work; the boolean is one line shorter. Pick your style and stick to it.
-- A natural follow-up exercise (not in K&R but useful) is to add a `printf` argument to control which counters are shown — turns the toy into a `wc -lwc` clone. Could be a side-quest in your revision.
-
-*Click **next →** to put those counts somewhere — into an array.*
+## Go deeper
+- [`getchar` / `putchar`](https://en.cppreference.com/w/c/io/getchar) — the byte-at-a-time stdio API
+- [`read(2)`](https://man7.org/linux/man-pages/man2/read.2.html) — the syscall stdio buffers on top of
+- [Finite-state machine](https://en.wikipedia.org/wiki/Finite-state_machine) — the model behind the word counter
+- [ASCII](https://en.wikipedia.org/wiki/ASCII) — what those byte values mean as text
