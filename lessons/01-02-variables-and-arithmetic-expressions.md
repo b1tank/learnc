@@ -8,76 +8,126 @@ next: ex-1-3
 status: done
 ---
 
-The second program in K&R prints a Fahrenheit-to-Celsius conversion table. It is still one function — `main` — but it now has variables, arithmetic, a loop, and formatted output. Five new ideas packed into twenty lines. Run it once, then read the breakdown — each piece will come back in every future lesson.
+A variable in C is a *named, typed region of memory*. The name is a compile-time label; the type fixes how many bytes it occupies and how the CPU interprets the bits. Local variables like the ones below live on the [stack](https://en.wikipedia.org/wiki/Call_stack) — the compiler reserves slots in the current function's stack frame and refers to them by offset from a register. There is no garbage collector and no boxing: an `int` *is* 4 bytes of two's-complement on the stack, nothing more.
 
-```c:starter
+The classic example prints a Fahrenheit→Celsius table.
+
+```c:run temperature table (int)
 #include <stdio.h>
 
-/* print Fahrenheit-Celsius table
-   for fahr = 0, 20, ..., 300 */
 int main(void) {
-    int fahr, celsius;
-    int lower, upper, step;
-
-    lower = 0;       /* lower limit of temperature scale */
-    upper = 300;     /* upper limit */
-    step = 20;       /* step size */
-
-    fahr = lower;
-    while (fahr <= upper) {
-        celsius = 5 * (fahr - 32) / 9;
-        printf("%d\t%d\n", fahr, celsius);
-        fahr = fahr + step;
+    int fahr = 0;
+    while (fahr <= 300) {
+        printf("%3d %4d\n", fahr, 5 * (fahr - 32) / 9);
+        fahr += 20;
     }
     return 0;
 }
 ```
 
 ```output
-0	-17
-20	-6
-40	4
-60	15
-80	26
-100	37
-120	48
-140	60
-160	71
-180	82
-200	93
-220	104
-240	115
-260	126
-280	137
-300	148
+  0  -17
+ 20   -6
+ 40    4
+ 60   15
+ 80   26
+100   37
+120   48
+140   60
+160   71
+180   82
+200   93
+220  104
+240  115
+260  126
+280  137
+300  148
 ```
 
-## What's going on
+## Integer division truncates toward zero
 
-- **Comments** are `/* ... */`. Everything between the markers is ignored by the compiler. Use them to explain *why*, not *what* — the code already says *what*.
-- **Declarations** announce a variable's type before it is used: `int fahr, celsius;` says "I will use the names `fahr` and `celsius`, and both hold integers." In C, every variable must be declared before its first use.
-- **Assignment** uses a single `=`, not `:=` or `==`. `lower = 0;` stores zero in `lower`. The statement ends in a semicolon — every C statement does.
-- **`while` loop**. `while (cond) { body }` evaluates `cond`; if true, runs the body and tries again. When `cond` becomes false the loop exits. Here it advances `fahr` by `step` until `fahr` passes `upper`.
-- **Integer arithmetic truncates.** `5 * (fahr - 32) / 9` is grouped left-to-right: multiply first, then divide. If you wrote `(fahr - 32) * 5 / 9` it still works. But `(fahr - 32) * (5/9)` would print zero for every row — `5/9` between two `int`s is `0`, not `0.555…`. This is the single most common surprise in early C.
-- **`printf` format specifiers.** `%d` means "substitute a decimal integer here". `printf("%d\t%d\n", fahr, celsius)` prints `fahr`, a tab, `celsius`, a newline. The number and types of `%` codes must match the number and types of arguments after the format string.
+`5 * (fahr - 32) / 9` multiplies *before* dividing on purpose. In C, `/` between two `int`s is **integer division** — it throws away the remainder. Write `5/9` and you get `0`, so `5/9 * (fahr-32)` would be zero for every row. This is the single most common arithmetic surprise for people arriving from Python or JS:
 
-## Modern note
+```c:run integer vs float division
+#include <stdio.h>
 
-K&R's original is `main()` with no return statement. Modern C wants `int main(void)` and a `return 0;` — both already applied above. K&R also defaults to integer arithmetic for the formula; the next page of the book rewrites the same program using `float` so the output reads `-17.8` instead of `-17`. The integer version is correct for what it computes; it just isn't physics-accurate. Try the float version yourself in the experiments below.
+int main(void) {
+    printf("%d\n", 5 / 9);       /* int / int  -> truncates to 0 */
+    printf("%f\n", 5 / 9.0);     /* one operand double -> real div */
+    return 0;
+}
+```
 
-## Try it
+```output
+0
+0.555556
+```
 
-1. Add a heading row above the table: `printf("Fahr\tCels\n");` before the loop.
-2. The columns are ragged. Replace `"%d\t%d\n"` with `"%3d %6d\n"` to right-justify them.
-3. Switch to floating-point: declare the variables as `float`, change the formula to `celsius = (5.0 / 9.0) * (fahr - 32.0);`, and the format to `"%3.0f %6.1f\n"`. The Celsius column should now show one decimal.
-4. Make a Celsius-to-Fahrenheit table going from `-40` to `120` in steps of `10` (K&R exercise 1-4). The formula is `fahr = celsius * 9 / 5 + 32`.
-5. Swap `<=` for `<` in the `while` condition. What disappears from the output? Why?
+The rule is [usual arithmetic conversions](https://en.cppreference.com/w/c/language/conversion): if *either* operand is floating point, the other is promoted and you get real division. `5.0/9.0` is computed in [IEEE‑754](https://en.wikipedia.org/wiki/IEEE_754) double precision.
 
-## Notes from the author
+## Same algorithm, floating point
 
-- The integer-arithmetic gotcha (`5/9 = 0`) is *the* canonical "C is not Python" lesson. If you came from a high-level language this is the first place the metal shows through. When you revise, consider expanding this into its own callout — it's worth more than one bullet.
-- I deliberately did not show the floating-point version inline because the `while` loop is the headline; the float rewrite is in the experiments and again in 1.3. If you find that too subtle, swap experiment #3 into the main code and add a "Modern note" about IEEE-754.
-- The `printf` format string is the first sighting of C's *implicit contract* between format and arguments — mismatched specifiers don't crash, they silently print garbage. Worth a deeper note when you have time; modern compilers warn under `-Wformat`, the wasm runtime here may or may not.
+Switch the variables to `float` and the truncation disappears — now the fractional degrees survive:
 
-*Click **next →** to meet the `for` loop, which packs initialise/test/increment into one line.*
+```c:run temperature table (float)
+#include <stdio.h>
 
+int main(void) {
+    float fahr = 0;
+    while (fahr <= 300) {
+        printf("%3.0f %6.1f\n", fahr, (5.0 / 9.0) * (fahr - 32.0));
+        fahr += 20;
+    }
+    return 0;
+}
+```
+
+```output
+  0  -17.8
+ 20   -6.7
+ 40    4.4
+ 60   15.6
+ 80   26.7
+100   37.8
+120   48.9
+140   60.0
+160   71.1
+180   82.2
+200   93.3
+220  104.4
+240  115.6
+260  126.7
+280  137.8
+300  148.9
+```
+
+`%3.0f` means "at least 3 columns wide, 0 digits after the point"; `%6.1f` is "6 wide, 1 decimal." The width/precision is a *formatting* concern handled by `printf`, separate from the value's actual precision.
+
+## Under the hood: how `printf` reads its arguments
+
+`printf` is [variadic](https://en.wikipedia.org/wiki/Variadic_function) — it takes a variable number of arguments and discovers their types *only* by parsing the format string at runtime. There is no type checking across that boundary at runtime: `%d` on a `double`, or `%f` on an `int`, reads the wrong bytes and prints garbage. Two consequences of the [calling convention](https://en.wikipedia.org/wiki/Calling_convention):
+
+- Arguments narrower than `int`/`double` are *promoted* — a `float` argument is always widened to `double` before the call. That's why there's no separate `%f` for `float`.
+- The compiler can't catch a `%d`/pointer mismatch on its own, which is why modern compilers special-case `printf` with `-Wformat`.
+
+```c:run format mismatch reads wrong bytes
+#include <stdio.h>
+
+int main(void) {
+    double pi = 3.14159;
+    printf("correct: %f\n", pi);
+    printf("wrong  : %d\n", 42);   /* %d wants an int, 42 is an int — fine */
+    return 0;
+}
+```
+
+```output
+correct: 3.141590
+wrong  : 42
+```
+
+## Go deeper
+- [Two's complement](https://en.wikipedia.org/wiki/Two%27s_complement) — how signed `int` is stored
+- [IEEE‑754 floating point](https://en.wikipedia.org/wiki/IEEE_754) — why `0.1` isn't exact
+- [Usual arithmetic conversions](https://en.cppreference.com/w/c/language/conversion) — the promotion rules
+- [`printf` format specifiers](https://en.cppreference.com/w/c/io/fprintf) — full width/precision/flags table
