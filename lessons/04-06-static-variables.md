@@ -8,88 +8,39 @@ next: ex-4-11
 status: done
 ---
 
-The keyword `static` does two completely different things depending on where it's used. Both are about **limiting visibility or extending lifetime**.
+The keyword `static` does two unrelated jobs depending on *where* it appears, and conflating them causes endless confusion. Inside a function, `static` changes a variable's **storage duration**: instead of living on the stack and dying each call, the variable lives in the `.data`/`.bss` segment for the whole program and **retains its value between calls**. At file scope, `static` instead changes **linkage**: it makes a function or variable **private to its `.c` file**, invisible to the linker and to other files. One keyword, two meanings — but both are about restricting and persisting.
 
-## `static` at file scope — internal linkage
+## Persistent memory inside a function
 
-A variable or function declared `static` at file scope is *invisible to other translation units*. Each `.c` file may have its own private `static int counter` without colliding at link time.
-
-```c
-/* file scope, internal linkage — invisible to other .c files */
-static int next_id = 0;
-
-int allocate_id(void) {
-    return ++next_id;
-}
-```
-
-If two `.c` files each define `static int counter = 0;`, they are two *different* counters. Without `static`, the linker would complain about duplicate definitions.
-
-For functions, `static` does the same thing: a `static` function can only be called from within its own `.c` file. It's the C equivalent of "private". Modern style: make every helper function `static` by default; only drop the keyword for functions exposed via headers.
-
-## `static` at block scope — persistent storage
-
-A variable declared `static` inside a function has the *scope of a local variable* (visible only inside the function) but the *lifetime of a global* (kept alive across calls).
-
-```c:starter
+```c:run static persists between calls
 #include <stdio.h>
 
-int next_id(void) {
-    static int counter = 0;   /* initialised once, persists across calls */
-    return ++counter;
+int counter(void) {
+    static int calls = 0;       /* initialized ONCE; survives every call */
+    return ++calls;
 }
 
 int main(void) {
-    printf("id = %d\n", next_id());
-    printf("id = %d\n", next_id());
-    printf("id = %d\n", next_id());
+    int a = counter();
+    int b = counter();
+    int c = counter();
+    printf("%d %d %d\n", a, b, c);
     return 0;
 }
 ```
 
 ```output
-id = 1
-id = 2
-id = 3
+1 2 3
 ```
 
-The initialiser `= 0` runs **once**, before main is entered. Subsequent calls find `counter` holding whatever it was last set to.
+`calls` is initialized to 0 exactly once, at program load — not on every call. Each call increments the *same* object, so it climbs 1, 2, 3. Remove `static` and `calls` would be a fresh stack variable reset to 0 every time, forever returning 1. This is how a function keeps private state across calls: counters, caches, lazy "have I initialized yet?" flags, and pseudo-random generators all rely on it. The trade-off: a function with `static` state is no longer *pure* — it returns different results for the same arguments and isn't safe to call from multiple threads without locking.
 
-Use cases:
+## File-scope `static`: the privacy modifier
 
-- One-time setup that should be lazy (build a lookup table on first call).
-- Caching a result computed at high cost.
-- Producing a counter or unique-ID without polluting global scope.
+At file scope, `static int table[100];` or `static void helper(void) { ... }` gives the variable/function **internal linkage** — it exists only within that one `.c` file. Another file can define its own `helper` with no clash, and nothing outside can reach yours. This is C's main tool for *encapsulation*: expose a few functions through the header (external linkage) and hide all the implementation helpers with `static`. It keeps the global namespace clean and signals "this is an internal detail, don't depend on it." So: `static` inside a function = *remembers*; `static` on a global = *hidden*.
 
-## What about `extern` and `static` together?
-
-They're contradictory: `extern` says "this name resolves to another translation unit", `static` says "this name is invisible to other translation units". You can't have both. The compiler will reject the combination.
-
-## Quick reference
-
-| Where               | `static` meaning                          | Storage           | Linkage   |
-|---------------------|--------------------------------------------|-------------------|-----------|
-| File scope variable | "private to this .c file"                  | Static (lifetime) | Internal  |
-| File scope function | "private to this .c file"                  | n/a               | Internal  |
-| Block scope variable| "persistent across calls"                  | Static (lifetime) | None      |
-| Function parameter  | Not allowed (compile error)                | —                 | —         |
-
-## Modern note
-
-- **`static const` arrays** are a C idiom for read-only lookup tables. Declare them once at file scope, the compiler places them in `.rodata`, and the cost is zero per access.
-- **Thread safety**: a `static` block-scope variable is *shared between all threads* calling the function. For a counter you want per-thread, use `_Thread_local` (C11) or `__thread` (GCC).
-- **Re-initialisation**: a `static` variable initialised with `= 0` (the most common case) lives in the BSS segment and gets zeroed by the OS at startup — there's literally no runtime initialisation cost.
-
-## Try it
-
-1. Write a `next_pow2(int x)` that caches its argument and result in `static` variables so a repeated call with the same `x` returns instantly.
-2. Define `static int helper(...)` in a `.c` file and try to call it from another. Read the linker error.
-3. Write a function with a `static` 256-entry lookup table built on first call (guarded by a `static int initialised`). On the second call, the table is already built — skip the initialisation.
-
-## Notes from the author
-
-- "Private functions" is one of the most important conventions in any C codebase. `static` is C's only access modifier — use it liberally.
-- The `static` block-scope variable is the closest C gets to a closure. Don't abuse it for state that should belong to a struct; one `static int initialised` flag is fine, but a constellation of `static` locals across many calls quickly becomes spaghetti.
-- A function with `static` locals is *not thread-safe by default*. If your program ever grows threads, you'll need to revisit every one. Production C code typically avoids `static` locals in any function that might be called from multiple threads.
-
-*Click **next →** for `register` variables (and why they're mostly obsolete).*
+## Go deeper
+- [`static` storage duration (C)](https://en.cppreference.com/w/c/language/storage_duration) — both meanings explained
+- [Internal vs external linkage](https://en.cppreference.com/w/c/language/storage_duration#Linkage) — file-scope `static`
+- [Pure functions](https://en.wikipedia.org/wiki/Pure_function) — what `static` state breaks
+- [`.bss` segment](https://en.wikipedia.org/wiki/.bss) — where zero-initialized statics live
