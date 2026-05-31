@@ -8,115 +8,43 @@ next: ex-6-1
 status: done
 ---
 
-An array of structs is laid out exactly like you'd expect: contiguous in memory, struct after struct. Each element is a full-sized struct, accessed by index.
+Combining the two aggregates gives an **array of structures** — a table where each row is a record with named fields. This is one of the most common data shapes in real C programs: a symbol table (name + value), a list of keywords (word + count), a set of menu items, a roster of employees. The whole array is one contiguous block, with each struct (padding included) laid end to end, so you can index rows with `[]` and reach fields with `.`.
 
-The classic example is K&R's keyword counter:
+## A table of records
 
-```c:starter
+```c:run an array of structs is a table of rows
 #include <stdio.h>
-#include <ctype.h>
-#include <string.h>
 
-struct key {
-    const char *word;
-    int   count;
-};
-
-static struct key keytab[] = {
-    { "auto",     0 },
-    { "break",    0 },
-    { "case",     0 },
-    { "char",     0 },
-    { "const",    0 },
-    { "continue", 0 },
-    { "default",  0 },
-    { "if",       0 },
-    { "int",      0 },
-    { "while",    0 },
-};
-
-#define NKEYS (sizeof keytab / sizeof keytab[0])
-
-static int getword(char *w, int lim);
-static int binsearch(const char *word, struct key tab[], int n);
+struct entry { char *word; int count; };   /* one row: a word and its tally */
 
 int main(void) {
-    char word[64];
-    while (getword(word, sizeof word) != EOF) {
-        if (isalpha((unsigned char)word[0])) {
-            int idx = binsearch(word, keytab, NKEYS);
-            if (idx >= 0) keytab[idx].count++;
-        }
-    }
-    for (size_t i = 0; i < NKEYS; ++i)
-        if (keytab[i].count > 0)
-            printf("%4d %s\n", keytab[i].count, keytab[i].word);
+    struct entry tab[] = {
+        {"int",    3},
+        {"return", 2},
+        {"if",     5}
+    };
+    int n = sizeof tab / sizeof tab[0];     /* element count, computed safely */
+
+    for (int i = 0; i < n; i++)
+        printf("%-8s %d\n", tab[i].word, tab[i].count);
     return 0;
-}
-
-static int getword(char *w, int lim) {
-    int c;
-    char *p = w;
-    while (isspace(c = getchar()))
-        ;
-    if (c == EOF) return EOF;
-    *p++ = c;
-    if (!isalpha(c)) { *p = '\0'; return c; }
-    while (--lim > 0) {
-        c = getchar();
-        if (!isalnum(c) && c != '_') { ungetc(c, stdin); break; }
-        *p++ = c;
-    }
-    *p = '\0';
-    return w[0];
-}
-
-static int binsearch(const char *word, struct key tab[], int n) {
-    int lo = 0, hi = n - 1;
-    while (lo <= hi) {
-        int mid = (lo + hi) / 2;
-        int cond = strcmp(word, tab[mid].word);
-        if (cond < 0)      hi = mid - 1;
-        else if (cond > 0) lo = mid + 1;
-        else               return mid;
-    }
-    return -1;
 }
 ```
 
 ```output
-(awaits C source on stdin — counts keywords)
+int      3
+return   2
+if       5
 ```
 
-## The size trick
+Each element `tab[i]` is a full `struct entry`; `tab[i].word` and `tab[i].count` reach its fields. The initializer is a list of brace-enclosed rows, and leaving the size empty (`tab[]`) lets the compiler count them. The `sizeof tab / sizeof tab[0]` idiom computes the number of elements *without* hard-coding 3 — it divides the whole array's size by one element's size, so it stays correct if you add or remove rows. The `%-8s` format left-justifies each word in an 8-column field, lining up the counts.
 
-```c
-#define NKEYS (sizeof keytab / sizeof keytab[0])
-```
+## Layout, and why it matters for performance
 
-This computes the array length *at compile time*. `sizeof keytab` is total bytes; `sizeof keytab[0]` is bytes per element; the quotient is the count.
+In memory the table is `tab[0]` immediately followed by `tab[1]`, then `tab[2]` — each occupying `sizeof(struct entry)` bytes (including any internal padding). Because the rows are contiguous, walking the array with `tab[i]` (or a moving pointer `p = tab; p < tab + n; p++`) marches straight through memory, which is exactly the access pattern [CPU caches](https://en.wikipedia.org/wiki/CPU_cache) reward. This "array of structs" layout keeps each record's fields together, ideal when you process whole records at a time. (The alternative, "struct of arrays" — separate parallel arrays, one per field — is faster when you sweep a *single* field across all records, a trick used in high-performance and SIMD code.) One practical note from the previous section: assigning `tab[i] = tab[j]` copies the entire struct, and sorting such a table swaps whole structs unless you instead sort an array of *pointers* into it — cheaper when the structs are large.
 
-The trick relies on `keytab` being a real array, not a pointer. If you pass `keytab` to a function and try the same expression there, you'll get nonsense — inside the function `keytab` decayed to a pointer, and `sizeof` returns the pointer size.
-
-## Initialiser order
-
-Members are initialised in declaration order — first member of struct gets the first value, etc. C99 added **designated initialisers** for clarity:
-
-```c
-struct key example = { .word = "if", .count = 0 };
-```
-
-Designated initialisers let you skip members (they get zero-initialised) and reorder. Highly recommended for structs with more than a few fields — they're self-documenting.
-
-## Try it
-
-1. Add words like `for`, `do`, `else`, `void` to the table (keep it sorted!) and verify the search finds them.
-2. Switch to designated initialisers and check the output is unchanged.
-
-## Notes from the author
-
-- `struct key keytab[]` (no size) lets the compiler count the initialisers. This is the safe-and-DRY way to declare a static table — adding rows automatically updates the size.
-- Binary search requires the table to be sorted. If you add words out of order, the search fails silently. A common discipline: sort the table at startup with `qsort`, or write a unit test that asserts sortedness.
-- Modern C codebases use `struct { ... } table[]` as the dictionary type for everything from CLI flags to MIME types. It's the closest C has to a built-in literal map.
-
-*Click **next →** for pointers to structs.*
+## Go deeper
+- [Arrays of structs (C)](https://en.cppreference.com/w/c/language/array) — combining the aggregates
+- [`sizeof arr / sizeof arr[0]`](https://en.cppreference.com/w/c/language/sizeof) — the element-count idiom
+- [AoS vs SoA](https://en.wikipedia.org/wiki/AoS_and_SoA) — layout choices and performance
+- [Cache locality](https://en.wikipedia.org/wiki/Locality_of_reference) — why contiguous tables are fast
