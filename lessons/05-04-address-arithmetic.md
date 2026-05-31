@@ -8,95 +8,41 @@ next: 05-05-character-pointers-and-functions
 status: done
 ---
 
-Pointers support a limited, *typed* arithmetic:
+C lets you do arithmetic *on addresses*, but with a twist that makes it safe and portable: pointer arithmetic is **scaled by the pointed-to type**. Adding 1 to an `int *` advances it by `sizeof(int)` bytes (4, typically), not by one byte, so `p + i` always lands on the `i`-th element — never in the middle of one. Subtracting two pointers into the same array gives the *number of elements* between them, not the byte distance. This is the machinery that makes `a[i]` work and that lets you walk through arrays without ever computing a raw byte address.
 
-| Expression | Result                                             |
-|------------|----------------------------------------------------|
-| `p + i`    | `p` advanced by `i` *elements* (not bytes!)         |
-| `p - i`    | `p` moved backwards by `i` elements                 |
-| `++p`, `p++` | Move forward one element                          |
-| `--p`, `p--` | Move backward one element                         |
-| `p - q`    | Number of elements between `p` and `q` (`ptrdiff_t`)|
-| `p == q`, `p < q`, `p > q` | Pointer comparisons (within one array) |
+## Adding, subtracting, comparing pointers
 
-The compiler scales by `sizeof(*p)` automatically. If `p` is `int *` (4-byte ints) and you write `p + 3`, the address advances by 12 bytes. **You think in elements; the compiler thinks in bytes.**
-
-## A walk through an array
-
-```c:starter
+```c:run pointer arithmetic counts elements, not bytes
 #include <stdio.h>
 
 int main(void) {
-    int v[] = { 10, 20, 30, 40, 50 };
-    int *p  = v;        /* &v[0] */
-    int *end = v + 5;   /* one past the last element */
+    int a[6] = {0, 10, 20, 30, 40, 50};
+    int *start = &a[0];
+    int *end   = &a[6];           /* one past the last element (legal to form) */
+    printf("elements between: %ld\n", (long)(end - start));
 
-    /* idiomatic pointer-walk loop */
-    while (p < end) {
-        printf("addr=%p  val=%d\n", (void*)p, *p);
-        ++p;
-    }
-
-    /* size of the array via pointer subtraction */
-    printf("array has %td elements\n", end - v);
+    int *p = &a[1];
+    int *q = &a[4];
+    printf("q - p = %ld (so 3 ints apart)\n", (long)(q - p));
+    printf("*(start + 2) = %d\n", *(start + 2));   /* a[2] */
     return 0;
 }
 ```
 
 ```output
-addr=0x7ffc...  val=10
-addr=0x7ffc...  val=20
-addr=0x7ffc...  val=30
-addr=0x7ffc...  val=40
-addr=0x7ffc...  val=50
-array has 5 elements
+elements between: 6
+q - p = 3 (so 3 ints apart)
+*(start + 2) = 20
 ```
 
-The `%td` format is for `ptrdiff_t`. Use it; don't cast to `int` (overflow on huge arrays).
+`end - start` is 6 — the element count — even though the two addresses differ by 24 *bytes*; the compiler divides by `sizeof(int)` for you. `q - p` is 3 for the same reason. The result type of pointer subtraction is `ptrdiff_t` (a signed integer type). You may also **compare** pointers into the same array (`p < q`, `p == q`), which is how loop conditions like `while (p < end)` work — a common idiom for scanning an array with a moving pointer instead of an index.
 
-## "One past the end" is legal
+## The rules that keep it safe (and the line you must not cross)
 
-C explicitly allows you to form (but not dereference) a pointer to *one element past* the last in an array. This is what `v + 5` is above. It's used as a loop sentinel and is the basis of `strchr`, `strrchr`, and friends returning `NULL` vs the end.
+Pointer arithmetic is only defined *within* a single array (or one element treated as an array of length 1). You may form a pointer to **one past the last element** — that's why `&a[6]` above is legal — and use it as a loop sentinel, but you may **not dereference** it; it marks the end, nothing lives there. Going further (`a - 1`, or `a + 100`) is **undefined behavior** even if you never dereference, because the standard only guarantees addresses inside the array's bounds plus the one-past slot. You also can't add two pointers (meaningless) or multiply them — only `pointer ± integer`, `pointer - pointer`, and comparisons are allowed. This deliberate restriction is what lets the same C code run on machines with wildly different memory layouts: you reason in *elements*, and the compiler translates to the platform's actual byte addresses.
 
-```c
-for (int *p = v; p < v + 5; ++p)
-    printf("%d\n", *p);
-```
-
-vs. equivalent index form:
-
-```c
-for (int i = 0; i < 5; ++i)
-    printf("%d\n", v[i]);
-```
-
-The compiler generates identical code from either. Style choice: use indices for "I want to see the position", pointer walks for "this is just a sweep".
-
-## Forbidden pointer arithmetic
-
-- Adding two pointers: nonsense. `p + q` doesn't compile.
-- Pointer arithmetic across arrays: technically undefined if `p` and `q` point into different objects.
-- Multiplying or dividing pointers: not defined.
-- Comparing pointers from different arrays with `<` or `>`: undefined (equality is fine).
-
-Realistically you won't accidentally do most of these — the type system or compile errors catch them. The "across arrays" rule is the one that bites: if you have two separately-allocated buffers, comparing pointers between them isn't guaranteed to make sense.
-
-## Modern note
-
-- AddressSanitizer (`-fsanitize=address`) detects out-of-bounds pointer arithmetic at runtime. Use it in every dev build.
-- `ptrdiff_t` may be smaller than `size_t` on huge address spaces. For sub-2GB arrays you're safe; for anything else, store sizes in `size_t`.
-- The "one past the end" sentinel makes half-open intervals `[start, end)` the idiomatic C pattern — matching mathematical convention and avoiding off-by-one errors.
-
-## Try it
-
-1. Implement `void *my_memcpy(void *dst, const void *src, size_t n)` using pointer walks. Cast to `unsigned char *` so the arithmetic is in bytes.
-2. Write a function that finds the median of an array by pointer-walking, then explain why "median requires sorting first" makes this exercise misleading. (Use `qsort` or write a partial sort.)
-3. Try `int v[5]; int *p = v + 100;`. The pointer formation may or may not crash (C says "UB"), but dereferencing it definitely will.
-
-## Notes from the author
-
-- Pointer arithmetic scales by element size automatically. This is one of the cleanest design choices in C: code looks the same whether you're walking `int`s, `double`s, or `struct foo`s.
-- Old C books emphasised pointer-walking as faster than indexing. Modern compilers transform between them freely at `-O2`; pick the form that reads better.
-- The "half-open interval `[begin, end)`" pattern, copied from C into C++ STL, Rust's `Range`, and Python's `range`, originates in this section of K&R. It's that influential.
-
-*Click **next →** for character pointers and string functions.*
+## Go deeper
+- [Pointer arithmetic (C)](https://en.cppreference.com/w/c/language/operator_arithmetic#Pointer_arithmetic) — the exact rules
+- [`ptrdiff_t`](https://en.cppreference.com/w/c/types/ptrdiff_t) — the type of a pointer difference
+- [One-past-the-end pointers](https://en.wikipedia.org/wiki/Pointer_(computer_programming)#C_and_C++) — the legal sentinel
+- [Undefined behavior](https://en.cppreference.com/w/c/language/behavior) — what out-of-bounds arithmetic invites
