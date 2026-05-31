@@ -8,129 +8,44 @@ next: ex-7-3
 status: done
 ---
 
-Functions like `printf` accept any number of arguments of any types. This is **variadic functions**, declared with `...` and implemented with the macros in `<stdarg.h>`.
+How does `printf` accept *any number* of arguments of *any* types? Through C's **variadic function** mechanism, exposed to you in `<stdarg.h>`. A function declared with `...` after its named parameters can be called with extra arguments; inside, you walk over them one at a time with a `va_list` cursor and the macros `va_start`, `va_arg`, and `va_end`. The catch — and it's a big one — is that the language gives you *no way to know* how many extra arguments arrived or what types they are. You must determine that yourself, from a count parameter or from a format string like `printf`'s.
 
-```c
-#include <stdarg.h>
+## Writing your own variadic function
 
-void minimal_printf(const char *fmt, ...);
-```
-
-The `...` says "more arguments may follow". Inside the function, you can't access them by name — you use a `va_list` and walk it with `va_arg`.
-
-## The pattern
-
-```c
-void minimal_printf(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);          /* point ap at the first arg AFTER fmt */
-    /* call va_arg(ap, type) to fetch each one in turn */
-    va_end(ap);                  /* clean up */
-}
-```
-
-Three macros:
-
-- `va_start(ap, last_named)` — initialise.
-- `va_arg(ap, type)` — fetch the next argument as `type` and advance.
-- `va_end(ap)` — finalise (required for portability).
-
-The caller's argument *types* are NOT recorded anywhere; the format string carries that information.
-
-## A tiny printf
-
-```c:starter
+```c:run sum a variable number of ints
 #include <stdio.h>
 #include <stdarg.h>
 
-void minimal_printf(const char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    for (const char *p = fmt; *p; ++p) {
-        if (*p != '%') {
-            putchar(*p);
-            continue;
-        }
-        switch (*++p) {
-        case 'd': {
-            int i = va_arg(ap, int);
-            printf("%d", i);
-            break;
-        }
-        case 'f': {
-            double f = va_arg(ap, double);
-            printf("%g", f);
-            break;
-        }
-        case 's': {
-            const char *s = va_arg(ap, const char *);
-            fputs(s, stdout);
-            break;
-        }
-        case '%':
-            putchar('%');
-            break;
-        default:
-            putchar('%');
-            putchar(*p);
-        }
-    }
-    va_end(ap);
+int sum(int count, ...) {           /* count tells us how many follow */
+    va_list ap;                     /* the argument cursor */
+    va_start(ap, count);            /* start it just after 'count' */
+    int total = 0;
+    for (int i = 0; i < count; i++)
+        total += va_arg(ap, int);   /* fetch next arg AS an int, advance */
+    va_end(ap);                     /* clean up */
+    return total;
 }
 
 int main(void) {
-    minimal_printf("name=%s, age=%d, score=%f\n", "Alice", 30, 95.5);
-    minimal_printf("%d%% done\n", 50);
+    printf("sum(3, 10,20,30) = %d\n", sum(3, 10, 20, 30));
+    printf("sum(5, 1,2,3,4,5) = %d\n", sum(5, 1, 2, 3, 4, 5));
     return 0;
 }
 ```
 
 ```output
-name=Alice, age=30, score=95.5
-50% done
+sum(3, 10,20,30) = 60
+sum(5, 1,2,3,4,5) = 15
 ```
 
-## Default argument promotions
+The protocol is fixed: declare a `va_list`, `va_start(ap, last)` where `last` is the *name of the final named parameter* (here `count`), then call `va_arg(ap, TYPE)` once per argument to read it and advance the cursor, and finally `va_end(ap)`. There must be **at least one named parameter** before the `...` — that's what `va_start` anchors to, and it's how the callee knows where the variable part begins. Here `count` does double duty: it's the anchor *and* it tells the loop how many `int`s to pull.
 
-When you pass variadic arguments, C does **default promotions**:
+## How it works underneath, and the sharp edges
 
-- `float` → `double`
-- `char`, `short` → `int`
-- bool → `int`
+Variadic arguments rely entirely on the platform's **[calling convention](https://en.wikipedia.org/wiki/Calling_convention) / [ABI](https://en.wikipedia.org/wiki/Application_binary_interface)**. On the x86-64 System V ABI, integer arguments arrive in registers (rdi, rsi, rdx, …) and `va_arg` is compiler magic that knows where each successive value lives — the `va_list` is really a small struct tracking register-save areas and a stack overflow pointer. Two rules fall out of this and bite the unwary. First, **default argument promotions** apply to everything passed through `...`: `char`/`short` become `int`, and `float` becomes `double`. So you must write `va_arg(ap, int)` to read what was a `char`, and `va_arg(ap, double)` to read a `float` — using the original narrow type reads the wrong bytes. Second, you must request *exactly* the type that was passed: ask for an `int` where a `double` was given and you'll silently misread the stack. Because nothing is checked, variadic functions are inherently type-unsafe — which is why modern C++ prefers templates/fold-expressions and why `printf`-style functions get special compiler `__attribute__((format))` warnings. When you do need them, the count-or-sentinel discipline (a leading count, or a terminating `NULL`/`0`) is mandatory.
 
-That's why `va_arg(ap, double)` for `%f`, not `va_arg(ap, float)`. The float was already widened to double when passed.
-
-Same trap: `va_arg(ap, short)` is **undefined behaviour** — there's no `short` on the variadic argument stack; you must use `int` and cast.
-
-## Forwarding to printf
-
-A common pattern: your function takes a format-string, prepends a prefix, and calls `vprintf`/`vfprintf`/`vsnprintf` with the same `va_list`:
-
-```c
-void log_msg(const char *level, const char *fmt, ...) {
-    fprintf(stderr, "[%s] ", level);
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fputc('\n', stderr);
-}
-
-log_msg("info", "user=%s age=%d", "Alice", 30);
-```
-
-`vfprintf` is the version of `fprintf` that takes a `va_list`. Every `printf`-like function should have a `v`-version for exactly this case.
-
-## Try it
-
-1. Extend `minimal_printf` to handle `%c` and `%x`.
-2. Write `sum_ints(int count, ...)` that adds `count` integers.
-3. Build a `log_msg` like above and use it in another small program.
-
-## Notes from the author
-
-- Variadic functions are a 1970s solution to "I don't know how many args yet". C++ has variadic templates that do this with full type safety; C still uses the same `<stdarg.h>` macros from K&R 2e.
-- The format-string-as-instructions design is great for ergonomics but bad for safety. `printf("%s", user_input)` is safe; `printf(user_input)` is a format-string attack waiting to happen.
-- `va_copy` (C99) lets you duplicate a `va_list` if you need to iterate twice (e.g. once to compute total size, once to write). It's not in K&R 2e but is essential modern hygiene.
-
-*Click **next →** for `scanf`.*
+## Go deeper
+- [`<stdarg.h>`](https://en.cppreference.com/w/c/variadic) — `va_list`, `va_start`, `va_arg`, `va_end`
+- [`stdarg(3)`](https://man7.org/linux/man-pages/man3/stdarg.3.html) — usage and gotchas
+- [Calling conventions](https://en.wikipedia.org/wiki/X86_calling_conventions) — where the extra args actually sit
+- [Default argument promotions](https://en.cppreference.com/w/c/language/conversion#Default_argument_promotions) — why `char`/`float` widen
