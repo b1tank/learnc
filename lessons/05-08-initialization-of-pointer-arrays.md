@@ -8,86 +8,45 @@ next: ex-5-9
 status: done
 ---
 
-You can initialise an array of pointers in the declaration, just like any other array — but the initialisers are themselves pointers (typically string literals or `NULL`).
+A common, elegant use of an array of pointers is a **static lookup table** of strings — initialized once, indexed by an integer. Because the array elements are just `char *` pointers to string literals, the table is compact (only the addresses are stored in the array; the characters live in read-only memory) and the lookup is a single index operation. Marking the table `static` inside a function means it's built once at program load, not rebuilt on every call.
 
-## The classic month-name table
+## A name-from-number table
 
-```c:starter
+```c:run month names via a static pointer-array table
 #include <stdio.h>
 
-const char *month_name(int n);
-
-int main(void) {
-    for (int i = 0; i <= 13; ++i)
-        printf("%2d: %s\n", i, month_name(i));
-    return 0;
+char *month_name(int n) {
+    static char *name[] = {           /* built once, kept for the program */
+        "illegal month",
+        "January", "February", "March",     "April",   "May",      "June",
+        "July",    "August",   "September", "October", "November", "December"
+    };
+    /* guard the index, then return the matching pointer */
+    return (n < 1 || n > 12) ? name[0] : name[n];
 }
 
-const char *month_name(int n) {
-    static const char *months[] = {
-        "(invalid)",       /* index 0 */
-        "January",  "February",  "March",
-        "April",    "May",       "June",
-        "July",     "August",    "September",
-        "October",  "November",  "December"
-    };
-    if (n < 1 || n > 12)
-        return months[0];
-    return months[n];
+int main(void) {
+    printf("%s\n", month_name(2));
+    printf("%s\n", month_name(12));
+    printf("%s\n", month_name(13));     /* out of range -> the guard entry */
+    return 0;
 }
 ```
 
 ```output
- 0: (invalid)
- 1: January
- 2: February
- 3: March
- 4: April
- 5: May
- 6: June
- 7: July
- 8: August
- 9: September
-10: October
-11: November
-12: December
-13: (invalid)
+February
+December
+illegal month
 ```
 
-A few things going on:
+The table maps `1→January … 12→December`, with index `0` reserved as the "bad input" sentinel — a tidy trick that lets the function return a valid string for *any* argument without crashing. `month_name(2)` simply returns `name[2]`; no `switch`, no chain of `if`s. Because `name` is `static`, the array of 13 pointers is laid out once when the program loads, pointing at string literals in read-only memory; subsequent calls just index into it. The bounds check (`n < 1 || n > 12`) is essential — indexing a pointer array out of range reads a stray address and dereferencing it (via `%s`) would be undefined behavior.
 
-1. **`static`** at function scope (§4.6): the table is built **once**, before main is entered, and persists across calls. No per-call setup cost.
-2. **`const char *`**: each entry is a pointer to a string literal in `.rodata`. The pointers themselves live in the (static, immutable) `months` array.
-3. **Bounds-check at the entry**: out-of-range inputs map to `months[0]` ("(invalid)"). The function never crashes on bad input.
+## Ragged by nature, and why `static` helps
 
-## Why pointers, not a 2D char array
+This is the ragged-array advantage from the previous sections made concrete: the month strings have wildly different lengths ("May" vs "September"), yet the table wastes no space — each slot is one pointer, and the strings are packed individually. A rectangular `char[13][10]` would have to size every row for the *longest* name and pad the rest. Two design notes: declaring the table `static const char *const name[]` would additionally promise that neither the pointers nor (via `const char *`) the pointed-to text will change, letting the compiler place the whole thing in read-only memory and catch accidental writes. And keeping it `static` matters for tables of any real size — without it, a large initializer would be *copied onto the stack* on every call, which is both slow and wasteful. Lookup tables like this are the idiomatic C alternative to long `switch` statements for mapping small integer ranges to strings or data.
 
-If you wrote it as `static const char months[13][10]`, every row would have to be at least 10 bytes (the longest string fits + null). Total: `130` bytes, with padding bytes wasting space.
-
-The pointer version: `13 * sizeof(char *)` = 104 bytes for the table, plus the literals themselves (~80 bytes total). Slightly more memory total in this small case; for highly variable-length rows the savings would be larger. The real benefit is **clarity of intent**: each entry is a string, not a fixed-width slot.
-
-## Initialiser shorthand
-
-```c
-const char *errors[] = {
-    [EIO]     = "I/O error",
-    [ENOMEM]  = "out of memory",
-    [EINVAL]  = "invalid argument",
-};
-```
-
-C99 **designated initialisers** let you initialise by index. Above, indices `EIO`, `ENOMEM`, `EINVAL` (errno macros) get specific entries; everything else is `NULL`. Beautiful for sparse tables — exactly what you want for `errno` strings.
-
-## Try it
-
-1. Make a `weekday_name(int n)` returning Sunday through Saturday. Defensive handling of out-of-range input.
-2. Build a 2D pointer table: `static const char *grid[3][3] = { ... };` and fill in chessboard positions or tic-tac-toe state.
-3. Use designated initialisers for an enum-keyed lookup table. Notice how the file reads like a switch statement.
-
-## Notes from the author
-
-- The "lookup table built at compile time" pattern is everywhere in real C: month names, day names, HTTP status text, errno strings, opcode mnemonics. Initialise them as `static const`; the linker places them in `.rodata` and there's literally no runtime setup cost.
-- Designated initialisers in C99 are quietly one of the language's best additions. They make tables self-documenting (`[EIO] = "..."` says "this entry corresponds to error code `EIO`") and reorderable without breaking the indices.
-- Returning `const char *` from a getter is the C idiom for "you don't own this string, don't free it, don't mutate it". The caller can `printf("%s", month_name(3))` and never has to think about lifetimes.
-
-*Click **next →** for the subtle distinction between pointers and multi-dim arrays.*
+## Go deeper
+- [Array initialization (C)](https://en.cppreference.com/w/c/language/array_initialization) — initializer lists
+- [String literals & storage](https://en.cppreference.com/w/c/language/string_literal) — where the text lives
+- [`static` storage duration](https://en.cppreference.com/w/c/language/storage_duration) — built-once tables
+- [Lookup table](https://en.wikipedia.org/wiki/Lookup_table) — the general technique
