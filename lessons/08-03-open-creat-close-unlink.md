@@ -8,119 +8,54 @@ next: ex-8-1
 status: done
 ---
 
-Four primitives let you manage the lifetime of files at the OS level:
+`read` and `write` need a descriptor to operate on; `open` is how you *get* one for a named file. `open(path, flags, mode)` asks the kernel to open (and optionally create) a file and returns the lowest free descriptor, or -1 on failure. `close(fd)` releases a descriptor when you're done, and `unlink(path)` removes a name from the filesystem. Together with `read`/`write` these are the complete low-level file API — the exact calls the `fopen`/`fclose`/`remove` of `<stdio.h>` are built on.
 
-```c
-int open  (const char *path, int flags, ... /* mode_t */);
-int creat (const char *path, mode_t mode);   /* historical; same as open with O_WRONLY|O_CREAT|O_TRUNC */
-int close (int fd);
-int unlink(const char *path);
-```
+## Descriptors connect FILE* to the kernel
 
-## `open` flags
-
-The `flags` argument is a bitwise-OR of:
-
-- **Access mode** (exactly one):
-  - `O_RDONLY` — read-only.
-  - `O_WRONLY` — write-only.
-  - `O_RDWR` — both.
-- **Creation flags**:
-  - `O_CREAT` — create if missing. Requires the third `mode` arg.
-  - `O_EXCL` — paired with `O_CREAT`: fail if file exists.
-  - `O_TRUNC` — truncate to zero length on open.
-  - `O_APPEND` — every `write` goes to end-of-file (atomic on most kernels).
-- **Other**:
-  - `O_NONBLOCK` — don't block on slow operations.
-  - `O_CLOEXEC` — auto-close on `exec()`.
-  - `O_SYNC`, `O_DSYNC` — bypass buffering, force durable writes.
-
-```c
-int fd = open("data.bin", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-```
-
-The `0644` is the **file mode** — what permissions to set if the file is created. `0644` is `rw-r--r--`. The actual permissions are `mode & ~umask` (your shell's umask filters out bits).
-
-## `creat`
-
-```c
-int fd = creat("file.txt", 0644);
-```
-
-Equivalent to `open("file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644)`. K&R era; modern code uses the `open` form.
-
-## `close`
-
-```c
-close(fd);
-```
-
-Returns 0 on success, -1 on error (rare — usually means the descriptor was already invalid, but `close` can also surface deferred write errors).
-
-Forgetting to `close` leaks descriptors. Long-running programs hit `EMFILE: too many open files` and fail to accept new connections.
-
-## `unlink`
-
-```c
-unlink("temp.txt");
-```
-
-Removes the **directory entry** for the file. If no other links and no open descriptors hold it, the data is freed. While a fd is open, the file persists even after `unlink` — useful for "anonymous temporary files":
-
-```c
-int fd = open("tmpfile", O_RDWR | O_CREAT | O_TRUNC, 0600);
-unlink("tmpfile");      /* gone from directory; only THIS fd can reach it */
-/* use fd freely; when closed, the data is freed */
-close(fd);
-```
-
-This is the basis for `tmpfile(3)` and many tempfile schemes — the file exists "in space" but has no name on disk.
-
-## Putting it together: atomic file replace
-
-```c:starter
+```c:run a FILE* is a buffered wrapper over a descriptor
 #include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-
-static int write_atomic(const char *path, const char *data, size_t n) {
-    char tmp[256];
-    snprintf(tmp, sizeof tmp, "%s.tmp", path);
-
-    int fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd < 0) { perror("open"); return -1; }
-    if (write(fd, data, n) != (ssize_t)n) { perror("write"); close(fd); unlink(tmp); return -1; }
-    if (close(fd) < 0) { perror("close"); unlink(tmp); return -1; }
-    if (rename(tmp, path) < 0) { perror("rename"); unlink(tmp); return -1; }
-    return 0;
-}
 
 int main(void) {
-    const char *data = "hello, world\n";
-    if (write_atomic("hello.txt", data, strlen(data)) == 0)
-        printf("wrote hello.txt atomically\n");
+    /* fileno() exposes the raw descriptor inside each standard stream. */
+    printf("fileno(stdin)  = %d\n", fileno(stdin));
+    printf("fileno(stdout) = %d\n", fileno(stdout));
+    printf("fileno(stderr) = %d\n", fileno(stderr));
     return 0;
 }
 ```
 
 ```output
-wrote hello.txt atomically
+fileno(stdin)  = 0
+fileno(stdout) = 1
+fileno(stderr) = 2
 ```
 
-`rename` is atomic on the same filesystem — either the new file is in place or the old one is. The "write to `.tmp`, then `rename`" pattern is how nearly every config file editor saves safely.
+`fileno(fp)` extracts the integer descriptor buried inside a `FILE *`, making the layering explicit: `stdin` is a buffered stream wrapped around descriptor 0, `stdout` around 1, `stderr` around 2. Every `fopen` you do creates a `FILE` whose hidden field is a descriptor returned by `open`. (This in-browser sandbox has no writable filesystem, so the `open`/`creat` calls below can't *run* here — but they're the real, unchanged syscalls you'd use on any Unix system.)
 
-## Try it
+## Opening, creating, and removing files
 
-1. Open a file with `O_EXCL` and try to create it twice; observe `EEXIST`.
-2. Open a file, `unlink` it, then try to read/write through the fd. Verify the data is still accessible.
-3. Use `O_APPEND` to have two processes write to the same file simultaneously — observe interleaved-but-not-corrupted output.
+The real low-level file lifecycle looks like this:
 
-## Notes from the author
+```c
+#include <fcntl.h>      /* open, O_* flags  */
+#include <unistd.h>     /* read, write, close, unlink */
 
-- The `open` flags are essentially a small DSL — bitwise OR specifies the behaviour. Modern kernels add new flags routinely (`O_TMPFILE`, `O_PATH`, ...) — see `open(2)`.
-- "Open, then unlink while still open" is the canonical anonymous-tempfile pattern. Linux has `O_TMPFILE` for the same purpose without the race window.
-- The atomic-rename pattern is *also* how most editors save files. The temporary lets you commit the entire write at once; readers see either the old version or the new, never a half-written file.
+int fd = open("data.txt", O_RDONLY);              /* open existing for reading */
+if (fd == -1) { perror("data.txt"); return 1; }   /* -1 => check errno */
 
-*Click **next →** for random access with `lseek`.*
+/* create-or-truncate for writing, permission bits 0644 (rw-r--r--): */
+int out = open("out.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+write(out, "hello\n", 6);
+close(fd);
+close(out);                                       /* release both descriptors */
+
+unlink("out.txt");                                /* remove the name */
+```
+
+The **flags** argument is a bitwise-OR of an access mode plus options: exactly one of `O_RDONLY`, `O_WRONLY`, `O_RDWR`, optionally `O_CREAT` (create if absent — and only then is the third `mode` argument used), `O_TRUNC` (truncate to zero length), `O_APPEND` (always write at the end), and `O_EXCL` (with `O_CREAT`, fail if the file already exists — the basis of safe lock files). The **mode** (`0644`, an octal permission mask) sets the new file's Unix permissions, and is itself filtered by the process's [`umask`](https://man7.org/linux/man-pages/man2/umask.2.html). The old `creat(path, mode)` call is just shorthand for `open(path, O_WRONLY|O_CREAT|O_TRUNC, mode)`. **`close`** matters for two reasons: descriptors are a *limited resource* (each process has a cap, often ~1024), so leaking them eventually makes `open` fail with `EMFILE`; and on some systems buffered metadata is finalized at close. **`unlink`** reveals a subtlety of Unix filesystems: it removes a *directory entry* (a name), not necessarily the file's data. A file's bytes persist until both its last name is unlinked *and* its last open descriptor is closed — the kernel reference-counts [inodes](https://en.wikipedia.org/wiki/Inode). This is why you can `unlink` a temp file right after opening it and still read/write it through the descriptor: the data lives on, nameless, until you close, after which the kernel reclaims it — a classic idiom for self-cleaning scratch files.
+
+## Go deeper
+- [`open(2)`](https://man7.org/linux/man-pages/man2/open.2.html) — flags, modes, and return value
+- [`close(2)`](https://man7.org/linux/man-pages/man2/close.2.html) / [`unlink(2)`](https://man7.org/linux/man-pages/man2/unlink.2.html) — releasing descriptors and names
+- [Inode](https://en.wikipedia.org/wiki/Inode) — why unlink doesn't always delete data
+- [File-system permissions](https://en.wikipedia.org/wiki/File-system_permissions) — what `0644` means
