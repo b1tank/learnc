@@ -8,120 +8,53 @@ next: 08-03-open-creat-close-unlink
 status: done
 ---
 
-The two workhorses:
+All input and output reduces to two system calls: `read` and `write`. Their signatures are symmetric — `n = read(fd, buf, count)` and `n = write(fd, buf, count)` — each transferring up to `count` bytes between your buffer and the descriptor, and each returning the number of bytes *actually* transferred (or 0 at end of input, or -1 on error). They impose **no interpretation** on the bytes: no lines, no number formatting, no buffering. They move raw memory. Everything fancier — `printf`, `fgets`, `getchar` — is library code layered on top of these two primitives.
 
-```c
-ssize_t read (int fd, void *buf, size_t n);
-ssize_t write(int fd, const void *buf, size_t n);
-```
+## A raw byte-copy loop
 
-- **`fd`**: the open file descriptor.
-- **`buf`**: where to put the data (`read`) or where to take it from (`write`).
-- **`n`**: max bytes the user wants to move.
-- **Return**: number of bytes actually moved, or `-1` on error (with `errno` set).
-- **Return `0`** from `read`: end of file.
-
-## The "short read/write" rule
-
-`read` may return **less than `n`** even when there's more data:
-
-- Reading from a terminal: returns one line at a time.
-- Reading from a pipe: returns whatever the writer has flushed so far.
-- Reading from a socket: returns whatever's arrived (may be one packet).
-- Interrupted by a signal: returns partial result.
-
-Same for `write` (especially on non-blocking sockets, signals, near-full pipes).
-
-**Always handle short returns.** The standard idiom:
-
-```c
-ssize_t full_write(int fd, const void *buf, size_t n) {
-    const char *p = buf;
-    size_t left = n;
-    while (left > 0) {
-        ssize_t w = write(fd, p, left);
-        if (w < 0) {
-            if (errno == EINTR) continue;  /* interrupted; retry */
-            return -1;
-        }
-        p    += w;
-        left -= w;
-    }
-    return n;
-}
-```
-
-## A minimal file copy
-
-```c:starter
-#include <stdio.h>
+```c:run copy stdin to stdout with read/write
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
 
-int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "usage: %s SRC DST\n", argv[0]);
-        return 1;
-    }
-    int in  = open(argv[1], O_RDONLY);
-    if (in < 0)  { perror(argv[1]); return 1; }
-    int out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (out < 0) { perror(argv[2]); close(in); return 1; }
-
+int main(void) {
     char buf[4096];
     ssize_t n;
-    while ((n = read(in, buf, sizeof buf)) > 0) {
-        ssize_t off = 0;
-        while (off < n) {
-            ssize_t w = write(out, buf + off, n - off);
-            if (w < 0 && errno == EINTR) continue;
-            if (w < 0) { perror("write"); close(in); close(out); return 1; }
-            off += w;
-        }
+    long total = 0;
+    while ((n = read(0, buf, sizeof buf)) > 0) {  /* until EOF (0) or error (-1) */
+        write(1, buf, n);                         /* write back EXACTLY n bytes */
+        total += n;
     }
-    if (n < 0) { perror("read"); close(in); close(out); return 1; }
-    close(in);
-    if (close(out) < 0) { perror("close"); return 1; }
+    /* report the count using only write() — no stdio */
+    char msg[64]; int len = 0;
+    const char *pre = "[copied ";
+    while (pre[len]) { msg[len] = pre[len]; len++; }
+    char digits[20]; int d = 0; long t = total;
+    if (t == 0) digits[d++] = '0';
+    while (t) { digits[d++] = '0' + t % 10; t /= 10; }
+    while (d) msg[len++] = digits[--d];
+    const char *post = " bytes]\n";
+    int j = 0; while (post[j]) msg[len++] = post[j++];
+    write(1, msg, len);
     return 0;
 }
 ```
 
-```output
-(awaits CLI args)
+```stdin
+abcde
 ```
 
-## Buffer size and performance
+```output
+abcde
+[copied 6 bytes]
+```
 
-| Buffer | Throughput (approx) |
-|--------|---------------------|
-| 1      | very slow (one syscall per byte) |
-| 128    | slow                |
-| 1024   | OK                  |
-| 4096   | fast — matches typical disk block |
-| 65536  | fast — uses CPU cache well |
-| 1MB+   | diminishing returns |
+The idiom `while ((n = read(...)) > 0) write(fd, buf, n);` is the canonical low-level copy, and the heart of programs like `cat` and `cp`. Two details are non-negotiable. First, you **write exactly `n` bytes**, not `sizeof buf` — the last `read` usually returns fewer bytes than the buffer holds, and writing the whole buffer would emit stale garbage. Second, the loop stops when `read` returns 0 (clean end of input) and treats a negative return as an error. Notice we even formatted the byte count by hand with `write`, to drive home that *no `stdio` is involved here at all*.
 
-The system call overhead is roughly fixed per call. Bigger buffers mean fewer calls. **4 KiB to 64 KiB** is the practical sweet spot for sequential file I/O.
+## Buffer size, partial transfers, and the cost of syscalls
 
-## Errors to handle
+The buffer size is a pure performance dial, not a correctness one. Each `read`/`write` is a [system call](https://en.wikipedia.org/wiki/System_call) — a relatively expensive trap into the kernel — so reading one byte at a time (`read(0, &c, 1)`) makes a syscall per byte and crawls, while a 4 KB or larger buffer amortizes that cost over thousands of bytes. This is precisely *why* the buffered `FILE *` layer exists: `getchar` pulls from a library buffer that was filled by one big `read`, turning a syscall-per-character into a syscall-per-block. The other essential truth is the **partial transfer**: `read` may return fewer bytes than you asked for even when not at end-of-file (a pipe with little data, a signal interrupting it, a network socket), and `write` may accept fewer than you offered — so robust code *loops* on `write` until all `n` bytes are sent, and never assumes one call moves everything. A return of -1 sets the global `errno` (e.g. `EINTR` for an interrupted call, which you typically retry); checking it is mandatory in production code. These two calls, with their integer descriptors, are the entire foundation of Unix I/O — and they map almost one-to-one onto the kernel's internal `sys_read`/`sys_write` handlers.
 
-- `EINTR`: signal interrupted; retry.
-- `EAGAIN`/`EWOULDBLOCK`: non-blocking fd, no data; retry later.
-- `ENOSPC`: disk full on `write`.
-- `EIO`: hardware error.
-- `EBADF`: bad fd (use-after-close).
-
-## Try it
-
-1. Vary the buffer size in the copy from 1 to 65536 and time a large copy.
-2. Add `O_APPEND` to the open flags and see what happens on consecutive runs.
-3. Try copying from `/dev/urandom` to `/dev/null` to test raw throughput.
-
-## Notes from the author
-
-- `ssize_t` is the signed version of `size_t`, big enough to hold either a byte count or `-1`. Use it for `read`/`write` return values, not `int`.
-- The "always loop on short reads/writes" rule is one of the highest-leverage habits in systems programming. Skipping it is the source of countless bugs in network code.
-- Modern kernels have `splice`, `sendfile`, `copy_file_range` for zero-copy transfers between fds. Useful when you have lots of file-to-network or file-to-file copying.
-
-*Click **next →** for `open` and friends.*
+## Go deeper
+- [`read(2)`](https://man7.org/linux/man-pages/man2/read.2.html) / [`write(2)`](https://man7.org/linux/man-pages/man2/write.2.html) — return values and error cases
+- [`<unistd.h>`](https://en.wikipedia.org/wiki/Unistd.h) — the POSIX syscall wrappers
+- [Data buffer](https://en.wikipedia.org/wiki/Data_buffer) — why block sizes matter
+- [`errno` / `EINTR`](https://man7.org/linux/man-pages/man3/errno.3.html) — handling partial and interrupted I/O
