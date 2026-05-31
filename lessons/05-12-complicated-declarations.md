@@ -8,133 +8,43 @@ next: ex-5-18
 status: done
 ---
 
-C declarations can become truly bewildering when arrays, pointers, and functions combine. Some real examples:
+C's declaration syntax is notorious: `int (*fp)(int, int)`, `char *(*x[3])(void)`, `int (*(*f)(int))[5]`. The trouble is that `*`, `[]`, and `()` combine in an order driven by **precedence**, not left-to-right reading. The cure is a mechanical rule: start at the identifier and read **outward**, applying `()` and `[]` (which bind tighter) before `*`, using parentheses to override. This "right-left" / spiral reading turns any declaration into plain English. The guiding C principle is *declaration mirrors use*: you declare a thing the same way you'd use it in an expression.
 
-| Declaration                          | What it means                                                |
-|--------------------------------------|---------------------------------------------------------------|
-| `int *p`                             | `p` is a pointer to `int`                                     |
-| `int *p[10]`                         | `p` is an array of 10 pointers to `int`                       |
-| `int (*p)[10]`                       | `p` is a pointer to an array of 10 `int`                      |
-| `int f(int)`                         | `f` is a function returning `int`                             |
-| `int *f(int)`                        | `f` is a function returning pointer to `int`                  |
-| `int (*f)(int)`                      | `f` is a pointer to a function returning `int`                |
-| `int *(*f)(int)`                     | `f` is a pointer to a function returning pointer to `int`     |
-| `int (*f[10])(int)`                  | `f` is an array of 10 pointers to function returning `int`    |
+## Reading a declaration outward
 
-The rule: **start from the identifier and read outward, following precedence**.
-
-- `()` and `[]` bind tighter than `*`.
-- Parentheses group.
-
-Apply that to `int (*f)(int)`:
-
-1. `f` — the identifier.
-2. `*f` — `f` is a pointer.
-3. `(*f)(int)` — pointer to a function taking `int`.
-4. `int (*f)(int)` — pointer to a function taking `int` and returning `int`.
-
-## The `cdecl` translator
-
-There's a program called `cdecl` that translates C declarations to and from English:
-
-```
-cdecl> explain int *(*f)(int)
-declare f as pointer to function (int) returning pointer to int
-```
-
-You can install it (`apt install cdecl`) or use [cdecl.org](https://cdecl.org) online. For genuinely hairy declarations, paste them in.
-
-## The typedef strategy
-
-Almost every multi-level declaration becomes readable with one or two `typedef`s:
-
-```c
-/* hard: */
-int (*funcs[10])(int, int);
-
-/* easier: */
-typedef int (*binop)(int, int);
-binop funcs[10];
-```
-
-Each layer of pointer-to / function-of indirection gets a name. The code reads like English:
-
-```c
-typedef int (*op)(int, int);          /* an op is a binary int->int function */
-typedef op  op_table[10];              /* an op_table is 10 ops */
-op_table the_ops;                      /* the_ops is a table of 10 ops */
-```
-
-This is also the way to build a vtable-like structure in C: typedef the method types, group them into a struct, and pass struct pointers around.
-
-## A worked example: signal handlers
-
-The historical `<signal.h>` declaration:
-
-```c
-void (*signal(int sig, void (*func)(int)))(int);
-```
-
-Reading right-to-left, starting at `signal`:
-
-1. `signal(...)` — function called with some arguments.
-2. `(*signal(...))` — the result is a pointer (we'll see what to).
-3. `(*signal(...))(int)` — the result is a pointer to a function taking `int`.
-4. `void (*signal(...))(int)` — that function returns `void`.
-
-So: "`signal` is a function that takes (an int, and a pointer to a function taking int returning void), and returns a pointer to a function taking int returning void."
-
-With typedefs:
-
-```c
-typedef void (*sig_handler)(int);
-sig_handler signal(int sig, sig_handler func);
-```
-
-Now it's just "`signal` takes a signal number and a handler, returns the previous handler". Same function, vastly clearer signature.
-
-## A starter
-
-```c:starter
+```c:run a pointer to a function, declared and used
 #include <stdio.h>
 
-/* declare three things at once and decipher them */
+int add(int a, int b) { return a + b; }
+
 int main(void) {
-    /* x: array of 3 pointers to int */
-    int a = 1, b = 2, c = 3;
-    int *x[3] = { &a, &b, &c };
-    printf("*x[0]=%d *x[1]=%d *x[2]=%d\n", *x[0], *x[1], *x[2]);
+    /* fp: start at fp -> "(*fp)" so fp is a pointer -> "(int,int)" to a
+       function taking two ints -> "int" returning int.
+       i.e. fp is a pointer to a function (int,int) returning int. */
+    int (*fp)(int, int) = add;
+    printf("fp(4,5) = %d\n", fp(4, 5));
 
-    /* y: pointer to array of 3 ints */
-    int arr[3] = { 10, 20, 30 };
-    int (*y)[3] = &arr;
-    printf("(*y)[0]=%d (*y)[1]=%d (*y)[2]=%d\n", (*y)[0], (*y)[1], (*y)[2]);
-
-    /* f: pointer to function taking int returning int */
-    int (*f)(int) = NULL;       /* would point to a real function */
-    (void)f;                    /* silence unused warning */
-
+    /* A typedef hides the noise: BinOp names that exact pointer type. */
+    typedef int (*BinOp)(int, int);
+    BinOp op = add;
+    printf("op(10,20) = %d\n", op(10, 20));
     return 0;
 }
 ```
 
 ```output
-*x[0]=1 *x[1]=2 *x[2]=3
-(*y)[0]=10 (*y)[1]=20 (*y)[2]=30
+fp(4,5) = 9
+op(10,20) = 30
 ```
 
-## Modern note
+Read `int (*fp)(int, int)` by starting at `fp` and working out: the parentheses group `(*fp)`, so **`fp` is a pointer**; to its right is `(int, int)`, so it points **to a function taking two ints**; the leading `int` is the **return type**. Compare the two declarations that differ by only the parentheses: `int (*fp)(int,int)` is *a pointer to a function returning int*, while `int *fp(int,int)` is *a function returning a pointer to int* — the `()` around `*fp` is what makes the difference, because without it the `(int,int)` binds first. The `typedef` version shows the practical escape hatch: name the ugly type once (`BinOp`) and every later use reads cleanly.
 
-- Modern coding conventions (LLVM, Linux kernel) typedef every function-pointer type and most array-of-pointer types. If a declaration would require more than one layer of `*` and `[]`, use a typedef.
-- C23 keeps the legacy syntax. The proposed `auto` as a type doesn't help (it's for `_Generic`-like inference, not declaration simplification).
-- AI tools and IDEs now do this translation automatically — hover over a declaration in any modern editor and you'll see the English form. The mental model still helps you read code without tooling.
+## Precedence rules and the `typedef` escape
 
-## Try it
+The whole system follows three facts: (1) `[]` and `()` have **higher precedence** than `*`, so they apply first; (2) you read **right then left** from the identifier, honoring any parentheses; (3) `const` binds to whatever is on its left (so `char * const p` is a *const pointer to char*, while `const char *p` is a *pointer to const char*). Work a hard one outward: `char *(*x[3])(void)` — `x` is an **array of 3** (`[3]`), of **pointers** (`*`), to **functions taking void** (`(void)`), **returning `char *`**. In real code you almost never write these raw; you `typedef` each layer (`typedef char *(*Handler)(void); Handler x[3];`) so the declaration documents intent and the compiler error messages stay readable. When you do meet a gnarly declaration in someone else's code, two tools help: the classic [`cdecl`](https://cdecl.org/) translator turns C gibberish into English and back, and the right-left rule above will always get you there by hand.
 
-1. Decipher `char (*(*f[10])(void))[5]` — array of 10, of pointers to functions taking void returning pointers to arrays of 5 chars. Build it step by step.
-2. Convert the above to typedef form. The typedef version is short enough to fit on one line.
-3. Run `cdecl` (or visit cdecl.org) on a few real-world declarations: try `<signal.h>`'s `sa_handler` and `sa_sigaction` fields. Read both the C form and the English.
-
-🎉 **You've finished Chapter 5's section walkthroughs.** Pointers, arrays, and the deep interplay between them are now in your toolbox. The exercises that follow build word counters, hash tables, and command-line filters.
-
-*Click **next →** to start the Chapter 5 exercises.*
+## Go deeper
+- [Declarations (C)](https://en.cppreference.com/w/c/language/declarations) — the grammar in full
+- [The "clockwise/spiral" rule](https://c-faq.com/decl/spiral.anderson.html) — a reading mnemonic
+- [`typedef`](https://en.cppreference.com/w/c/language/typedef) — taming complex types
+- [cdecl.org](https://cdecl.org/) — translate declarations to/from English
