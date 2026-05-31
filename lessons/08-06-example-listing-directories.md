@@ -8,151 +8,68 @@ next: ex-8-5
 status: done
 ---
 
-A directory in Unix is a special kind of file containing **directory entries** — pairs of `(inode number, name)`. The POSIX way to read them is the `<dirent.h>` API:
+A directory is, at heart, just a special file whose contents are a list of **(name, inode-number)** entries. Listing a directory — what `ls` does — means opening it and walking those entries. Because the on-disk format differs across filesystems, you don't read directory bytes by hand; you use the portable POSIX layer `opendir`/`readdir`/`closedir` from `<dirent.h>`, and to learn each entry's *size, type, and timestamps* you call [`stat`](https://man7.org/linux/man-pages/man2/stat.2.html) on its name. This is the canonical example of building a useful tool from a few system calls.
 
-```c
-#include <dirent.h>
+## Modeling the result of a directory walk
 
-DIR           *opendir (const char *name);
-struct dirent *readdir (DIR *dirp);
-int            closedir(DIR *dirp);
-```
-
-Each `readdir` returns one entry or `NULL` at the end. The struct has at least:
-
-```c
-struct dirent {
-    ino_t  d_ino;     /* inode number */
-    char   d_name[];  /* null-terminated filename */
-    /* plus implementation-specific fields */
-};
-```
-
-## A tiny `ls`
-
-```c:starter
+```c:run formatting a directory listing
 #include <stdio.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <stdlib.h>
 
-int main(int argc, char *argv[]) {
-    const char *dir = (argc > 1) ? argv[1] : ".";
-    DIR *d = opendir(dir);
-    if (!d) { perror(dir); return 1; }
+/* Real code gets these from readdir()+stat(); the sandbox has no filesystem,
+   so we model the (name, size) entries the OS would return. */
+struct entry { const char *name; long size; };
 
-    struct dirent *de;
-    while ((de = readdir(d)) != NULL) {
-        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-            continue;
-
-        /* build full path and stat it */
-        char path[1024];
-        snprintf(path, sizeof path, "%s/%s", dir, de->d_name);
-        struct stat st;
-        if (stat(path, &st) < 0) {
-            perror(path);
-            continue;
-        }
-        char type = '?';
-        if      (S_ISREG(st.st_mode)) type = '-';
-        else if (S_ISDIR(st.st_mode)) type = 'd';
-        else if (S_ISLNK(st.st_mode)) type = 'l';
-        else if (S_ISFIFO(st.st_mode))type = 'p';
-        else if (S_ISCHR(st.st_mode)) type = 'c';
-        else if (S_ISBLK(st.st_mode)) type = 'b';
-
-        printf("%c %8lld %s\n", type, (long long)st.st_size, de->d_name);
+int main(void) {
+    struct entry dir[] = {
+        {"main.c", 1024}, {"main.o", 2048}, {"a.out", 16384}, {"README", 240}
+    };
+    int n = sizeof dir / sizeof dir[0];
+    long total = 0;
+    for (int i = 0; i < n; i++) {
+        printf("%-10s %6ld\n", dir[i].name, dir[i].size);   /* left name, right size */
+        total += dir[i].size;
     }
-    closedir(d);
+    printf("%-10s %6ld\n", "(total)", total);
     return 0;
 }
 ```
 
 ```output
-- 1234 README.md
-d   96 src
-- 5678 hello.c
+main.c       1024
+main.o       2048
+a.out       16384
+README        240
+(total)     19696
 ```
 
-(Output depends on the directory.)
+The formatting mirrors `ls -l`: `%-10s` left-justifies each name in a 10-wide column, `%6ld` right-justifies the size in a 6-wide column so the digits line up. The data here is hardcoded only because this browser sandbox has no filesystem to walk — but the *shape* of the program (iterate entries, query each one's size, accumulate a total) is exactly what a real directory lister does.
 
-## `stat` — get info on a file
+## The real opendir / readdir / stat loop
 
-```c
-struct stat {
-    dev_t     st_dev;     /* device */
-    ino_t     st_ino;     /* inode */
-    mode_t    st_mode;    /* type + permissions */
-    nlink_t   st_nlink;   /* number of hard links */
-    uid_t     st_uid;     /* user ID */
-    gid_t     st_gid;     /* group ID */
-    off_t     st_size;    /* size in bytes */
-    time_t    st_atime;   /* last access */
-    time_t    st_mtime;   /* last modification */
-    time_t    st_ctime;   /* last status change */
-    /* ... */
-};
-```
-
-`stat(path, &st)` follows symlinks; `lstat(path, &st)` does not. Use `lstat` if you want to know "is this a symlink?".
-
-## `S_IS*` macros
-
-The mode field encodes both file type and permission bits:
+On any Unix system the genuine version is this:
 
 ```c
-S_ISREG(m)   /* regular file */
-S_ISDIR(m)   /* directory */
-S_ISLNK(m)   /* symlink */
-S_ISFIFO(m)  /* named pipe */
-S_ISCHR(m)   /* character device */
-S_ISBLK(m)   /* block device */
-S_ISSOCK(m)  /* socket */
-```
+#include <stdio.h>
+#include <dirent.h>     /* opendir, readdir, closedir, struct dirent */
+#include <sys/stat.h>   /* stat, struct stat                         */
 
-Permission bits: `S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | ...`. Or use the octal form (`0644`, `0755`).
+DIR *dp = opendir(".");                  /* open the directory          */
+if (dp == NULL) { perror("."); return 1; }
 
-## Recursive directory walks
-
-To traverse subdirectories, recurse:
-
-```c
-void walk(const char *path) {
+struct dirent *e;
+while ((e = readdir(dp)) != NULL) {      /* one entry per call, NULL at end */
+    if (e->d_name[0] == '.') continue;   /* skip "." , ".." and dotfiles */
     struct stat st;
-    if (lstat(path, &st) < 0) return;
-    printf("%s\n", path);
-    if (!S_ISDIR(st.st_mode)) return;
-
-    DIR *d = opendir(path);
-    if (!d) return;
-    struct dirent *de;
-    while ((de = readdir(d))) {
-        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-            continue;
-        char child[1024];
-        snprintf(child, sizeof child, "%s/%s", path, de->d_name);
-        walk(child);
-    }
-    closedir(d);
+    if (stat(e->d_name, &st) == 0)       /* fetch metadata by name      */
+        printf("%-10s %6lld\n", e->d_name, (long long) st.st_size);
 }
+closedir(dp);
 ```
 
-Beware of symlink loops! Skip symlinks or track visited inodes.
+Three calls do the work. `opendir` returns a `DIR *` handle (a buffered wrapper much like `FILE *`). `readdir` returns a `struct dirent *` for the next entry — crucially it gives you only the **name** and inode number, *not* the size or type, because those live in the file's inode, not the directory entry. So to get size, permissions, modification time, or whether something is itself a directory, you call `stat(name, &st)`, which fills a `struct stat` from the inode; you then inspect fields like `st.st_size`, `st.st_mode` (test with `S_ISDIR(st.st_mode)`), and `st.st_mtime`. To recurse into subdirectories — the basis of `find`, `du`, and `ls -R` — you check `S_ISDIR`, build the child path, and call yourself on it (watching for the `.` and `..` entries, which would otherwise loop forever). Two refinements real tools use: `lstat` instead of `stat` to avoid following symbolic links (so you don't recurse into a link that points back up the tree), and `fstatat`/`openat` with directory descriptors to avoid race conditions and repeated path lookups. The big idea is that the filesystem is a tree you traverse with a tiny, uniform API — names from `readdir`, metadata from `stat` — and almost every file-management utility is a variation on this loop.
 
-For production use, `nftw` (POSIX) does the walk with a callback. Or use `fts(3)` on BSD/Linux for richer control.
-
-## Try it
-
-1. Add a `-l` flag that mimics `ls -l` (mode bits, owner, mtime, size, name).
-2. Sort entries alphabetically with `qsort` before printing.
-3. Write a `du`-like tool that prints total size of each directory.
-
-## Notes from the author
-
-- The "directory is just a file" model goes back to Unix v6 (1975). Reading directories used to be done with `read(fd, buf, n)` and parsing the raw bytes. POSIX `readdir` is the portable abstraction.
-- Different filesystems have different sort orders for `readdir` — alphabetic, insertion-order, whatever the filesystem feels like. **Never rely on `readdir` ordering.** Sort yourself if you need it.
-- Recursive directory walks are how `find`, `du`, `tar`, `rsync`, and every backup tool work. Once you've built one, the rest is variations on the theme.
-
-*Click **next →** for the allocator.*
+## Go deeper
+- [`opendir` / `readdir`](https://man7.org/linux/man-pages/man3/readdir.3.html) — walking directory entries
+- [`stat(2)`](https://man7.org/linux/man-pages/man2/stat.2.html) — the metadata behind each name
+- [Directory (computing)](https://en.wikipedia.org/wiki/Directory_(computing)) — name-to-inode mappings
+- [`nftw` / `fts`](https://man7.org/linux/man-pages/man3/nftw.3.html) — library helpers for recursive walks
