@@ -8,116 +8,41 @@ next: ex-5-14
 status: done
 ---
 
-A function in C has an address, just like a variable. A **function pointer** stores that address; calling through the pointer invokes the function.
+Functions, like data, live at addresses in memory — in the program's executable `.text` segment. So you can take a **pointer to a function** and call *through* it, choosing at run time which function to invoke. This turns behavior into data: you can store functions in arrays, pass them as arguments (callbacks), and build dispatch tables. It's how `qsort` accepts your comparison function, how event loops invoke handlers, and how you replace a long `switch` with a clean indexed lookup.
 
-Declaration syntax — read carefully:
+## A dispatch table of function pointers
 
-```c
-int  (*fp)(int, int);
-```
-
-That's: `fp` is a pointer to a function that takes two `int`s and returns `int`. The parentheses around `*fp` are mandatory; without them you'd get `int *fp(int, int);` which is "function returning pointer to int".
-
-## A simple example
-
-```c:starter
+```c:run an array of function pointers
 #include <stdio.h>
 
 int add(int a, int b) { return a + b; }
-int mul(int a, int b) { return a * b; }
 int sub(int a, int b) { return a - b; }
-
-int apply(int (*op)(int, int), int a, int b) {
-    return op(a, b);              /* call through pointer */
-}
+int mul(int a, int b) { return a * b; }
 
 int main(void) {
-    printf("add(3, 4) = %d\n", apply(add, 3, 4));
-    printf("mul(3, 4) = %d\n", apply(mul, 3, 4));
-    printf("sub(3, 4) = %d\n", apply(sub, 3, 4));
+    int (*ops[3])(int, int) = { add, sub, mul };   /* array of fn pointers */
+    char *names[3]          = { "add", "sub", "mul" };
 
-    /* arrays of function pointers — dispatch table */
-    int (*ops[])(int, int) = { add, mul, sub };
-    for (int i = 0; i < 3; ++i)
-        printf("ops[%d](10, 2) = %d\n", i, ops[i](10, 2));
+    for (int i = 0; i < 3; i++)
+        printf("%s(6,2) = %d\n", names[i], ops[i](6, 2));
     return 0;
 }
 ```
 
 ```output
-add(3, 4) = 7
-mul(3, 4) = 12
-sub(3, 4) = -1
-ops[0](10, 2) = 12
-ops[1](10, 2) = 20
-ops[2](10, 2) = 8
+add(6,2) = 8
+sub(6,2) = 4
+mul(6,2) = 12
 ```
 
-## Callback patterns
+`int (*ops[3])(int, int)` declares an array of three pointers, each to a function taking `(int, int)` and returning `int`. The parentheses around `*ops[3]` are mandatory — without them, `int *ops[3](...)` would parse as something else entirely (see the next section on reading declarations). A function name used without `()` decays to its address, exactly like an array name, so `{ add, sub, mul }` stores the three function addresses. Then `ops[i](6, 2)` selects the i-th function pointer and *calls through it* — no `&` or explicit `*` needed; both `ops[i](6,2)` and `(*ops[i])(6,2)` work and mean the same thing. The loop dispatches to a different function each iteration purely by index.
 
-The most familiar function pointer: a comparator passed to `qsort`.
+## Callbacks and why this is powerful
 
-```c
-int cmp_int(const void *a, const void *b) {
-    int x = *(const int *)a;
-    int y = *(const int *)b;
-    return (x > y) - (x < y);     /* -1, 0, +1; no overflow */
-}
+The real payoff is **callbacks** — passing a function pointer *into* another function so the callee can call *back* into your code. The standard library's [`qsort`](https://en.cppreference.com/w/c/algorithm/qsort) is the canonical example: you give it your array plus a `int (*cmp)(const void *, const void *)` comparator, and `qsort` calls your `cmp` whenever it needs to compare two elements — so one generic sort works for any data and any ordering. This is C's version of polymorphism: the sorting *algorithm* is fixed, but the *comparison behavior* is supplied as data. Dispatch tables (like `ops` above) are the other big use — a state machine, a virtual-machine opcode loop, or a command interpreter indexes into an array of handlers instead of a giant `switch`, which is often faster and far easier to extend (add a row, not a case). The cost to keep in mind: an *indirect* call through a pointer can be slightly slower than a direct call and can defeat the compiler's inlining, but for anything but the hottest inner loops that's irrelevant next to the flexibility gained.
 
-int main(void) {
-    int v[] = { 3, 1, 4, 1, 5, 9, 2, 6 };
-    qsort(v, 8, sizeof v[0], cmp_int);
-    /* v is now sorted */
-}
-```
-
-`qsort` doesn't know about `int`s; it knows about *byte ranges* and *comparator functions*. The function pointer is the polymorphism.
-
-## Typedefs make pointer types tolerable
-
-```c
-typedef int (*binop)(int, int);
-
-binop op = add;
-int   r  = op(3, 4);
-
-int apply(binop op, int a, int b) {
-    return op(a, b);
-}
-```
-
-Once you have several uses, the `typedef` pays off. (For C23, `typedef` no longer requires the `typedef` keyword for function pointers in *some* contexts — but the explicit form is portable.)
-
-## The `&` and `*` are optional
-
-These are all the same:
-
-```c
-int (*fp)(int, int) = add;       /* function decays to pointer */
-int (*fp)(int, int) = &add;      /* explicit address-of */
-fp(3, 4);
-(*fp)(3, 4);
-(&add)(3, 4);    /* &-back-then-call also works */
-```
-
-C treats function names like array names: they decay to pointers in most expressions. Convention: write the bare names (`fp = add; fp(3, 4);`). It's cleaner.
-
-## Modern note
-
-- `<stdlib.h>` `qsort` and `bsearch` are the C library's canonical function-pointer APIs. C11 added `qsort_s` (bounds-checked) and `bsearch_s`; not widely used.
-- Function pointers don't carry captured state — they're plain code addresses. For closures (function + captured state), you need to pass a `void *user_data` alongside. Many APIs (`pthread_create`, GLib, GTK) do this.
-- The `*(const int *)a` cast in `cmp_int` is the price of `qsort`'s `void *` interface. Modern alternatives (`qsort_r` with a separate context pointer, or sort-by-key libraries) avoid the cast. But the standard `qsort` is everywhere.
-
-## Try it
-
-1. Write a generic `map(int *arr, size_t n, int (*f)(int))` that applies `f` to every element in place.
-2. Build a small command dispatch: `struct cmd { const char *name; void (*fn)(int argc, char **argv); };` and an array of them. Look up by name on input.
-3. Pass `cmp_int` to `qsort` and a descending comparator (`return -cmp_int(a, b)`). Same function pointer mechanism, different ordering.
-
-## Notes from the author
-
-- Function pointers are how C does polymorphism, callbacks, and plugin systems. Every "object" in classic Unix kernels and many production C libraries (cURL, libuv, OpenSSL) is a struct full of function pointers — manual vtables.
-- The declaration syntax is genuinely ugly. `void (*signal(int sig, void (*func)(int)))(int)` is the famous example from `<signal.h>` — a function that takes a function pointer and returns a function pointer. Typedefs make this readable; never write nested function pointer types inline.
-- The lack of closures is the *real* limitation. C's "function + context pointer" idiom (pass a `void *user_data` along with the function) works but verbose. C++ lambdas, Rust closures, and Go function values all bake this together.
-
-*Click **next →** for the truly nightmarish declarations.*
+## Go deeper
+- [Pointers to functions (C)](https://en.cppreference.com/w/c/language/pointer#Pointers_to_functions) — declaration and calling
+- [`qsort`](https://en.cppreference.com/w/c/algorithm/qsort) — the classic callback API
+- [Callback (programming)](https://en.wikipedia.org/wiki/Callback_(computer_programming)) — the general pattern
+- [Branch table / dispatch table](https://en.wikipedia.org/wiki/Branch_table) — replacing `switch` with an array
