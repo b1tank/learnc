@@ -8,55 +8,35 @@ next: 02-02-data-types-and-sizes
 status: done
 ---
 
-C is parsimonious about what a name can be — and surprisingly relaxed about what *should* be a name. The language sets the rules; convention does the heavy lifting.
+A variable name is just a human-readable label the compiler maps to a storage location — a stack slot, a register, or an address in the `.data`/`.bss` segment. The name exists only at compile time; by the time the program runs, it's all addresses and offsets. C's rules: names are made of letters, digits, and underscore; they may not start with a digit; and they are **case-sensitive**. Keywords like `int`, `if`, `return` are reserved.
 
-## The mechanical rules
+## Case matters, and style is a convention
 
-A name is a letter or underscore followed by any combination of letters, digits, and underscores. Names that begin with an underscore are technically legal but are reserved by convention for the standard library and the compiler — don't start your own variables that way.
+`x` and `X` are two entirely different variables. C imposes no naming style — `snake_case`, `camelCase`, and `ALLCAPS` are all legal — but conventions carry meaning to humans: lowercase for variables, `ALL_CAPS` for macros/constants:
 
-Names are case-sensitive: `count`, `Count`, and `COUNT` are three different identifiers. Compilers must distinguish at least the first 31 characters of an internal identifier; for external names (linker-visible symbols) the old guarantee was just 6 case-insensitive characters, which is why a lot of standard-library function names look terse (`strncmp`, `getc`).
-
-```c:starter
+```c:run names are distinct labels
 #include <stdio.h>
 
 int main(void) {
-    int   apples         = 3;
-    int   golden_apples  = 5;
-    int   APPLES         = 7;   /* legal, distinct, but please don't */
-    int   _reserved      = 9;   /* legal, reserved by convention */
-
-    printf("%d %d %d %d\n", apples, golden_apples, APPLES, _reserved);
+    int x = 1;
+    int X = 99;                              /* different variable: case-sensitive */
+    int count_items = 5, countItems = 7;     /* snake vs camel: also distinct */
+    printf("x=%d X=%d\n", x, X);
+    printf("count_items=%d countItems=%d\n", count_items, countItems);
     return 0;
 }
 ```
 
 ```output
-3 5 7 9
+x=1 X=99
+count_items=5 countItems=7
 ```
 
-## Convention beats the rulebook
+## The "31 significant characters" footnote
 
-- **Lowercase with underscores** for variables and most functions: `read_line`, `buffer_size`.
-- **ALL_CAPS** for macros and symbolic constants: `MAXLINE`, `EOF`.
-- **PascalCase** is rare in C; you'll see it in some Microsoft-flavoured codebases.
-- Reserved words (`int`, `for`, `if`, `return`, etc.) can't be used as names.
+K&R warns that only the first few characters of a name might be significant. Modern compilers track full names for internal (local) identifiers, but the C standard still only *guarantees* 31 significant characters for external names and 63 for internal ones — a limit rooted in old linkers that truncated symbols. In practice you'll never hit it, but it's why historical C libraries used terse names. Pick names that are descriptive but not novel-length: `npending`, not `numberOfCurrentlyPendingRequestsInQueue`.
 
-Use names that read like the thing they describe. `n` for "number of something" inside a tight loop is fine; `i`, `j`, `k` for loop indices is fine. Three-letter mystery names for module-level globals are not.
-
-## Modern note
-
-C99 introduced the `_Bool` type (typedef'd as `bool` in `<stdbool.h>`); C11 added `_Static_assert`. Any new identifier you invent that starts with an underscore followed by an uppercase letter, or with double underscore, is reserved *by the implementation* — you can step on the compiler's toes without realising. Stay away from leading underscores in your own code.
-
-## Try it
-
-1. Change one name to start with a digit and try to compile. The error message names the rule precisely.
-2. Declare both `int sum` and `int Sum` in the same function. Note that the compiler treats them as completely independent.
-3. Try `int int;`. See what the compiler calls that.
-
-## Notes from the author
-
-- The K&R "31-character" guarantee feels archaic today; modern compilers honour much longer names. But the *external* limit (link-visible names) is what bites you in cross-platform code. If you ship a library that has to link cleanly with a 1990s C runtime, keep the first ~8 chars of every public symbol unique.
-- The single most important rule is the one the language won't enforce for you: **names should be self-explanatory at the call site, not the definition site**. `find(x, 3)` is mystery; `find_index(haystack, needle)` is documentation.
-- Hungarian notation (`iCount`, `pszName`) is a relic of pre-IDE editors. Don't bring it back. Type information belongs in the declaration, not the name.
-
-*Click **next →** to enumerate the built-in numeric types.*
+## Go deeper
+- [Identifiers (C)](https://en.cppreference.com/w/c/language/identifier) — the exact lexical rules and significance limits
+- [C keywords](https://en.cppreference.com/w/c/keyword) — the reserved words you can't reuse
+- [Naming conventions](https://en.wikipedia.org/wiki/Naming_convention_(programming)) — snake_case, camelCase, and why teams pick one
