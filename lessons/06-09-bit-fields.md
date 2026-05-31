@@ -8,109 +8,46 @@ next: 07-01-standard-input-and-output
 status: done
 ---
 
-A **bit-field** is a struct member that occupies a specified number of bits instead of a whole storage unit. The syntax: a member of integer type followed by `: N` where `N` is the bit count.
+A **bit-field** lets a struct member occupy a chosen number of *bits* rather than whole bytes. You write `unsigned is_keyword : 1;` to declare a one-bit field. The compiler packs several such fields into a single integer-sized storage unit, so a handful of flags and small numbers that would otherwise cost one or more bytes each can share a single `int`. Bit-fields are how C expresses, in readable named-member form, the kind of bit-packing you'd otherwise do with manual shifts and masks.
 
-```c
-struct flags {
-    unsigned is_keyword  : 1;
-    unsigned is_extern   : 1;
-    unsigned is_static   : 1;
-    unsigned priority    : 4;     /* 0–15 */
-    unsigned reserved    : 9;
-};
-```
+## Packing flags into one word
 
-The struct packs `1 + 1 + 1 + 4 + 9 = 16` bits into the smallest storage that fits them. Access is normal struct syntax:
-
-```c
-struct flags f = {0};
-f.is_keyword = 1;
-f.priority   = 7;
-```
-
-## A small example
-
-```c:starter
+```c:run several members sharing the bits of one int
 #include <stdio.h>
 
-struct color {
-    unsigned r : 5;
-    unsigned g : 6;
-    unsigned b : 5;
+struct flags {
+    unsigned is_keyword : 1;   /* 1 bit  -> 0 or 1            */
+    unsigned is_extern  : 1;   /* 1 bit                       */
+    unsigned is_static  : 1;   /* 1 bit                       */
+    unsigned level      : 5;   /* 5 bits -> 0..31             */
 };
 
 int main(void) {
-    struct color c;
-    c.r = 31;       /* 5 bits: 0..31 */
-    c.g = 63;       /* 6 bits: 0..63 */
-    c.b = 31;
-    printf("white-ish: r=%u, g=%u, b=%u\n", c.r, c.g, c.b);
-    printf("sizeof color = %zu\n", sizeof c);
-
-    /* assigning too-big a value silently truncates */
-    c.r = 100;          /* 100 = 0b1100100 -> bottom 5 bits = 0b00100 = 4 */
-    printf("after r=100: r=%u\n", c.r);
+    struct flags f = {0};
+    f.is_keyword = 1;
+    f.is_static  = 0;
+    f.level      = 20;
+    printf("keyword=%u static=%u level=%u\n", f.is_keyword, f.is_static, f.level);
+    printf("sizeof(struct flags) = %zu\n", sizeof(struct flags));
     return 0;
 }
 ```
 
 ```output
-white-ish: r=31, g=63, b=31
-sizeof color = 4
-white-ish: r=31, g=63, b=31
-after r=100: r=4
+keyword=1 static=0 level=20
+sizeof(struct flags) = 4
 ```
 
-## Where bit-fields shine
+The three 1-bit flags plus the 5-bit `level` total just 8 bits, and the whole struct fits in **4 bytes** — one `int`-sized storage unit — instead of the four separate bytes (or more) you'd pay for ordinary members. Each field behaves like a tiny unsigned integer: `level : 5` holds 0–31, so assigning 20 is fine but assigning 40 would silently wrap to fit 5 bits. You read and write them with plain member syntax (`f.level = 20`), and the compiler generates the shifts and masks for you — far more legible than hand-rolling `flags |= KEYWORD; level = (flags >> 3) & 0x1f;`.
 
-1. **Hardware registers**: a 16-bit device register might pack 8 different flags. A struct of bit-fields documents the layout and gives natural access.
-2. **Compact in-memory representations**: an RGB565 pixel, a flag-heavy tag, a packed protocol header.
-3. **Self-documenting "this many bits" constraints**: `unsigned x : 4` says "x has 4 bits of state".
+## Where they shine, and the fine print
 
-## Where bit-fields are awful
+Bit-fields earn their keep when memory is scarce or structures are numerous: compiler symbol tables (the K&R example), file-format and protocol headers, and embedded systems mapping hardware registers where each bit controls a device. They make intent obvious — `is_keyword : 1` says "a boolean flag" far better than a magic mask. But the convenience hides genuinely implementation-defined behavior, which is why portable wire formats often *avoid* bit-fields and use explicit masking instead. The standard doesn't fix the **allocation order** (whether `is_keyword` lands in the low or high bit of the word), nor the packing and **alignment** of units, nor — historically — which types beyond `int`/`unsigned` are allowed; all of these can differ between compilers and architectures. You also **cannot take the address** of a bit-field (`&f.level` is illegal) — they aren't separately addressable, since several share one byte — so they can't be used where a pointer to the member is needed. Treat bit-fields as a compact, readable in-memory convenience, not as a guaranteed byte-exact layout across systems.
 
-1. **Layout is implementation-defined**. The order of bit-fields within a storage unit (big-endian first or little-endian first) varies by compiler and target. NOT portable for on-the-wire protocols.
-2. **No address**: you cannot take `&f.priority`. You can't pass it to a function by pointer.
-3. **Compiler can be sloppy**: read-modify-write on a bit-field may involve loading the whole storage unit, masking, and writing back — multiple instructions instead of one.
+This wraps up structures. Next we move to the standard library and **input/output** — reading and writing the world outside your program.
 
-For network protocols and binary file formats, **don't use bit-fields**. Use explicit shifts and masks:
-
-```c
-uint16_t pixel;
-uint8_t r = (pixel >> 11) & 0x1F;
-uint8_t g = (pixel >>  5) & 0x3F;
-uint8_t b = (pixel      ) & 0x1F;
-```
-
-This is portable, predictable, and the optimiser knows what to do with it.
-
-## Bit-fields and unions: a useful pair
-
-```c
-union register {
-    uint16_t raw;
-    struct {
-        uint16_t enable    : 1;
-        uint16_t mode      : 3;
-        uint16_t addr      : 12;
-    } f;
-};
-```
-
-Now you can read/write `r.raw` to talk to hardware, and `r.f.mode = 2;` for ergonomic access. Just remember the layout caveat — this is only safe when you control the compiler and target.
-
-## Try it
-
-1. Print `sizeof` for `struct flags` defined above. Does it equal 2 (16 bits) or 4 (rounded to int)?
-2. Try `unsigned x : 0;` — what does it mean? (Hint: it forces alignment to the next storage unit.)
-3. Define a struct with a `1`-bit field that you store `-1` into. What do you read back?
-
-## Notes from the author
-
-- The K&R discussion of bit-fields is honest about their portability problems. The advice has aged well: use them for hardware/memory-tight scenarios, never for cross-platform binary formats.
-- The "signed bit-field" trap: `signed x : 1` can only hold `0` and `-1`, not `0` and `1`. Most code uses `unsigned` bit-fields exclusively.
-- Modern alternatives — `_BitInt(N)` (C23), or just explicit shifts — give the same density without the portability gotchas. Bit-fields remain useful for documentation and embedded register definitions.
-
-🎉 You've finished the structures chapter. Six exercises follow that exercise these patterns: building, traversing, hashing, and packing structured data.
-
-*Click **next →** for exercise 6-1.*
+## Go deeper
+- [Bit-fields (C)](https://en.cppreference.com/w/c/language/bit_field) — syntax and the implementation-defined parts
+- [Bit field](https://en.wikipedia.org/wiki/Bit_field) — the general concept
+- [Bit manipulation](https://en.wikipedia.org/wiki/Bit_manipulation) — the shifts and masks bit-fields hide
+- [Data structure alignment](https://en.wikipedia.org/wiki/Data_structure_alignment) — why packing and units vary
