@@ -8,98 +8,42 @@ next: 08-02-low-level-io-read-and-write
 status: done
 ---
 
-Chapter 8 drops below the stdio library and talks to the operating system directly. The currency at this level is the **file descriptor** — a small non-negative integer that names an open file.
+Beneath the buffered `FILE *` streams of chapter 7 lies the operating system's *real* I/O interface: the **file descriptor**, a small non-negative integer the kernel hands you when you open something. Every open file, pipe, socket, or device a process holds is identified by one of these integers, which index into a per-process table the kernel maintains. The three you always start with are fixed by convention: **0 = standard input, 1 = standard output, 2 = standard error**. The functions in this chapter — `read`, `write`, `open`, `close`, `lseek` — are thin wrappers over **system calls** that speak directly in descriptors, with no buffering or formatting in between.
 
-```c
-int fd = open("data.txt", O_RDONLY);
-/* fd is 3, 4, or whatever the kernel handed back */
-```
+## Talking to the kernel by number
 
-Three descriptors are always open when your program starts:
-
-| fd | Name      | Default                       |
-|----|-----------|-------------------------------|
-| 0  | stdin     | terminal input                 |
-| 1  | stdout    | terminal output                |
-| 2  | stderr    | terminal error output          |
-
-That's literally how `stdin`/`stdout`/`stderr` map to the OS: the C runtime wraps fd 0/1/2 in `FILE *` structs.
-
-## Where descriptors come from
-
-Three sources:
-
-1. **Inherited** — the shell or parent process opens fd 0/1/2 (and any others passed via `dup`/`fork`).
-2. **`open(path, flags)`** — returns a new fd for a file.
-3. **`pipe(fds)`**, **`socket(...)`**, **`accept(...)`** — return fds for IPC and network.
-
-In all cases, the fd is an index into a per-process table the kernel maintains. Behind the fd is everything the kernel knows about the open file: position, mode, type, etc.
-
-## File-descriptor properties
-
-- **Per-process**: `fd = 3` in your program is a totally different file from `fd = 3` in another process.
-- **Small integers**: typically 0 to 1023 by default; raise with `ulimit -n`.
-- **Inheritable**: `fork()` copies the fd table to the child. `exec()` keeps them (unless `O_CLOEXEC` is set).
-- **Numbered lowest-first**: `open` returns the lowest unused fd. That's why closing fd 0 then `open`ing assigns fd 0 — the trick behind shell redirection.
-
-## stdio vs. low-level I/O
-
-Both ways are valid, but understand the layers:
-
-```
-User code
-  │
-  ├── fopen/fread/fwrite/printf   ←─ buffered, in libc
-  │       │
-  │       ▼
-  ├── open/read/write/lseek/close  ←─ system calls, this chapter
-  │       │
-  │       ▼
-  └── kernel
-```
-
-`fopen` calls `open` internally. `fread` calls `read` (often once for a big buffer, then satisfies many `fread`s from the buffer). `printf` eventually calls `write`.
-
-When to skip stdio:
-
-- You need exact byte counts and offsets.
-- You need `O_DIRECT`, `O_APPEND`, file locks, or other Unix-specific flags.
-- You're using `select`/`poll`/`epoll` on a non-file fd (socket, pipe).
-- Performance — stdio's buffering can be the wrong layer for some workloads.
-
-## A trivial example
-
-```c:starter
+```c:run read from fd 0, write to fd 1
 #include <unistd.h>
-#include <stdio.h>
+#include <string.h>
 
 int main(void) {
-    /* write to stdout (fd 1) directly — no stdio */
-    const char *msg = "hello via write()\n";
-    write(1, msg, 18);
-    /* and stderr (fd 2) */
-    write(2, "this goes to stderr\n", 20);
+    char buf[256];
+    const char *p = "fd 1 is stdout; fd 2 is stderr\n";
+    write(STDOUT_FILENO, p, strlen(p));            /* fd 1, no printf */
+    int n = read(STDIN_FILENO, buf, sizeof buf);   /* fd 0 */
+    write(STDOUT_FILENO, "echo: ", 6);
+    if (n > 0) write(STDOUT_FILENO, buf, n);
     return 0;
 }
 ```
 
-```output
-hello via write()
-this goes to stderr
+```stdin
+hi there
 ```
 
-The output appears immediately — no buffering between you and the kernel. That's both the benefit and the cost of low-level I/O.
+```output
+fd 1 is stdout; fd 2 is stderr
+echo: hi there
+```
 
-## Try it
+No `<stdio.h>`, no `FILE *`, no `printf` — just `read` and `write` from `<unistd.h>` operating on the bare integers `STDOUT_FILENO` (1) and `STDIN_FILENO` (0). Each `write` call is (essentially) one trip into the kernel that copies bytes straight to the destination; each `read` asks the kernel for up to `sizeof buf` bytes from the input. This is the layer the C library's streams are built on top of: `printf` ultimately calls `write(1, …)`, and `getchar` ultimately calls `read(0, …)`.
 
-1. Print "hello\n" using `write(1, ...)` and the same message using `printf`. Compile and run; both should work.
-2. Run with `./prog > out.txt 2> err.txt` to see fds 1 and 2 split.
-3. Use `dup2(2, 1)` to redirect stdout to stderr inside the program; verify everything goes to the err stream.
+## What a descriptor really is, and why redirection works
 
-## Notes from the author
+A file descriptor is an **index into the kernel's open-file table** for your process. When you open a file you get the lowest unused number (so the first `open` after the standard three is usually 3); `close` releases it back. The descriptor points to a kernel object holding the current read/write offset, the access mode, and a link to the actual file/pipe/socket. This indirection is the secret behind Unix's elegance. **Redirection** (`prog > out.txt`) works because the shell, *before* exec-ing your program, opens `out.txt` and arranges for it to be descriptor 1 — so your unchanged `write(1, …)` lands in the file. **Pipes** (`a | b`) connect `a`'s descriptor 1 to `b`'s descriptor 0 through a kernel buffer. The system calls that make this possible — [`dup`/`dup2`](https://man7.org/linux/man-pages/man2/dup.2.html) (duplicate a descriptor onto a chosen number) and the fork/exec dance — are how shells and servers wire processes together. Because *everything is a file* in Unix (the famous design principle), the same `read`/`write` calls work uniformly on files, terminals, pipes, network sockets, and devices like `/dev/null` — one tiny, uniform interface for all I/O. A system call itself is not a normal function call: it traps into the kernel (via a `syscall`/`int 0x80` instruction), switching from user mode to privileged kernel mode to do the work, then returns — which is why syscalls are comparatively expensive and why the buffered `FILE *` layer exists to batch them.
 
-- "Everything is a file" is Unix's defining metaphor: regular files, devices, sockets, pipes, even some kernel structures all use the file-descriptor interface. Once you know `read`/`write`/`close`, you can talk to any of them.
-- Other OSes use different abstractions — Windows has HANDLE (pointer-sized), separate from "file descriptor" emulation. POSIX-on-Windows (Cygwin, WSL) papers over the difference.
-- File descriptors are the building block for everything more complex: pipelines, network servers, IPC. A small integer that names "an open thing" is the entire interface.
-
-*Click **next →** for read and write.*
+## Go deeper
+- [File descriptor](https://en.wikipedia.org/wiki/File_descriptor) — the integer and the table behind it
+- [`read(2)`](https://man7.org/linux/man-pages/man2/read.2.html) / [`write(2)`](https://man7.org/linux/man-pages/man2/write.2.html) — the core syscalls
+- [Everything is a file](https://en.wikipedia.org/wiki/Everything_is_a_file) — the unifying Unix idea
+- [System call](https://en.wikipedia.org/wiki/System_call) — how user code enters the kernel
