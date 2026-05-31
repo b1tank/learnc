@@ -8,115 +8,43 @@ next: 06-09-bit-fields
 status: done
 ---
 
-A **union** holds one value at a time, but the value can be of any of several declared types. All members share the same storage, so the union's size is the size of its largest member.
+A **union** looks like a struct but with a radical difference: all its members **share the same memory**. A union is only large enough to hold its *biggest* member, and at any moment it holds *one* of its members — writing one member overwrites the others, because they occupy the same bytes. Where a struct is "all of these at once" (members side by side), a union is "any one of these, reusing the space." Unions exist to save memory when a value could be one of several types, and to reinterpret the same bytes through different type lenses.
 
-```c
-union number {
-    int    i;
-    double d;
-    char  *s;
-};
+## One storage, many views
 
-union number n;
-n.i = 42;       /* now `n` holds an int */
-n.d = 3.14;     /* now `n` holds a double; the int is gone */
-```
-
-Only the most recently written member is "live". Reading any other member gives implementation-defined behaviour (sometimes well-defined for type-punning, but generally not portable).
-
-## The tagged-union pattern
-
-Because the compiler doesn't track which member is current, you do it yourself with a separate tag:
-
-```c:starter
+```c:run members of a union overlap in memory
 #include <stdio.h>
-#include <string.h>
 
-enum tag { TAG_INT, TAG_DOUBLE, TAG_STRING };
-
-struct value {
-    enum tag tag;
-    union {
-        int    i;
-        double d;
-        char  *s;
-    } u;
+union value {                 /* all three members start at the same address */
+    int           i;
+    float         f;
+    unsigned char b[4];
 };
-
-static void print_value(struct value v) {
-    switch (v.tag) {
-        case TAG_INT:    printf("int: %d\n",    v.u.i); break;
-        case TAG_DOUBLE: printf("double: %g\n", v.u.d); break;
-        case TAG_STRING: printf("string: %s\n", v.u.s); break;
-    }
-}
 
 int main(void) {
-    struct value v1 = { .tag = TAG_INT,    .u.i = 42 };
-    struct value v2 = { .tag = TAG_DOUBLE, .u.d = 3.14 };
-    struct value v3 = { .tag = TAG_STRING, .u.s = "hello" };
-    print_value(v1);
-    print_value(v2);
-    print_value(v3);
+    union value v;
+    v.i = 1;
+    printf("sizeof(union) = %zu\n", sizeof v);   /* size of the LARGEST member */
+
+    v.f = 1.0f;               /* overwrites the bytes; now read them raw */
+    printf("1.0f bytes: %02x %02x %02x %02x\n", v.b[0], v.b[1], v.b[2], v.b[3]);
     return 0;
 }
 ```
 
 ```output
-int: 42
-double: 3.14
-string: hello
+sizeof(union) = 4
+1.0f bytes: 00 00 80 3f
 ```
 
-A tagged union (also called a *sum type* or *variant*) is how dynamic languages represent values internally. Python's `PyObject` is essentially `{ type_pointer, union_of_values }`. JavaScript engines, Lua, every dynamic language — same pattern.
+`sizeof v` is 4 — the size of the largest member (`int`, `float`, and `b[4]` are all 4 bytes), not their sum, because they overlap. After `v.f = 1.0f`, reading `v.b[]` shows the raw bytes of the float `1.0` as the CPU stores them: `00 00 80 3f`. That's the [IEEE-754](https://en.wikipedia.org/wiki/IEEE_754) bit pattern `0x3f800000` for `1.0f`, appearing **little-endian** (least-significant byte first) because this is a little-endian machine. This is *type punning*: the same four bytes viewed as a `float` mean 1.0, viewed as four `unsigned char`s reveal the encoding. (Reading a *different* member than the one last written is technically implementation-defined in C, but the byte-array case shown here is the standard, well-defined way to inspect an object's representation.)
 
-## Sizes
+## Tagged unions and what they're for
 
-```c
-sizeof(union number)
-```
+A union by itself doesn't remember *which* member is currently valid — read the wrong one and you get garbage reinterpreted. So real code pairs a union with a **tag** (an enum saying which member is live), forming a **tagged union** (a.k.a. *variant* or *sum type*): `struct { enum {INT, FLT, STR} kind; union { int i; float f; char *s; } u; }`. You check `kind` before touching `u`, the way an interpreter stores a value that might be a number, string, or list in one compact object. This pattern is everywhere in systems code — token values in a parser, `union sigval`, the many `struct sockaddr_*` variants overlaid through `union`, and message protocols where a header byte selects the payload interpretation. The two reasons to reach for a union: **saving space** (one slot for mutually-exclusive alternatives) and **deliberate reinterpretation** of bytes. The danger is the flip side of the power — nothing stops you reading the wrong member, so always gate access with a tag.
 
-is `max(sizeof(int), sizeof(double), sizeof(char*))` plus possibly padding for alignment. On 64-bit, that's typically 8 bytes.
-
-A struct holding all three would be ~24 bytes. The union saves space when only one field is live at a time.
-
-## Type punning (proceed with care)
-
-You can write one member and read another to reinterpret bytes:
-
-```c
-union { int i; float f; } x;
-x.f = 1.0f;
-printf("%x\n", x.i);   /* the bit pattern of 1.0f as an int */
-```
-
-This is **implementation-defined** but works on all mainstream compilers. The C standard says "trap representations" might occur in pathological cases; the C++ standard says it's strictly undefined. For portable bit-pattern access, use `memcpy`:
-
-```c
-float f = 1.0f;
-int   i;
-memcpy(&i, &f, sizeof i);    /* well-defined */
-```
-
-The compiler optimises this to a free move on every modern target.
-
-## When to use unions
-
-- **Tagged variants**: with an enum tag.
-- **Memory-tight data**: when one field is mutually exclusive with another.
-- **Hardware registers**: e.g. union of a 32-bit value with a struct of bit-fields representing the layout.
-- **NOT for type punning** in modern code — `memcpy` is the portable idiom.
-
-## Try it
-
-1. Add a `TAG_NULL` case to the discriminated union and handle it in `print_value`.
-2. Print `sizeof(struct value)` and explain it.
-3. Write a function `int as_int(struct value v)` that returns the int value when tag is INT, else 0.
-
-## Notes from the author
-
-- "Tagged union" is one of the most-reinvented concepts. Rust's `enum`, OCaml's variants, Haskell's algebraic types, TypeScript's discriminated unions — all of them are this pattern with compiler-enforced exhaustiveness. C lacks the exhaustiveness check; you have to be disciplined.
-- The C++ `std::variant<>` is a tagged union with the tag managed automatically. It's safer but adds template machinery. In plain C, write your own enum + union — it's a few dozen lines.
-- The most common bug with unions: writing one member, reading another, getting "garbage". The compiler doesn't warn you. Always check the tag.
-
-*Click **next →** for bit-fields.*
+## Go deeper
+- [Unions (C)](https://en.cppreference.com/w/c/language/union) — shared storage rules
+- [Tagged union](https://en.wikipedia.org/wiki/Tagged_union) — pairing a union with a discriminant
+- [Type punning](https://en.wikipedia.org/wiki/Type_punning) — reinterpreting bytes
+- [Endianness](https://en.wikipedia.org/wiki/Endianness) — why the bytes appear reversed
