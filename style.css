@@ -332,6 +332,27 @@ button.primary:active { filter: brightness(0.92); }
 .runner-bar button.ghost { padding: 0.2rem 0.6rem; color: var(--muted); }
 .runner-bar button.ghost:hover { color: var(--fg); }
 
+/* Read-only stdin panel for runnable blocks that pipe input to the program. */
+.runner-stdin {
+  border-top: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+.runner-stdin-label {
+  display: inline-block;
+  color: var(--muted);
+  font-family: "Courier New", monospace;
+  margin-right: 0.5rem;
+}
+.runner-stdin pre {
+  display: inline;
+  margin: 0;
+  font-family: "Courier New", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Editor: light mode falls through to CodeMirror's default white; in dark
    mode the oneDark extension applies its own background. */
 .editor { min-height: 8em; }

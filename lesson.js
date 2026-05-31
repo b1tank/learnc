@@ -118,19 +118,21 @@ function extractFences(markdown) {
 // inline renderer fills in after the prose is in the DOM.
 function extractRunnables(markdown) {
   var blocks = [];
-  // Match one `c:run` fence, then an OPTIONAL `output` fence right after it.
-  // The output must be optional within a *single* alternative: with two
-  // separate alternatives the code body's non-greedy `[\s\S]*?` backtracks
-  // across its own closing fence to reach a later block's `output`, swallowing
-  // the block in between. Anchoring the code close to `\n``` ` and making the
-  // output group optional keeps each block self-contained.
-  var re = /```c:run([^\n]*)\r?\n([\s\S]*?)\r?\n```[ \t]*(?:(?:[ \t]*\r?\n)+```output[^\n]*\r?\n([\s\S]*?)\r?\n```)?/g;
-  var body = markdown.replace(re, function (whole, title, code, out) {
+  // Match one `c:run` fence, then an OPTIONAL `stdin` fence and an OPTIONAL
+  // `output` fence (in that order) right after it. Both must be optional
+  // *within a single alternative*: with separate alternatives the code body's
+  // non-greedy `[\s\S]*?` backtracks across its own closing fence to reach a
+  // later block's fence, swallowing the block in between. Anchoring the code
+  // close to `\n``` ` and making the trailing groups optional keeps each block
+  // self-contained.
+  var re = /```c:run([^\n]*)\r?\n([\s\S]*?)\r?\n```[ \t]*(?:(?:[ \t]*\r?\n)+```stdin[^\n]*\r?\n([\s\S]*?)\r?\n```[ \t]*)?(?:(?:[ \t]*\r?\n)+```output[^\n]*\r?\n([\s\S]*?)\r?\n```)?/g;
+  var body = markdown.replace(re, function (whole, title, code, stdin, out) {
     title = (title || "").trim();
     code = (code || "").replace(/\r?\n$/, "");
+    var input = stdin != null ? stdin.replace(/\r?\n$/, "") + "\n" : null;
     var expected = out != null ? out.replace(/\r?\n$/, "") : null;
     var idx = blocks.length;
-    blocks.push({ title: title, code: code, expected: expected });
+    blocks.push({ title: title, code: code, stdin: input, expected: expected });
     // Blank lines keep marked from folding the div into a paragraph.
     return "\n\n<div class=\"runnable-slot\" data-idx=\"" + idx + "\"></div>\n\n";
   });
@@ -369,9 +371,10 @@ function ensureCrossOriginIsolated(termEl) {
 }
 
 // Compile + run `code`, streaming progress into `termEl` and final output
-// into termEl/badgeEl. `btn` is disabled for the duration. Self-contained so
-// inline blocks and the bottom runner share one code path.
-async function compileAndRun(code, termEl, badgeEl, expected, btn) {
+// into termEl/badgeEl. `btn` is disabled for the duration. `stdin` (optional)
+// is fed to the program. Self-contained so inline blocks and the bottom runner
+// share one code path.
+async function compileAndRun(code, termEl, badgeEl, expected, btn, stdin) {
   if (!ensureCrossOriginIsolated(termEl)) return;
   termEl.innerHTML = '<span class="terminal-empty">compiling and running\u2026</span>';
   if (badgeEl) badgeEl.textContent = "";
@@ -380,7 +383,7 @@ async function compileAndRun(code, termEl, badgeEl, expected, btn) {
     termEl.innerHTML = '<span class="terminal-empty">' + escapeHTML(msg) + "</span>";
   });
   try {
-    var result = await runC(code);
+    var result = await runC(code, stdin || "");
     renderInto(termEl, badgeEl, result, expected);
   } catch (e) {
     termEl.innerHTML = '<span class="terminal-error">' + escapeHTML(String(e && e.message || e)) + "</span>";
@@ -411,6 +414,16 @@ function buildRunnable(block) {
   var editorHost = el("div", { class: "editor" }, []);
   root.appendChild(editorHost);
 
+  // Optional stdin panel: shows exactly what bytes are piped to the program so
+  // the learner can see the input that produced the output. Read-only — the
+  // point is reproducibility, not an interactive console.
+  if (block.stdin != null) {
+    var stdinWrap = el("div", { class: "runner-stdin" }, []);
+    stdinWrap.appendChild(el("span", { class: "runner-stdin-label" }, ["stdin"]));
+    stdinWrap.appendChild(el("pre", {}, [block.stdin]));
+    root.appendChild(stdinWrap);
+  }
+
   var term = el("div", { class: "terminal" }, [
     el("span", { class: "terminal-empty" }, ['click "run" to compile and execute'])
   ]);
@@ -425,7 +438,7 @@ function buildRunnable(block) {
   var api = mountEditor(editorHost, block.code, null);
 
   runBtn.addEventListener("click", function () {
-    compileAndRun(api.getValue(), term, badge, block.expected, runBtn);
+    compileAndRun(api.getValue(), term, badge, block.expected, runBtn, block.stdin);
   });
 
   // Reset restores the original code shipped with the lesson. No confirm
