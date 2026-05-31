@@ -29,10 +29,10 @@ int main(void) {
 ```output
 pa: hi hello hey
 ma: hi hello hey
-sizeof pa = 24, sizeof ma = 18
+sizeof pa = 12, sizeof ma = 18
 ```
 
-Both print the same strings and both accept `[i]` indexing, but `sizeof` exposes the difference. `pa` is 24 bytes: three 8-byte pointers, with the actual strings ("hi", "hello", "hey") stored separately as read-only literals of *their own* lengths. `ma` is 18 bytes: a single 3 × 6 block where each string is copied in and padded with `'\0'` to fill its row — "hi" wastes 3 bytes of padding, and every row is forced to be 6 wide whether it needs it or not. So `pa[1]` is "follow a pointer to wherever "hello" lives," while `ma[1]` is "the address `ma + 1*6`," a fixed offset into the block.
+Both print the same strings and both accept `[i]` indexing, but `sizeof` exposes the difference. `pa` is 12 bytes here: three pointers (4 bytes each in this WebAssembly runtime — 8 each on a typical 64-bit native build), with the actual strings ("hi", "hello", "hey") stored separately as read-only literals of *their own* lengths. `ma` is 18 bytes: a single 3 × 6 block where each string is copied in and padded with `'\0'` to fill its row — "hi" wastes 3 bytes of padding, and every row is forced to be 6 wide whether it needs it or not. So `pa[1]` is "follow a pointer to wherever "hello" lives," while `ma[1]` is "the address `ma + 1*6`," a fixed offset into the block.
 
 ## How to choose
 
