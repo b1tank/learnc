@@ -8,60 +8,42 @@ next: 03-02-if-else
 status: done
 ---
 
-A **statement** is the unit C executes. Every expression followed by a semicolon is a statement: `x = 0;`, `printf("hi");`, even a bare `i++;`. The semicolon is part of the statement, not a separator.
+A **statement** is C's unit of action — an expression followed by a semicolon (`x = 0;`), or a control construct. The semicolon is a *terminator*, not a separator: every statement needs one. A **block** (or compound statement) is a brace-wrapped group `{ ... }` that the language treats as a single statement *and* introduces a new **scope** — names declared inside vanish at the closing brace. This is how C lets you put several statements where the grammar allows only one, like a loop body.
 
-A **block** (or compound statement) is a `{ ... }` group. Anywhere a statement is allowed, a block is allowed — and inside the block you may have more statements and even local declarations. Blocks have no semicolon after the closing brace.
+## Blocks create scope; inner names shadow outer
 
-```c:starter
+```c:run blocks and scope
 #include <stdio.h>
 
 int main(void) {
-    int n = 5;
-
-    /* a single statement after if */
-    if (n > 0) printf("positive\n");
-
-    /* a block of statements (the common case) */
-    if (n > 0) {
-        int squared = n * n;     /* declaration inside the block */
-        printf("n = %d, n*n = %d\n", n, squared);
+    int x = 10;
+    {                       /* a nested block: its own scope */
+        int x = 20;         /* shadows the outer x — only inside these braces */
+        printf("inner x = %d\n", x);
     }
+    printf("outer x = %d\n", x);   /* the inner x is gone; this is the 10 */
 
-    /* squared is gone here — its scope was just the block */
+    for (int i = 0; i < 3; i++)    /* i is scoped to the loop */
+        printf("i=%d ", i);
+    printf("\n");
     return 0;
 }
 ```
 
 ```output
-positive
-n = 5, n*n = 25
+inner x = 20
+outer x = 10
+i=0 i=1 i=2 
 ```
 
-## Why blocks matter
+The inner `x` doesn't overwrite the outer one — it's a *separate object* living in a separate stack slot, visible only within its block. When the block ends, the name leaves scope. Declaring variables in the smallest block that needs them (and in the `for` header) keeps lifetimes short and bugs local — the opposite of one giant pile of declarations at the top.
 
-1. **Multi-statement bodies.** `if`/`while`/`for` take a single statement. To run several, wrap them in a block. Habit: always use braces, even for one-line bodies. It eliminates a whole family of bugs (the famous Apple `goto fail` bug was a missing brace).
-2. **Local scope.** A variable declared inside a block exists only until the matching `}`. Shorter lifetimes mean less mental tracking and easier reasoning.
-3. **Initialisation.** Each entry into a block can re-initialise its local variables. That's especially nice in tight loops.
+## Why the distinction matters
 
-## The empty statement
+Anywhere the grammar says "statement," you can substitute a block. That's why `if (c) { a(); b(); }` works but `if (c) a(); b();` does *not* group `b()` under the `if` — the block braces are what bind multiple statements together. Forgetting them is the source of the infamous "goto fail" bug. The empty statement `;` and the empty block `{}` are both valid "do nothing" placeholders, useful for loops whose work happens entirely in the header (`while ((c = getchar()) != EOF) ;`).
 
-A lone `;` is a valid statement (it does nothing). It's idiomatic at the end of a loop whose work happens entirely in the header:
-
-```c
-for (i = 0; s[i] != '\0'; ++i)
-    ;
-```
-
-The `;` on its own line signals "the body is intentionally empty" — much clearer than putting the semicolon next to the `for(...)` line.
-
-## Modern note
-
-C99 lets you declare variables anywhere within a block, not just at the top. Use that to limit each variable's scope to the lines that actually need it. The compiler is happy; the reader is happier.
-
-## Notes from the author
-
-- Always-braces is one of those style rules that costs nothing and saves accidents. The "no braces for single-line body" style looks tidier but breeds bugs when you later add a second line and forget to wrap.
-- The empty statement at the end of a loop is a tiny piece of style hygiene: put it on its own line, indented. A `for(...);` on one line reads like a typo even when it's intentional.
-- Scope blocks aren't only for control flow. You can write `{ int tmp = a; a = b; b = tmp; }` to swap two variables without polluting the enclosing scope with `tmp`. Modern C compilers will inline this away.
-
-*Click **next →** for `if`/`else`.*
+## Go deeper
+- [Statements (C)](https://en.cppreference.com/w/c/language/statements) — the full taxonomy
+- [Blocks & scope](https://en.cppreference.com/w/c/language/scope) — block scope and shadowing rules
+- [Variable shadowing](https://en.wikipedia.org/wiki/Variable_shadowing) — when an inner name hides an outer one
+- [The "goto fail" bug](https://en.wikipedia.org/wiki/Unreachable_code#goto_fail_bug) — what missing braces can cost
