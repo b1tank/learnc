@@ -8,103 +8,44 @@ next: ex-5-3
 status: done
 ---
 
-A **string** in C is a sequence of `char` values terminated by a `'\0'` byte. A "string variable" can be either:
+A C **string** is not a distinct type — it's just an array of `char` ending in a `'\0'` (the null terminator). A *string literal* like `"ground up"` is stored as such an array somewhere in memory, and using it in an expression gives a `char *` pointing at its first character. This is why string functions take `char *` arguments and walk the bytes with pointer arithmetic until they hit the `'\0'`. Writing your own `strcpy` and `strlen` reveals the idiom that pervades C: *march a pointer down the string until the terminator*.
 
-- A `char` array with the contents copied in: `char a[] = "hello";` — 6 bytes of mutable storage.
-- A `char *` pointing to a string literal: `char *p = "hello";` — the pointer is in your stack/heap, the literal lives in **read-only** memory.
+## Copying and measuring with bare pointers
 
-```c
-char a[] = "hello";    /* mutable: a[0] = 'H' is fine */
-char *p  = "hello";    /* read-only: *p = 'H' is undefined behaviour, may segfault */
-```
-
-C99 made this a strict rule: string literals have type `const char *` (some compilers warn if you assign to non-const). Use `const char *p = "hello";` to make the contract explicit.
-
-## A classic: `strcpy`
-
-```c:starter
+```c:run hand-written strcpy and strlen
 #include <stdio.h>
 
-void my_strcpy(char *s, const char *t);
+void mystrcpy(char *dst, const char *src) {
+    while ((*dst++ = *src++))     /* copy each char, INCLUDING the '\0' */
+        ;                         /* the assignment's value is the char; */
+}                                 /* it becomes 0 (false) at the terminator */
 
-int main(void) {
-    char buf[20];
-    my_strcpy(buf, "hello pointer world");
-    printf("[%s]\n", buf);
-    return 0;
+int mystrlen(const char *s) {
+    const char *p = s;
+    while (*p) p++;               /* advance until the '\0' */
+    return (int)(p - s);          /* distance walked = length */
 }
 
-/* the K&R idiomatic pointer-walking version */
-void my_strcpy(char *s, const char *t) {
-    while ((*s++ = *t++) != '\0')
-        ;
+int main(void) {
+    char buf[32];
+    mystrcpy(buf, "ground up");
+    printf("copied: %s (len %d)\n", buf, mystrlen(buf));
+    return 0;
 }
 ```
 
 ```output
-[hello pointer world]
+copied: ground up (len 9)
 ```
 
-The compact form `while ((*s++ = *t++) != '\0')` does four things per iteration:
+`*dst++ = *src++` is one of C's densest idioms: copy the char `*src` to `*dst`, *then* advance both pointers (post-increment), and the loop continues while the copied value is non-zero. When `src` reaches the `'\0'`, that zero is copied (terminating `dst` correctly) and the assignment yields 0, ending the loop. `mystrlen` shows the pointer-difference trick from the previous section: walk a pointer to the terminator, then subtract the start — the gap *is* the length (9 here; the `'\0'` isn't counted).
 
-1. Read the byte at `*t`.
-2. Write it to `*s`.
-3. Advance both pointers (`s++`, `t++` post-increment).
-4. Continue while the byte was non-zero.
+## Where strings live, and the buffer-overflow trap
 
-Operator precedence subtlety: `*s++` parses as `*(s++)`, which reads `*s` then advances `s`. The whole assignment `*s = *t` produces the value written; the `!= '\0'` tests that copied value.
+A crucial distinction: `char *s = "hi";` makes `s` point at a **read-only** string literal (typically in the `.rodata` segment); attempting `s[0] = 'H'` is undefined behavior and usually crashes. By contrast, `char a[] = "hi";` *copies* the literal into a writable array you own — that you may modify. The other ever-present danger is size: `mystrcpy` and the standard `strcpy` write until the source's `'\0'`, with **no idea** how big `dst` is. If the destination buffer is too small, you scribble past it — the classic [buffer overflow](https://en.wikipedia.org/wiki/Buffer_overflow), the root of countless security exploits. That's why modern code prefers bounded variants like `strncpy`/`snprintf` (or `strlcpy` where available) that take a maximum length. Always ensure the destination has room for *every source character plus the terminator*.
 
-The even more compact `while (*s++ = *t++);` (no explicit `!= '\0'`) is K&R style — the loop ends when the assigned value is `0`, which is exactly the null terminator. Modern compilers and linters often want the explicit comparison; add it for clarity.
-
-## `strlen`, `strcmp` — same idea
-
-```c
-size_t my_strlen(const char *s) {
-    const char *start = s;
-    while (*s) ++s;
-    return s - start;
-}
-
-int my_strcmp(const char *s, const char *t) {
-    while (*s == *t) {
-        if (*s == '\0') return 0;
-        ++s; ++t;
-    }
-    return (unsigned char)*s - (unsigned char)*t;
-}
-```
-
-Each is a tight pointer-walk over two strings. The `(unsigned char)` cast in `strcmp` matters: on systems where `char` is signed, a negative-byte character would produce wrong comparison results.
-
-## Why character pointers vs char arrays
-
-| Form              | Memory               | Mutable? | Cost           |
-|-------------------|----------------------|----------|----------------|
-| `char a[] = "x";` | Stack copy of literal| Yes      | One-time copy  |
-| `char *p = "x";`  | Pointer to literal   | No       | No copy        |
-| `char *p = malloc(...); strcpy(p, "x");` | Heap | Yes  | malloc + copy  |
-
-Pick the form that matches what you'll do:
-- Read-only string handed around → `const char *`.
-- Mutable in-place edit → array or `malloc`'d buffer.
-- Build at runtime from pieces → `malloc`'d buffer.
-
-## Modern note
-
-- `strncpy`, `strncat`, `snprintf` exist to bound writes. Plain `strcpy` is a buffer-overflow magnet — every C security advisory mentions one.
-- C11 added `strcpy_s` and friends (Annex K) — bounds-checked variants. They're optional, sparsely implemented (glibc rejects them), and Microsoft's are different from the standard. Most modern code uses `snprintf` or wrote its own bounded copy.
-- For C-like high-level work, consider hand-rolling a `struct slice { char *p; size_t len; };` instead of relying on `\0`-terminated convention. Many real codebases (sd-bus, OpenSSL's BIO) do this for binary data.
-
-## Try it
-
-1. Implement `char *my_strchr(const char *s, int c)` that finds the first `c` in `s` and returns a pointer (or `NULL`). Compare with library `strchr`.
-2. Try `*p = 'H'` after `char *p = "hello";`. Run it under AddressSanitizer or in a debug build — you'll see a SIGSEGV from writing to `.rodata`.
-3. Use `printf("%zu\n", strlen("hello"));` and notice that `strlen` returns `size_t`, which `%zu` prints correctly. Using `%d` is a portability bug on 64-bit.
-
-## Notes from the author
-
-- The "pointer-walk loop body" idiom (`while (*s++ = *t++)`) is C at its most dense. It's beautiful when you understand it, opaque when you don't. Modern style often prefers the explicit form for readability; performance is identical post-optimisation.
-- Null-terminated strings are a 1970s design choice that the world is still paying for. Every buffer overflow, every "off by one for the terminator", every "`strlen` is O(n)" surprise traces back to it. We're stuck with them for C interop forever.
-- Always treat string literals as `const char *`. Modern compilers warn; don't silence the warning. Mutating a literal is one of the easiest ways to crash a program in the wild.
-
-*Click **next →** for arrays of pointers and pointers to pointers.*
+## Go deeper
+- [Strings in C](https://en.cppreference.com/w/c/string/byte) — the null-terminated convention
+- [String literals](https://en.cppreference.com/w/c/language/string_literal) — storage and read-only-ness
+- [Buffer overflow](https://en.wikipedia.org/wiki/Buffer_overflow) — why unbounded copies are dangerous
+- [`strcpy`/`strlen` reference](https://en.cppreference.com/w/c/string/byte/strcpy) — the standard versions
