@@ -8,88 +8,34 @@ next: ex-4-2
 status: done
 ---
 
-By default — in pre-ANSI C — a function whose return type isn't declared was assumed to return `int`. That defaulting was a bug magnet: declare a function returning `double` without a prototype and the caller would interpret the bits as an `int`, producing garbage.
+Historically, if you called a function C hadn't seen declared, it *assumed* the function returned `int`. For a function that actually returns `double` (or a pointer), that assumption is catastrophic: the caller reads the result from the wrong register, in the wrong format, and gets garbage. The fix — and a hard rule in modern C — is to **declare every function before you call it**, with its true return type. C99 removed the "implicit int" rule entirely; today calling an undeclared function is an error.
 
-ANSI C, C99, and modern toolchains require an explicit return type. So **always declare it**, especially for non-int returns.
+## The prototype carries the return type
 
-## Example: a tiny atof
-
-`atof` converts a string like `"3.14"` or `"-42.5e3"` to a `double`.
-
-```c:starter
+```c:run a function that returns double
 #include <stdio.h>
-#include <ctype.h>
 
-double my_atof(const char s[]);
-
-int main(void) {
-    printf("'3.14'      -> %g\n", my_atof("3.14"));
-    printf("'-42.5'     -> %g\n", my_atof("-42.5"));
-    printf("'  +0.001'  -> %g\n", my_atof("  +0.001"));
-    printf("'invalid'   -> %g\n", my_atof("invalid"));
-    return 0;
+double favg(double a, double b) {   /* its definition (and prototype) precede main */
+    return (a + b) / 2.0;
 }
 
-double my_atof(const char s[]) {
-    double val = 0.0;
-    double power = 1.0;
-    int i = 0, sign = 1;
-
-    while (isspace((unsigned char)s[i]))   /* skip leading whitespace */
-        ++i;
-
-    if (s[i] == '+' || s[i] == '-')
-        sign = (s[i++] == '+') ? 1 : -1;
-
-    for (; isdigit((unsigned char)s[i]); ++i)
-        val = 10.0 * val + (s[i] - '0');
-
-    if (s[i] == '.')
-        ++i;
-
-    for (; isdigit((unsigned char)s[i]); ++i) {
-        val = 10.0 * val + (s[i] - '0');
-        power *= 10.0;
-    }
-
-    return sign * val / power;
+int main(void) {
+    printf("avg = %.2f\n", favg(3.0, 4.0));
+    return 0;
 }
 ```
 
 ```output
-'3.14'      -> 3.14
-'-42.5'     -> -42.5
-'  +0.001'  -> 0.001
-'invalid'   -> 0
+avg = 3.50
 ```
 
-## What's different from int-returning functions
+Because the compiler has seen `favg`'s real signature before the call, it knows the result is a `double` arriving in a floating-point register and passes it to `printf` correctly. Remove the declaration (in old C) and the compiler would assume `int`, fetch from an integer register, and print nonsense — a bug that historically bit people who forgot to `#include <math.h>` before calling `sqrt`.
 
-Mechanically nothing — the compiler emits different return-register conventions for `double` vs `int`, but the source-level rules are identical. What matters is **that the prototype is in scope at every call site**.
+## Why this was such a famous trap
 
-Without the prototype, the call `my_atof(s)` would assume `int` return, read the bits in a way that doesn't match the `double` ABI, and produce nonsense. With the prototype, the compiler generates the right load.
+The lesson generalizes: **the prototype must be in scope at the call site**, and it must match the definition exactly. A mismatch between what the caller assumes and what the callee actually does — return type *or* parameter types — is undefined behavior. This is the entire reason library headers exist: `<math.h>` declares `double sqrt(double)`, `<stdlib.h>` declares `void *malloc(size_t)`, so the moment you `#include` them every call is type-checked. Forget the include and, pre-C99, the compiler silently assumed `int sqrt(int)` and your math quietly broke. Always include the right header (or write your own prototype) for every function you call.
 
-## Why `isspace((unsigned char)s[i])`?
-
-`isspace` and friends (in `<ctype.h>`) take an `int` argument that's either `EOF` or a value representable as `unsigned char`. Passing a plain `char` directly — which may be signed on some platforms — produces undefined behaviour for negative values (any character ≥ 128 on signed-char systems).
-
-The cast `(unsigned char)` reinterprets the byte's bits as a small positive number, which is the legal input form. This applies to all `<ctype.h>` functions and to `tolower`/`toupper`. Common and important fix.
-
-## Modern note
-
-- The standard library's `atof` and `strtod` are locale-aware. `strtod` is the recommended one because it tells you where parsing stopped (via an out-pointer).
-- For robust parsing, `errno` is set by `strtod` on overflow/underflow; `atof` cannot signal errors. Production code uses `strtod`.
-
-## Try it
-
-1. Add exponent support: parse `1e3` or `2.5e-4`. After the fraction-digit loop, look for `e`/`E`, parse a signed integer, multiply or divide `val` by `10^exp` (use a loop, not `pow`, to keep this exercise standard-library-free).
-2. Return a separate success flag: change the signature to `int my_atof(const char *s, double *out)`. Return 0 on success, -1 on garbage. This is the modern style.
-3. Compile with the prototype commented out. What warning does `-Wall` emit?
-
-## Notes from the author
-
-- The `(unsigned char)` cast for `<ctype.h>` calls is a real-world C bug that bites every team. CERT-C calls it out as MSC10. Learn it once; use it forever.
-- `double` is the right pick for numeric work unless you have a specific reason to use `float` (memory pressure, GPU). The extra precision is essentially free on modern CPUs.
-- `my_atof` here doesn't handle hex floats (`0x1.8p4`), infinity, or NaN — `strtod` does. The point of writing your own is to understand the layered structure: sign, integer part, fraction, exponent. Real parsers are just this with edge cases.
-
-*Click **next →** for external variables and multi-file programs.*
+## Go deeper
+- [Implicit function declarations](https://en.wikipedia.org/wiki/C99#Design) — the rule C99 removed
+- [Function declarations (C)](https://en.cppreference.com/w/c/language/function_declaration) — return types and prototypes
+- [`<math.h>`](https://en.cppreference.com/w/c/numeric/math) — a header full of `double`-returning functions
