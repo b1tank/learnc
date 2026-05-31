@@ -8,101 +8,55 @@ next: 03-03-else-if
 status: done
 ---
 
-The basic conditional in C:
+`if (expr) stmt` runs `stmt` only when `expr` is **nonzero** — remember, C has no separate boolean; any nonzero value is "true." An optional `else` gives the alternative. At the machine level this is a *conditional branch*: the compiler evaluates the expression into a flag and jumps over the body when it's false. Everything about C's control flow is built on this one primitive.
 
-```c
-if (expression)
-    statement1
-else
-    statement2
-```
+## Truthiness, and the dangling-else rule
 
-The `else` and its statement are optional. Each branch can be a single statement or a block.
-
-```c:starter
+```c:run if/else basics
 #include <stdio.h>
 
 int main(void) {
-    int n = 7;
-
-    if (n > 0)
-        printf("positive\n");
-    else if (n < 0)
-        printf("negative\n");
-    else
-        printf("zero\n");
-
+    for (int n = -2; n <= 2; n++) {
+        if (n > 0)
+            printf("%2d: positive\n", n);
+        else if (n < 0)
+            printf("%2d: negative\n", n);
+        else
+            printf("%2d: zero\n", n);
+    }
+    int flags = 4;
+    if (flags)                       /* nonzero == true; no "!= 0" needed */
+        printf("flags is set (%d)\n", flags);
     return 0;
 }
 ```
 
 ```output
-positive
+-2: negative
+-1: negative
+ 0: zero
+ 1: positive
+ 2: positive
+flags is set (4)
 ```
 
-## The "dangling else" trap
+The `else if` chain is read top to bottom; the first true branch wins and the rest are skipped. The last `if (flags)` shows truthiness directly — `flags` is `4`, which is nonzero, so the body runs without any explicit `!= 0`.
 
-What does the `else` belong to?
+## The two classic traps
+
+**`=` vs `==`.** `if (x = 5)` assigns 5 to `x` and tests 5 (always true); `if (x == 5)` compares. The compiler usually warns, but the bug compiles. Some people write the constant on the left (`if (5 == x)`) so a slipped `=` becomes an error.
+
+**Dangling else.** An `else` always binds to the *nearest* unmatched `if`, regardless of indentation:
 
 ```c
 if (a)
-    if (b)
-        x = 1;
-    else            /* attaches to which if? */
-        x = 2;
+    if (b) foo();
+    else   bar();   /* this else belongs to `if (b)`, NOT `if (a)` */
 ```
 
-C's rule: `else` binds to the **nearest** unmatched `if`. So the `else` above pairs with `if (b)`, not `if (a)`. The indentation in the example is misleading. With explicit braces the meaning is unambiguous:
+If you meant it to pair with `if (a)`, you must add braces: `if (a) { if (b) foo(); } else bar();`. This is exactly why the disciplined style is to **always brace** the bodies of `if`/`else`, even one-liners — it makes the grouping explicit and immune to later edits.
 
-```c
-if (a) {
-    if (b)
-        x = 1;
-    else
-        x = 2;
-}
-```
-
-This is the main reason "always brace your `if`s" is a real style rule.
-
-## Truthy and falsey
-
-The condition is any expression. C treats **0 as false, anything non-zero as true**. So all of these are equivalent:
-
-```c
-if (n != 0) ...
-if (n)      ...
-if (n ? 1 : 0) ...
-```
-
-The "implicit comparison to zero" is idiomatic for pointers (`if (p)` means "p is non-NULL"), for boolean flags (`if (found)`), and for "is the value non-zero" tests (`if (x % 2)`). For numeric quantities where 0 is a meaningful value (not just "no flag"), prefer the explicit `!= 0`.
-
-## The `=` vs `==` mistake (again)
-
-```c
-if (x = 0) ...    /* assigns 0, tests 0; never taken */
-if (x == 0) ...   /* equality */
-```
-
-Compile with `-Wall` and modern compilers will warn. If you really mean assignment-as-condition, double-paren it: `if ((x = next())) ...` — the extra parens tell the compiler "yes, I meant that."
-
-## Modern note
-
-Use `<stdbool.h>` for clearer boolean variables in C99+ code:
-
-```c
-#include <stdbool.h>
-bool ready = false;
-/* ... */
-if (ready) { ... }
-```
-
-No performance cost; the type signals intent.
-
-## Notes from the author
-
-- The dangling-else is the kind of thing every C textbook warns about and most programmers forget by the time they encounter it in real code. Brace religiously and the problem disappears.
-- `if (p)` for pointers is so widely used that some style guides ban it (insisting on `if (p != NULL)`) for explicitness. Pick one; be consistent. Mixing the two within a project signals "we never had a style discussion."
-- The "non-zero is true" convention is what makes `while ((c = getchar()) != EOF)` work and lets `strcmp` return *any* non-zero value for "different". Don't conflate "true" with `1`; conflate it with "non-zero".
-
-*Click **next →** for the else-if chain.*
+## Go deeper
+- [`if` statement (C)](https://en.cppreference.com/w/c/language/if) — syntax and semantics
+- [Dangling else](https://en.wikipedia.org/wiki/Dangling_else) — the classic grammar ambiguity
+- [Conditional branch](https://en.wikipedia.org/wiki/Branch_(computer_science)) — what `if` becomes in machine code
