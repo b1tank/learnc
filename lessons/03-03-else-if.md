@@ -8,86 +8,42 @@ next: ex-3-1
 status: done
 ---
 
-`else if` isn't actually a keyword in C — it's just `else` followed by `if`. The conventional formatting
+There is no `elif` keyword in C. The `else if` "ladder" is just nested `if/else` with the formatting flattened — `else` whose statement happens to be another `if`. It's the idiomatic way to pick one path out of several mutually-exclusive ranges. The tests run **top to bottom**; the first true one fires, its body executes, and every remaining test is skipped. A trailing bare `else` catches "none of the above."
 
-```c
-if (cond1) {
-    ...
-} else if (cond2) {
-    ...
-} else if (cond3) {
-    ...
-} else {
-    ...
-}
-```
+## A range classifier
 
-is what you get when you collapse nested `else { if (...) { ... } }` chains by keeping the inner `if` on the same line as the outer `else`.
-
-The semantics are: conditions are tested in order; the first one that's true gets its body run; everything else is skipped.
-
-## A practical example — binary search
-
-```c:starter
+```c:run an else-if ladder
 #include <stdio.h>
 
-/* return index of x in v[0..n-1], or -1 */
-int binsearch(int x, const int v[], int n);
-
-int main(void) {
-    int v[] = { 1, 3, 5, 7, 9, 11, 13, 15 };
-    int n   = sizeof(v) / sizeof(v[0]);
-
-    printf("found 7 at %d\n",  binsearch(7,  v, n));
-    printf("found 11 at %d\n", binsearch(11, v, n));
-    printf("found 4 at %d\n",  binsearch(4,  v, n));
-    return 0;
+const char *grade(int s) {
+    if      (s >= 90) return "A";
+    else if (s >= 80) return "B";
+    else if (s >= 70) return "C";
+    else              return "F";   /* the catch-all */
 }
 
-int binsearch(int x, const int v[], int n) {
-    int lo = 0, hi = n - 1;
-    while (lo <= hi) {
-        int mid = (lo + hi) / 2;
-        if (x < v[mid])
-            hi = mid - 1;
-        else if (x > v[mid])
-            lo = mid + 1;
-        else
-            return mid;
-    }
-    return -1;
+int main(void) {
+    int marks[] = {95, 83, 72, 40};
+    for (int i = 0; i < 4; i++)
+        printf("%d -> %s\n", marks[i], grade(marks[i]));
+    return 0;
 }
 ```
 
 ```output
-found 7 at 3
-found 11 at 5
-found 4 at -1
+95 -> A
+83 -> B
+72 -> C
+40 -> F
 ```
 
-The classical three-way comparison maps perfectly to `if`/`else if`/`else`.
+Order is everything. Because the first match wins, the tests must go from most to least specific (or, as here, highest threshold first). If you wrote `s >= 70` before `s >= 90`, a 95 would match the `>= 70` branch and wrongly score a "C" — the later, stronger test never gets a chance. The `early return` from each branch is a clean alternative to deeply nested braces.
 
-## When to choose `else if` vs `switch`
+## When to switch to `switch`
 
-- **`else if` chains** suit *arbitrary expressions*: range tests, complex booleans, function-result branches.
-- **`switch`** (next lesson) suits *equality* against a finite set of integer constants.
+An `else if` ladder evaluates each condition in sequence — O(n) comparisons for n branches — and handles *arbitrary* expressions (ranges, function calls, combined conditions). When you're instead dispatching on the *exact value* of a single integer or character, a [`switch`](lesson.html?id=03-04-switch) is clearer and the compiler may compile it to a jump table (O(1) dispatch). Rule of thumb: ranges and compound tests → `else if`; equality against many discrete constants → `switch`.
 
-If your chain is doing `if (n == 1) ... else if (n == 2) ... else if (n == 3) ...`, that's a `switch` waiting to happen.
-
-## Watch the `(lo + hi) / 2` overflow
-
-The line `int mid = (lo + hi) / 2;` is famously buggy when `lo + hi` overflows `INT_MAX`. For arrays under a billion elements you're safe; for larger ones the textbook trick is `mid = lo + (hi - lo) / 2;` which never overflows.
-
-This was an actual bug in Java's built-in binary search, untouched for nearly a decade. Two-billion-element arrays are normal in modern data systems.
-
-## Modern note
-
-For chains over a small set of integer constants, prefer `switch`. The compiler can generate a jump table — usually faster than a linear chain — and the structure documents "these are the cases" at a glance.
-
-## Notes from the author
-
-- An `else if` chain that has more than ~6 branches is asking to be a `switch`, a lookup table, or a function pointer dispatch. Long chains hide subtle ordering bugs (one branch may inadvertently mask another).
-- The overflow in `(lo + hi) / 2` is a small thing that's caused real outages. The habit of writing `lo + (hi - lo) / 2` is free; adopt it for everything index-arithmetic.
-- The three-way comparison in `binsearch` exposes a recurring idiom: when you have a comparison function `cmp(a, b)` returning negative/zero/positive, the `else if`/`else` cascade falls out of the comparison naturally. Many sort and search routines use this exact pattern.
-
-*Click **next →** for `switch`.*
+## Go deeper
+- [`if`/`else if` (C)](https://en.cppreference.com/w/c/language/if) — the ladder is just nested `if`
+- [Guard clause / early return](https://en.wikipedia.org/wiki/Guard_(computer_science)) — flattening nesting with returns
+- [Branch table](https://en.wikipedia.org/wiki/Branch_table) — how `switch` can beat a long ladder
