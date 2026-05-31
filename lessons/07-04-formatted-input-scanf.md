@@ -8,126 +8,38 @@ next: ex-7-4
 status: done
 ---
 
-`scanf` is `printf`'s mirror image: it reads characters from `stdin`, parses them according to a format string, and stores the results into pointer arguments.
+`scanf` is `printf`'s mirror image: it reads characters from `stdin` and *parses* them into typed variables according to a format string. Where `printf` turns values into text, `scanf` turns text into values. Each conversion like `%d` skips leading whitespace, reads as many characters as match (e.g. digits for `%d`), converts them, and stores the result through a **pointer** you pass — which is why `scanf` arguments are addresses (`&day`), not values. Its critical and easily-ignored feature is the **return value**: the number of items successfully converted, which is how you detect bad input.
 
-```c
-int  a, b;
-scanf("%d %d", &a, &b);     /* read two integers separated by whitespace */
-```
+## Parsing fields from a line
 
-**You MUST pass pointers.** `scanf("%d", a)` is a classic bug — the compiler can't warn you about it (with default flags); the program crashes at runtime.
-
-## The common conversions
-
-| Spec   | Reads                                      | Argument type      |
-|--------|--------------------------------------------|---------------------|
-| `%d`   | optional sign + decimal digits             | `int *`              |
-| `%u`   | decimal digits                             | `unsigned *`         |
-| `%x`   | hex digits (optional `0x`)                  | `unsigned *`         |
-| `%o`   | octal digits                                | `unsigned *`         |
-| `%f`/`%e`/`%g` | float                                | `float *`            |
-| `%lf`  | double                                       | `double *`           |
-| `%c`   | one char (NO whitespace skipping!)           | `char *`             |
-| `%s`   | run of non-whitespace + adds `\0`            | `char[]`             |
-| `%[abc]` | run of chars in the set                    | `char[]`             |
-| `%[^\n]` | run of chars NOT in the set                | `char[]`             |
-| `%%`   | matches a literal `%`                        | (no arg)             |
-
-## Return value
-
-`scanf` returns the **number of successfully matched fields**. Always check it!
-
-```c
-int a, b;
-if (scanf("%d %d", &a, &b) != 2) {
-    fprintf(stderr, "expected two integers\n");
-    return 1;
-}
-```
-
-A return of less than expected means parsing stopped at a non-matching character. A return of `EOF` means the stream ended (or had an error) before any matches.
-
-## A tiny calculator
-
-```c:starter
+```c:run read a day, a month name, and a year
 #include <stdio.h>
 
 int main(void) {
-    double a, b;
-    char op;
-    printf("enter: <num> <op> <num>\n> ");
-    if (scanf("%lf %c %lf", &a, &op, &b) != 3) {
-        fprintf(stderr, "parse error\n");
-        return 1;
-    }
-    double result;
-    switch (op) {
-        case '+': result = a + b; break;
-        case '-': result = a - b; break;
-        case '*': result = a * b; break;
-        case '/': result = b ? a / b : 0; break;
-        default:  fprintf(stderr, "unknown op '%c'\n", op); return 1;
-    }
-    printf("%g %c %g = %g\n", a, op, b, result);
+    int day, year;
+    char mon[20];
+    int n = scanf("%d %s %d", &day, mon, &year);   /* &day: store THROUGH a pointer */
+    printf("matched %d fields: day=%d mon=%s year=%d\n", n, day, mon, year);
     return 0;
 }
 ```
 
+```stdin
+25 Dec 1988
+```
+
 ```output
-(awaits input — try '3 + 4')
-3 + 4 = 7
+matched 3 fields: day=25 mon=Dec year=1988
 ```
 
-## Whitespace handling
+`%d` skips whitespace then reads an integer; `%s` skips whitespace then reads a **non-whitespace word** (stopping at the next space/newline) and appends a `'\0'`. Note `mon` is passed *without* `&` — an array name already decays to a pointer to its first element, whereas `day` and `year` are plain `int`s and need `&` to give `scanf` their addresses. The return value `n` is 3 because all three conversions succeeded; that number is your only reliable signal of success.
 
-By default `scanf` treats whitespace specially:
+## Why scanf is treacherous — check the return, bound the width
 
-- Whitespace in the format string matches *any amount* of whitespace in the input, including zero.
-- Most conversions (`%d`, `%f`, `%s`) automatically skip leading whitespace.
-- `%c` does NOT skip whitespace — a leading space (`" %c"`) is the workaround.
+`scanf` is convenient but notoriously error-prone, and the failures are silent. **Always check the return value**: if the user types `abc` where `%d` expects a number, the conversion fails, `n` comes back less than expected, and — crucially — the offending characters are *left in the input buffer*, so a naive retry loops forever on the same bad data. The worst hazard is `%s`: by default it reads an unbounded word and will **overflow** your buffer if the input is longer than `mon[20]`, a classic [buffer overflow](https://owasp.org/www-community/vulnerabilities/Buffer_Overflow). The defense is a *field width*: `%19s` reads at most 19 characters into a 20-byte buffer (leaving room for `'\0'`). Other traps: mixing `scanf("%d")` with line-reading functions tangles the leftover newline; and a literal space in the format matches *any amount* of whitespace including none. For these reasons seasoned C programmers often avoid `scanf` for interactive input entirely, preferring to read a whole line with [`fgets`](07-07-line-input-and-output.md) and then parse it with [`sscanf`](https://en.cppreference.com/w/c/io/fscanf) or `strtol`/`strtod` — that way a parse error can't corrupt the input stream and you control buffering explicitly.
 
-```c
-char c;
-scanf(" %c", &c);    /* skip whitespace, then read one char */
-```
-
-## The `%s` foot-gun
-
-`%s` reads a non-whitespace run into a buffer **with no bound check**. The classic exploit:
-
-```c
-char buf[16];
-scanf("%s", buf);   /* user types 1000 chars → stack overflow */
-```
-
-**Always use a width modifier:**
-
-```c
-scanf("%15s", buf);   /* read at most 15 chars + the implicit \0 */
-```
-
-This is the `scanf` analogue of `snprintf`. The width is *characters*, not buffer size; reserve one byte for the null terminator.
-
-## When scanf falls down
-
-`scanf` is great for *well-formed structured input* but terrible for free-form data. Real-world parsing usually wants:
-
-1. `fgets` a line into a buffer.
-2. `sscanf` or hand-parse from that buffer.
-3. On parse failure, you can re-prompt with the line intact.
-
-With raw `scanf` on `stdin`, a parse failure leaves the unmatched characters in the input buffer, leading to infinite loops if you retry naively.
-
-## Try it
-
-1. Read three integers per line until EOF; print their sum each time.
-2. Read a line into a buffer with `fgets`, then use `sscanf` to parse it. Compare to direct `scanf`.
-3. Read a sequence of `"name=value"` pairs into a struct. (`%[^=]=%[^\n]` is your friend.)
-
-## Notes from the author
-
-- `scanf` is a "use with caution" API. It's appropriate for teaching, prototyping, and simple tools. For production parsing, prefer `fgets` + custom parsing, or use `strtol`/`strtod` which give you better error semantics.
-- The `%lf` (lowercase L) for `double` vs. `%f` for `float` trips up newcomers daily. Modern compilers warn (`-Wformat`); turn that on and pay attention.
-- The `n` conversion (`%n`) writes the number of characters consumed so far into an `int *`. It's powerful but a security hazard — many libc implementations disable it for format-string-from-input.
-
-*Click **next →** for file access.*
+## Go deeper
+- [`scanf` format spec](https://en.cppreference.com/w/c/io/fscanf) — conversions and the return value
+- [`scanf(3)`](https://man7.org/linux/man-pages/man3/scanf.3.html) — full reference
+- [`strtol` / `strtod`](https://en.cppreference.com/w/c/string/byte/strtol) — safer numeric parsing
+- [Buffer overflow](https://en.wikipedia.org/wiki/Buffer_overflow) — why unbounded `%s` is dangerous
