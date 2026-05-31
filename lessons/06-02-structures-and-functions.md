@@ -8,90 +8,47 @@ next: 06-03-arrays-of-structures
 status: done
 ---
 
-Structures can be passed to functions and returned from them. The semantics are **by value**: the entire struct is copied into the parameter, and a copy is returned.
+Unlike arrays, a whole **structure is a first-class value** in C: you can assign one struct to another (`a = b` copies every member), pass a struct *by value* to a function (the callee gets its own copy), and *return* a struct from a function. This makes structs convenient — a function can hand back a coordinate, a complex number, or a small record as a single value. But "by value" means exactly that: the function works on a copy, so changes inside it don't touch the caller's original unless you deliberately pass a pointer.
 
-```c:starter
+## Pass and return by value
+
+```c:run structs copy on assignment, argument, and return
 #include <stdio.h>
 
-struct point {
-    int x;
-    int y;
-};
+struct point { int x, y; };
 
-/* construct a point */
 struct point makepoint(int x, int y) {
-    struct point p;
-    p.x = x;
-    p.y = y;
-    return p;
+    struct point p = { x, y };
+    return p;                       /* the struct value is copied back */
 }
 
-/* add two points */
 struct point addpoint(struct point a, struct point b) {
-    a.x += b.x;
+    a.x += b.x;                     /* a is a COPY of the caller's struct */
     a.y += b.y;
-    return a;
+    return a;                       /* caller's originals are untouched */
 }
 
 int main(void) {
-    struct point a = makepoint(3, 4);
-    struct point b = makepoint(1, 2);
+    struct point a = makepoint(2, 3);
+    struct point b = makepoint(5, 1);
     struct point c = addpoint(a, b);
-    printf("a + b = (%d, %d)\n", c.x, c.y);
+    printf("a=(%d,%d) after add: a still (%d,%d)\n", c.x, c.y, a.x, a.y);
     return 0;
 }
 ```
 
 ```output
-a + b = (4, 6)
+a=(7,4) after add: a still (2,3)
 ```
 
-## By value, by pointer
+`addpoint` modifies `a.x` and `a.y`, yet after the call `main`'s `a` is *still* `(2, 3)` — because the function received a **copy**. The modified copy comes back only through the `return` value, which we captured in `c`. This value semantics is clean and safe (no aliasing surprises), and it's why `makepoint` can simply build a local struct and return it. Assigning `c = addpoint(...)` is itself a struct copy: every member is duplicated.
 
-For a small struct (say, two `int`s), pass-by-value is fine — the copy is cheap. For larger structs, pass a pointer:
+## When to pass a pointer instead
 
-```c
-void shift(struct point *p, int dx, int dy) {
-    p->x += dx;       /* p->x is shorthand for (*p).x */
-    p->y += dy;
-}
+By-value structs are copied in full on every call and return. For a tiny `struct point` (8 bytes) that's free, but for a large struct — say one with arrays or many members — copying it can be wasteful, and there's no way to *modify* the caller's struct through a value parameter. The fix is to pass a **pointer to the struct** (next section's `->` operator): `void addto(struct point *p, struct point d)` lets the function change `*p` in place and copies only an address (4–8 bytes) instead of the whole object. The rule of thumb mirrors other languages' "pass big things by reference": pass small, read-only structs by value for clarity; pass large structs, or any struct you need to *modify*, by pointer (adding `const` when you only read). Under the hood, the calling convention decides how a struct argument travels — small ones may ride in CPU registers, larger ones are copied onto the stack — but you rarely need to think about that; you choose value vs pointer based on size and whether you need to mutate the original.
 
-shift(&a, 1, 1);     /* modifies a in place */
-```
-
-The `->` operator dereferences a pointer and accesses a member in one step. `p->x` ≡ `(*p).x`.
-
-## When to choose which
-
-| Need                                | Pattern                       |
-|--------------------------------------|-------------------------------|
-| Return a new value                   | Return a struct (by value)    |
-| Modify caller's struct               | Take `struct T *`             |
-| Avoid copying large struct           | Take `const struct T *`        |
-| Lots of accesses inside the function | Take pointer, use `->`        |
-
-In modern C, the convention for "do not modify" is `const struct T *`. The `const` documents intent and lets the compiler catch accidental mutations.
-
-## Returning aggregate vs. modifying
-
-Both styles are idiomatic. Compare:
-
-```c
-struct point translated = translate(p, 3, 4);  /* functional style */
-translate_in_place(&p, 3, 4);                   /* imperative style */
-```
-
-The functional style chains nicely. The imperative style avoids copying. ABI-wise, small structs (≤16 bytes on x86-64) are often returned in registers, so the copy is free.
-
-## Try it
-
-1. Write `subpoint`, `scalepoint(p, k)`, and `manhattan(a, b)` (the L1 distance).
-2. Convert `addpoint` to take pointer arguments. When is each version better?
-
-## Notes from the author
-
-- "Pass-by-value for structs" is a unique-to-C-and-its-descendants design. Many languages pass everything by reference (Java) or by sharing (Python). C's value semantics give you predictable copy costs.
-- The `->` operator is one of the most-asked-about quirks of C. It exists because the precedence of `.` and `*` would otherwise force parens (`(*p).x`). The shorthand is the *only* reason `->` is in the language.
-- Returning a struct used to be expensive on early machines. Today, small structs return in registers; it's free. Don't optimise prematurely by switching to out-parameters.
-
-*Click **next →** for arrays of structs.*
+## Go deeper
+- [Struct as a value (C)](https://en.cppreference.com/w/c/language/struct) — assignment and copying
+- [Function arguments & return](https://en.cppreference.com/w/c/language/functions) — by-value semantics
+- [`const` pointer parameters](https://en.cppreference.com/w/c/language/const) — read-only by reference
+- [Calling conventions](https://en.wikipedia.org/wiki/Calling_convention) — how structs are actually passed
