@@ -8,91 +8,36 @@ next: 05-04-address-arithmetic
 status: done
 ---
 
-In C, arrays and pointers are deeply connected. Given:
+In C, arrays and pointers are intimately related — so much that beginners often think they're the same thing. They aren't, but the connection is precise: in almost every expression, an array's name **decays** to a pointer to its first element. So if `a` is an array, `a` is shorthand for `&a[0]`, and the subscript `a[i]` is *defined* as `*(a + i)`. That single identity explains why `a[i]`, `*(a+i)`, `p[i]`, and `*(p+i)` are all interchangeable once `p = a`.
 
-```c
-int a[10];
-int *p;
-```
+## Four ways to say the same thing
 
-- `a` (an array name) decays to `&a[0]` in nearly every expression. So `a` *is* a pointer to the first element, except where it isn't (we'll get to that).
-- You can write `p = a;` (legal — `a` decays to a pointer), but not `a = p;` (illegal — `a` is not an lvalue).
-- After `p = &a[0]`:
-  - `*p` is `a[0]`.
-  - `*(p + 1)` is `a[1]`.
-  - `p[1]` is `a[1]`. (Subscript is just sugar.)
-- And by the same rule: `a[i]` is *defined* as `*(a + i)`. So `5[a]` is the same as `a[5]` — both are `*(a + 5)`, and addition commutes. (Don't write `5[a]` in production. But it's a fun trivia.)
-
-## A demonstration
-
-```c:starter
+```c:run subscripting is pointer arithmetic in disguise
 #include <stdio.h>
 
 int main(void) {
-    int a[5] = { 10, 20, 30, 40, 50 };
-    int *p   = a;                /* p points to a[0] */
+    int a[5] = {10, 20, 30, 40, 50};
+    int *p = a;             /* a decays to &a[0]; no & needed */
 
-    printf("a[0] = %d, *p     = %d\n", a[0], *p);
-    printf("a[2] = %d, *(p+2) = %d, p[2] = %d\n", a[2], *(p+2), p[2]);
-
-    p += 3;
-    printf("after p += 3: *p = %d\n", *p);     /* a[3] = 40 */
-
+    printf("a[2]=%d *(p+2)=%d p[2]=%d\n", a[2], *(p + 2), p[2]);
+    printf("*(a+3)=%d\n", *(a + 3));   /* a[3], written the long way */
     return 0;
 }
 ```
 
 ```output
-a[0] = 10, *p     = 10
-a[2] = 30, *(p+2) = 30, p[2] = 30
-after p += 3: *p = 40
+a[2]=30 *(p+2)=30 p[2]=30
+*(a+3)=40
 ```
 
-## Where the equivalence breaks down
+`a[2]`, `*(p+2)`, and `p[2]` all name the third element — because the compiler rewrites every `x[i]` as `*(x + i)` whether `x` is an array or a pointer. (A fun consequence: `i[a]` is also legal and equals `a[i]`, since `*(a+i) == *(i+a)`.) The key under-the-hood fact is that `a + 2` doesn't add 2 *bytes* — it adds `2 * sizeof(int)` bytes, because pointer arithmetic is scaled by the element type. That's how the same offset works for `int`, `double`, or `struct` arrays.
 
-Two places where an array is *not* a pointer:
+## Where arrays and pointers differ
 
-1. **`sizeof`**. `sizeof a` (where `a` is `int a[10]`) is `40` (10 ints × 4 bytes). `sizeof p` is the size of a pointer (8 bytes on 64-bit). The array remembers its size at compile time; the pointer doesn't.
-2. **`&`**. `&a` has type `int (*)[10]` (pointer to array of 10 ints), *not* `int**`. The address numerically equals `&a[0]`, but the type is different.
+The decay is real, but an array is **not** a pointer. `a` is the name of a contiguous block of storage; `p` is a separate variable holding an address. You can write `p = a;` (point `p` at the array) or `p++` (advance it), but you **cannot** write `a = p;` or `a++` — an array name isn't a modifiable lvalue; it has no storage of its own to reassign. They also report different sizes: `sizeof a` is the whole array (5 × 4 = 20 bytes here), while `sizeof p` is one pointer (8 bytes). And the decay only happens in expressions — it does *not* happen for `&a` (which gives a pointer to the whole array) or `sizeof a`. The most important practical consequence: when you pass an array to a function, it decays to a pointer, so the function receives no size information. That's why C functions on arrays always take a separate length parameter (`f(int a[], int n)` — the `int a[]` is really `int *a`).
 
-These are the two ways C "remembers" that you declared an array. Once the array decays into a pointer (e.g. when passed to a function), that memory is lost.
-
-## Function parameter syntax
-
-```c
-void f(int a[]);     /* equivalent to: */
-void f(int *a);      /* both declare a pointer-to-int parameter */
-void f(int a[10]);   /* the 10 is ignored; still just int * */
-```
-
-Inside the function, you cannot recover the array's length from `a`. The caller has to pass it as a separate argument:
-
-```c
-double avg(const int *a, size_t n) {
-    long sum = 0;
-    for (size_t i = 0; i < n; ++i) sum += a[i];
-    return (double)sum / n;
-}
-```
-
-This "size by separate parameter" convention is everywhere in C. `qsort`, `memcpy`, `read`, `write` — all of them.
-
-## Modern note
-
-- `<stddef.h>` provides `size_t` and `ptrdiff_t` (the type of a pointer-pointer difference). Use them; `int` for array indices invites overflow on 64-bit data.
-- C99 added VLAs (variable-length arrays) — `void f(int n, int a[n])` — but they're now optional in C11/C23 and disabled by many compilers (the Linux kernel banned them in 2018). Avoid in portable code.
-- For "array with size attached", build a struct: `struct slice { int *data; size_t len; };`. This is how Go and Rust represent slices natively.
-
-## Try it
-
-1. Write `int sum_array(const int v[], size_t n)` two ways: subscripted (`v[i]`) and pointer-walking (`*p++`). Compile with `-O2 -S` and compare the generated assembly. Modern compilers produce identical code.
-2. Confirm `sizeof a` vs `sizeof p` differ for an array and a pointer. Print both.
-3. Use `(int)(sizeof a / sizeof a[0])` to compute an array's length. This is the idiomatic C "array_size" trick. Wrap it in a macro: `#define ARRAY_SIZE(x) (sizeof (x) / sizeof (x)[0])`.
-
-## Notes from the author
-
-- The "arrays decay to pointers" rule is the source of more confusion than any other C feature. Burn it into memory: **in almost every expression, the array name evaluates to a pointer to the first element**. The two exceptions (`sizeof`, `&`) are the only places the array nature shows through.
-- The `ARRAY_SIZE` macro is portable C-89 magic. In C11 you can do `_Generic`-based versions that reject pointers at compile time. Either way, hand-counting `sizeof a / 4` is brittle (what if you change the element type?).
-- For new C code, prefer slice-like structs over bare pointers when you need length. The cost is one extra parameter or struct field; the benefit is bounds-checked iteration and self-documenting APIs.
-
-*Click **next →** for pointer arithmetic.*
+## Go deeper
+- [Array-to-pointer decay](https://en.cppreference.com/w/c/language/array#Array_to_pointer_conversion) — the precise rule
+- [Subscript = `*(a+i)`](https://en.cppreference.com/w/c/language/operator_member_access#Subscript) — how `[]` is defined
+- [`sizeof`](https://en.cppreference.com/w/c/language/sizeof) — array vs pointer sizes
+- [C arrays](https://en.wikipedia.org/wiki/C_(programming_language)#Arrays) — contiguous storage model
