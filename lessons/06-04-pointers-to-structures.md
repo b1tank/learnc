@@ -8,82 +8,39 @@ next: 06-05-self-referential-structures
 status: done
 ---
 
-A pointer to a struct works just like a pointer to anything else:
+Because copying a whole struct can be costly and value parameters can't modify the caller's data, C code overwhelmingly works with **pointers to structures**. A pointer to a struct is just an address, so passing it is cheap and lets a function change the original in place. Accessing a member through a pointer is so common that C gives it dedicated syntax: `p->member`, the **arrow operator**, which means "follow the pointer, then take the member" — shorthand for the clumsy `(*p).member`.
 
-```c
-struct point pt = {3, 4};
-struct point *p = &pt;
-```
+## The arrow operator
 
-Access members through the pointer with `->`:
-
-```c
-p->x       /* equivalent to (*p).x */
-p->y       /* equivalent to (*p).y */
-```
-
-The `->` operator was added to C for ergonomics. `(*p).x` works but is hard to read.
-
-## Why pointers to structs matter
-
-1. **Cheap function arguments** — pass a pointer (one register) instead of the whole struct.
-2. **Mutation** — the function can modify the caller's struct.
-3. **Dynamic data structures** — linked lists, trees, graphs all hold pointers to other nodes.
-4. **Polymorphic data** — when you want a "handle" without exposing fields.
-
-## Modifying through a pointer
-
-```c:starter
+```c:run p->member is (*p).member, but readable
 #include <stdio.h>
 
-struct point {
-    int x;
-    int y;
-};
-
-void normalize(struct point *p) {
-    if (p->x < 0) p->x = -p->x;
-    if (p->y < 0) p->y = -p->y;
-}
+struct point { int x, y; };
 
 int main(void) {
-    struct point a = {-3, 4};
-    printf("before: (%d, %d)\n", a.x, a.y);
-    normalize(&a);
-    printf("after:  (%d, %d)\n", a.x, a.y);
+    struct point pt = { 3, 4 };
+    struct point *pp = &pt;               /* pp points at pt */
+
+    printf("(*pp).x = %d, pp->x = %d\n", (*pp).x, pp->x);   /* same thing */
+    pp->y = 99;                           /* write through the pointer */
+    printf("pt.y is now %d\n", pt.y);     /* the original changed */
     return 0;
 }
 ```
 
 ```output
-before: (-3, 4)
-after:  (3, 4)
+(*pp).x = 3, pp->x = 3
+pt.y is now 99
 ```
 
-## Walking an array of structs via pointer
+`pp->x` and `(*pp).x` are exactly equivalent — both dereference `pp` and select member `x` — so the first line prints `3` twice. The arrow form just reads far better and avoids a parenthesization trap: writing `*pp.x` would *not* work, because `.` binds tighter than `*`, so it parses as `*(pp.x)` (and `pp` isn't a struct). The important line is the second: `pp->y = 99` reaches back through the pointer and changes the *real* `pt`, so `pt.y` is now 99. A write through a struct pointer modifies the original object — that's the whole reason to use one.
 
-```c
-struct key *p;
-for (p = keytab; p < keytab + NKEYS; ++p)
-    if (p->count > 0)
-        printf("%4d %s\n", p->count, p->word);
-```
+## Why this dominates real C
 
-`p++` advances by **one whole struct** (the compiler scales the increment by `sizeof(*p)`). This pointer-walk is equivalent to indexing with `keytab[i]`.
+Passing `struct foo *` instead of `struct foo` is the default in serious C for three reasons: it copies only an address rather than the whole record; it lets the function mutate the caller's object (the only way to "return" changes through a parameter); and it enables data structures that *link* structs together by address — lists, trees, graphs (next section). The standard library and OS are built this way: `FILE *`, `struct stat *` filled in by [`stat`](https://man7.org/linux/man-pages/man2/stat.2.html), `struct sockaddr *` — you hand the kernel a pointer to a struct and it writes the fields. When a function only *reads* the struct, mark the parameter `const struct foo *p` to promise it won't modify your data and to let the compiler enforce that. One subtlety: `++p->x` increments the *member* `x` (because `->` binds tighter than `++`), whereas `(++p)->x` would advance the pointer first — precedence matters once you mix arrow with other operators.
 
-## Operator precedence quirks
-
-`->` and `.` bind very tightly. `++p->count` is `++(p->count)` — it increments the `count` member, not the pointer. To increment the pointer, write `(++p)->count` or just `++p; p->count`.
-
-## Try it
-
-1. Write a function `nearest_to_origin(struct point *pts, int n)` that returns a pointer to the point closest to (0,0).
-2. Try `p++->count++` and read it aloud — that's three operations on three different things.
-
-## Notes from the author
-
-- The "pass a pointer for mutation" convention spreads across C APIs: `fread(buf, sz, n, fp)` writes into your buffer; `strtol(s, &endp, 10)` writes the end position. Output parameters are pointer arguments.
-- `const struct T *p` says "I take a pointer but won't modify". Use it consistently — the documentation is enforced by the compiler.
-- Pointer arithmetic on struct arrays is a real C idiom. The compiler does the multiplication-by-sizeof for you. Once you internalise it, walking arrays without indices becomes natural.
-
-*Click **next →** for self-referential structures.*
+## Go deeper
+- [The `->` operator (C)](https://en.cppreference.com/w/c/language/operator_member_access#Member_access_through_pointer) — definition and precedence
+- [`stat(2)`](https://man7.org/linux/man-pages/man2/stat.2.html) — a kernel API that fills a struct via pointer
+- [`const` correctness](https://en.cppreference.com/w/c/language/const) — read-only struct pointers
+- [Pointers (C)](https://en.cppreference.com/w/c/language/pointer) — the addresses underneath
