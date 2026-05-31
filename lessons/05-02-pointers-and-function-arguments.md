@@ -8,97 +8,41 @@ next: ex-5-1
 status: done
 ---
 
-C passes function arguments **by value**. The function receives a *copy* of the argument; modifying the parameter inside the function doesn't change the caller's variable.
+C passes arguments **by value**: a function receives *copies* of its arguments, so assigning to a parameter changes only the local copy, never the caller's variable. That's a problem when a function needs to *modify* something the caller owns — like a swap routine. The fix is to pass a **pointer**: the caller hands over the *address* of its variable, and the function dereferences that address to reach the original object. This "call by reference, simulated with pointers" is how C functions return results through their parameters.
 
-To let a function modify its caller's variables, the caller passes a **pointer** and the function dereferences it.
+## Modifying the caller's variables
 
-## The swap example
-
-```c:starter
+```c:run swap works only because we pass addresses
 #include <stdio.h>
 
-void swap_bad(int x, int y);
-void swap_good(int *p, int *q);
+void swap(int *a, int *b) {   /* receives addresses, not values */
+    int t = *a;
+    *a = *b;                  /* writes through the pointers... */
+    *b = t;                   /* ...so the caller's vars change */
+}
 
 int main(void) {
-    int a = 1, b = 2;
-
-    swap_bad(a, b);
-    printf("after swap_bad : a=%d b=%d\n", a, b);
-
-    swap_good(&a, &b);
-    printf("after swap_good: a=%d b=%d\n", a, b);
+    int x = 3, y = 7;
+    printf("before: x=%d y=%d\n", x, y);
+    swap(&x, &y);             /* pass the ADDRESSES of x and y */
+    printf("after:  x=%d y=%d\n", x, y);
     return 0;
-}
-
-void swap_bad(int x, int y) {
-    int t = x; x = y; y = t;       /* swaps local copies; caller unchanged */
-}
-
-void swap_good(int *p, int *q) {
-    int t = *p; *p = *q; *q = t;   /* swaps the values at the addresses */
 }
 ```
 
 ```output
-after swap_bad : a=1 b=2
-after swap_good: a=2 b=1
+before: x=3 y=7
+after:  x=7 y=3
 ```
 
-The mechanism: `swap_good(&a, &b)` passes the *addresses* of `a` and `b`. Inside the function, `*p = *q` writes through the pointer back to the caller's storage.
+If `swap` took plain `int a, int b`, it would shuffle its own copies and `main`'s `x`/`y` would be untouched. By taking `int *a, int *b` and calling `swap(&x, &y)`, the function receives the *locations* of `x` and `y`; `*a` and `*b` are then aliases for the originals, so the exchange sticks. The pointers themselves are still passed by value (the addresses are copied) — but those copies point at the very objects we want to change.
 
-## Returning multiple values
+## Why `scanf` needs `&`, and the efficiency angle
 
-C functions return one value, but pointer parameters let you return more:
+This is exactly why you write `scanf("%d", &n)` and not `scanf("%d", n)`: `scanf` must *store into* your variable, so it needs the address. Forgetting the `&` passes the (garbage) value of an uninitialized `n` as if it were an address, and `scanf` writes through it — a crash or silent corruption. Pointers serve a second purpose too: passing a large object (a big `struct`, or an array) by pointer copies only an 8-byte address instead of duplicating the whole thing, which is faster and uses less stack. When a function only *reads* through such a pointer, mark it `const` (`const int *p`) to promise it won't modify the caller's data — the compiler then enforces that promise. Arrays are the special case: an array argument *automatically* passes as a pointer to its first element, which the next section explores.
 
-```c
-/* extract integer part and fraction of a double */
-void split(double v, int *whole, double *frac) {
-    *whole = (int)v;
-    *frac  = v - *whole;
-}
-
-int main(void) {
-    int    w;
-    double f;
-    split(3.14159, &w, &f);
-    printf("whole=%d frac=%g\n", w, f);      /* 3, 0.14159 */
-    return 0;
-}
-```
-
-This pattern — "the function fills in values through pointer parameters" — is everywhere in the C standard library. `scanf`, `time`, `getline`, `pthread_create`, `read` — all use it.
-
-## Const-correctness
-
-If a function *reads* from its pointer but doesn't *write*, mark it `const`:
-
-```c
-size_t my_strlen(const char *s) {
-    size_t n = 0;
-    while (*s++) ++n;
-    return n;
-}
-```
-
-Now the compiler enforces "don't modify what `s` points to". The function works on `const` and non-`const` strings alike. Without `const`, calling `my_strlen("hello")` (a string literal — read-only) is a portability warning.
-
-## Modern note
-
-- Always declare pointer parameters `const` if the function doesn't modify the pointee. It documents intent, helps the compiler, and makes the function usable with read-only data.
-- The C99 `restrict` qualifier on pointer parameters tells the compiler "no other pointer in scope aliases this one" — enables optimisations. Use it sparingly and only when you've thought carefully about aliasing.
-- For "in-out parameters" (read and modify), no special qualifier; just a non-const pointer.
-
-## Try it
-
-1. Write `min_max(int v[], int n, int *min, int *max)` that finds both extremes in one pass. The function returns nothing; results come out via the pointer parameters.
-2. Try calling `swap_good(a, b)` (without the `&`). Read the compiler error: it says "expected `int *`, got `int`". The type system catches this category of bug.
-3. Add `const` to the wrong pointer: try `void swap_good(const int *p, int *q);`. The compiler flags writes to `*p`. Now you can't accidentally modify it.
-
-## Notes from the author
-
-- "Pointer to int" instead of "reference to int" is C-specific phrasing. C++ added `&` references that look like pass-by-value but act like pass-by-pointer; modern languages (Rust, Go) keep the explicit pointer notation but make raw memory access harder. C is the simplest model: everything is bytes, and pointers point to bytes.
-- The "fill these out-parameters" idiom is verbose compared to tuple returns in modern languages. But it's *predictable* — there's no hidden allocation or copying, the caller controls where the data goes.
-- For a function that needs to return success/failure *and* a value, the idiom is `int do_thing(int x, int *out)` — return code as the value, real result through the pointer. This is the foundation of every Unix system call.
-
-*Click **next →** for the deep equivalence between pointers and arrays.*
+## Go deeper
+- [Evaluation strategy: call by value](https://en.wikipedia.org/wiki/Evaluation_strategy#Call_by_value) — C's model
+- [Pointer parameters (C)](https://en.cppreference.com/w/c/language/pointer) — modifying through a pointer
+- [`scanf` and `&`](https://en.cppreference.com/w/c/io/fscanf) — why it takes addresses
+- [`const` correctness](https://en.cppreference.com/w/c/language/const) — promising read-only access
