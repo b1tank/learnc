@@ -8,128 +8,58 @@ next: ex-6-5
 status: done
 ---
 
-A hash table maps strings to data in (amortised) `O(1)` time. K&R's example is a "name → definition" lookup, the kind used inside a preprocessor.
+A **hash table** answers "what value is associated with this key?" in roughly constant time, no matter how many entries it holds. The trick: run the key through a **hash function** that turns it into an array index, then store the entry in a bucket at that index. Looking up is the same: hash the key, jump straight to the bucket. When two different keys hash to the same bucket — a **collision** — we chain the entries together with the self-referential structs from the previous section. This is the data structure behind symbol tables, dictionaries, caches, and language `map`/`dict` types.
 
-The structure:
+## A chained hash table
 
-```c
-struct nlist {
-    struct nlist *next;     /* chain for collisions */
-    const char   *name;
-    const char   *defn;
-};
-
-#define HASHSIZE 101
-static struct nlist *hashtab[HASHSIZE];
-```
-
-`hashtab` is an array of pointers, one per bucket. Each bucket holds a (possibly empty) linked list of entries that hashed to that bucket.
-
-## Putting it together
-
-```c:starter
+```c:run hash, install, and look up
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define HASHSIZE 101
+#define NHASH 101                       /* a prime: spreads keys evenly */
+struct nlist { struct nlist *next; char *name; int val; };
+static struct nlist *table[NHASH];      /* array of bucket-list heads */
 
-struct nlist {
-    struct nlist *next;
-    char *name;
-    char *defn;
-};
-
-static struct nlist *hashtab[HASHSIZE];
-
-/* polynomial-rolling hash: hash * 31 + c */
-static unsigned hash(const char *s) {
+unsigned hash(const char *s) {
     unsigned h = 0;
-    while (*s) h = 31u * h + (unsigned char)*s++;
-    return h % HASHSIZE;
+    for (; *s; s++) h = *s + 31 * h;    /* fold each char into h */
+    return h % NHASH;                   /* squeeze into [0, NHASH) */
 }
 
-static struct nlist *lookup(const char *name) {
-    for (struct nlist *p = hashtab[hash(name)]; p; p = p->next)
-        if (strcmp(name, p->name) == 0)
-            return p;
-    return NULL;
+void install(char *name, int val) {     /* prepend into the right bucket */
+    unsigned h = hash(name);
+    struct nlist *p = malloc(sizeof *p);
+    p->name = name; p->val = val;
+    p->next = table[h]; table[h] = p;
 }
 
-static struct nlist *install(const char *name, const char *defn) {
-    struct nlist *np = lookup(name);
-    if (np == NULL) {       /* new */
-        np = malloc(sizeof *np);
-        if (!np) return NULL;
-        np->name = strdup(name);
-        unsigned h = hash(name);
-        np->next = hashtab[h];
-        hashtab[h] = np;
-    } else {
-        free(np->defn);
-    }
-    np->defn = strdup(defn);
-    return np;
+int lookup(char *name) {                /* walk that bucket's chain */
+    for (struct nlist *p = table[hash(name)]; p; p = p->next)
+        if (strcmp(name, p->name) == 0) return p->val;
+    return -1;                          /* not found */
 }
 
 int main(void) {
-    install("MAX", "100");
-    install("PI",  "3.14");
-    install("NAME","yummy");
-    install("MAX", "200");   /* update */
-
-    const char *keys[] = { "MAX", "PI", "NAME", "MISSING", NULL };
-    for (int i = 0; keys[i]; ++i) {
-        struct nlist *p = lookup(keys[i]);
-        printf("%-8s -> %s\n", keys[i], p ? p->defn : "(not found)");
-    }
+    install("red", 1); install("green", 2); install("blue", 3);
+    printf("green=%d blue=%d missing=%d\n",
+           lookup("green"), lookup("blue"), lookup("purple"));
     return 0;
 }
 ```
 
 ```output
-MAX      -> 200
-PI       -> 3.14
-NAME     -> yummy
-MISSING  -> (not found)
+green=2 blue=3 missing=-1
 ```
 
-## How the chaining works
+`table` is an array of 101 bucket pointers, each the head of a linked list. `hash` reduces a string to one of those 101 indices using the classic *multiply-by-31-and-add* rolling hash (31 is an odd prime that mixes bits well). `install` hashes the name and *prepends* a new node into that bucket's chain (O(1)); `lookup` hashes the name, then walks only the handful of nodes in that one bucket, comparing with `strcmp`. Because each bucket holds just a few entries when the table is sized well, both operations are effectively constant time — vastly faster than scanning an array of all entries.
 
-When two keys hash to the same bucket, `install` prepends the new entry to the linked list:
+## Why it's fast, and the catches
 
-```c
-np->next = hashtab[h];   /* old list becomes our "next" */
-hashtab[h] = np;          /* we're the new head */
-```
+The whole performance argument rests on the hash spreading keys *evenly* across buckets, so each chain stays short. A bad hash (or a table too small) piles many keys into one bucket, degrading lookup to O(n) — a linear scan of a long list — which is also the basis of [hash-flooding](https://en.wikipedia.org/wiki/Collision_attack#Hash_flooding) denial-of-service attacks against predictable hashes. Real implementations therefore *resize* (rehash into a bigger array) when the **load factor** (entries ÷ buckets) climbs too high, and they choose strong hash functions. A few engineering notes about this code: it stores the `name` pointer it was *given* rather than copying the string, so the caller must keep those strings alive (real code `strdup`s the key); it doesn't update an existing key (a second `install` of the same name shadows the first in the chain); and a complete version would pair `install` with a `delete`/`free`. The alternative collision strategy to chaining is **open addressing** (probe to the next empty slot in the array itself), which is more cache-friendly but trickier to delete from. Hashing is one of the highest-leverage ideas in all of programming — the same array-indexing-by-computed-key trick appears everywhere from databases to compilers.
 
-This is `O(1)` insertion. Lookup walks the chain (`p = p->next`), which is `O(chain_length)`. With a decent hash function and a load factor below 1, chains stay short.
-
-## Hash function quality
-
-`hash * 31 + c` (the "Java string hash") is simple and gives reasonable distribution for English text. Better choices exist (FNV, Murmur, SipHash for security), but for non-adversarial inputs this is fine.
-
-For HASHSIZE, a **prime** number reduces clustering — composites can leave whole buckets empty if input keys share a factor. 101 is prime; 100 would be a poor choice.
-
-## When the chain gets long
-
-Performance degrades when chains average > ~3-4. Two common remedies:
-
-1. **Resize**: when load factor exceeds threshold, allocate a bigger table and rehash everything. This is what `unordered_map`/`HashMap` do under the hood.
-2. **Better hash**: a hash that's poorly distributed creates artificial collisions. Try harder hashes.
-
-K&R's plain chaining table doesn't resize — it's a teaching implementation.
-
-## Try it
-
-1. Add a `delete(name)` that unlinks the matching entry and frees its memory.
-2. Add a counter that tracks the longest chain length. How does it grow as you `install` more keys?
-3. Replace the hash with a multiplicative variant (`hash * 2654435761u`) and compare distributions.
-
-## Notes from the author
-
-- Chaining vs. open addressing is the classic hash-table design split. Chaining (this code) is simpler; open addressing (linear/quadratic probing, Robin Hood) is faster on modern caches because everything fits in one array.
-- `strdup` allocates a new copy of the string. Always check for NULL return on the malloc family — the example skips it for brevity, but production code shouldn't.
-- "Hash table from scratch" is a foundational exercise. Once you understand chaining + the dynamic-resize trick, you've built every "Map" type in every language.
-
-*Click **next →** for `typedef`.*
+## Go deeper
+- [Hash table](https://en.wikipedia.org/wiki/Hash_table) — buckets, collisions, load factor
+- [Hash function](https://en.wikipedia.org/wiki/Hash_function) — what makes a good one
+- [Separate chaining vs open addressing](https://en.wikipedia.org/wiki/Hash_table#Collision_resolution) — the two strategies
+- [`strcmp` / `strdup`](https://en.cppreference.com/w/c/string/byte/strcmp) — comparing and copying keys
