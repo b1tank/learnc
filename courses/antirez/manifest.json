@@ -81,7 +81,7 @@
       "title": "Function Pointers, Toy Forth, and Graphics",
       "items": [
         { "kind": "section", "id": "25-function-pointers",            "label": "9.1",  "title": "Pointers to functions",                          "status": "draft",  "videoId": "OIseV5lcx8w", "transcript": "transcripts/en/25-OIseV5lcx8w.md" },
-        { "kind": "section", "id": "26-toy-forth-part-1",             "label": "9.2",  "title": "Writing the Toy Forth interpreter (part 1)",      "status": "stub",  "videoId": "vYODKK8TQGE", "transcript": "transcripts/en/26-vYODKK8TQGE.md" },
+        { "kind": "section", "id": "26-toy-forth-part-1",             "label": "9.2",  "title": "Writing the Toy Forth interpreter (part 1)",      "status": "draft",  "videoId": "vYODKK8TQGE", "transcript": "transcripts/en/26-vYODKK8TQGE.md" },
         { "kind": "section", "id": "27-toy-forth-part-2",             "label": "9.3",  "title": "Toy Forth interpreter (part 2)",                  "status": "stub",  "videoId": "-QxrmHo-V7Y", "transcript": "transcripts/en/27--QxrmHo-V7Y.md" },
         { "kind": "section", "id": "28-toy-forth-part-3",             "label": "9.4",  "title": "Toy Forth interpreter (part 3)",                  "status": "stub",  "videoId": "-1ZhCgaIPOk", "transcript": "transcripts/en/28--1ZhCgaIPOk.md" },
         { "kind": "section", "id": "29-toy-forth-exec-internals",     "label": "9.5",  "title": "Toy Forth — inside exec() (part 4)",              "status": "stub",  "videoId": "oMj3N6jYIUU", "transcript": "transcripts/en/29-oMj3N6jYIUU.md" },
