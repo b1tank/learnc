@@ -51,7 +51,7 @@
       "title": "Dynamic Memory and Structures",
       "items": [
         { "kind": "section", "id": "13-malloc-first-encounter",       "label": "6.1", "title": "A first encounter with malloc()",                 "status": "draft",  "videoId": "ZkaKwWXJXs8", "transcript": "transcripts/en/13-ZkaKwWXJXs8.md" },
-        { "kind": "section", "id": "14-hidden-metadata-behind-pointer","label": "6.2", "title": "The hidden-metadata-behind-the-pointer trick",   "status": "stub",  "videoId": "9AhaOdEBmPc", "transcript": "transcripts/en/14-9AhaOdEBmPc.md" },
+        { "kind": "section", "id": "14-hidden-metadata-behind-pointer","label": "6.2", "title": "The hidden-metadata-behind-the-pointer trick",   "status": "draft",  "videoId": "9AhaOdEBmPc", "transcript": "transcripts/en/14-9AhaOdEBmPc.md" },
         { "kind": "section", "id": "15-structs-of-c",                 "label": "6.3", "title": "The structs of C",                                "status": "stub",  "videoId": "p4IMHau2lq8", "transcript": "transcripts/en/15-p4IMHau2lq8.md" }
       ]
     },
