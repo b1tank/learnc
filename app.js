@@ -5,7 +5,18 @@
 import { mountToggle as mountThemeToggle } from "./theme.js";
 import { mountHelp as mountShortcuts } from "./shortcuts.js";
 
-var MANIFEST_URL = "lessons/manifest.json";
+// Course routing. The index HTML file (kr.html, antirez.html, ...) sets
+// `window.__course` inline before this module loads, picking which manifest
+// to fetch and which URL pattern to emit for lesson links. Defaults to "kr"
+// so anything that loads app.js without setting the flag still works.
+var COURSE = (typeof window !== "undefined" && window.__course) || "kr";
+if (!/^[a-z][a-z0-9-]{0,31}$/.test(COURSE)) COURSE = "kr";
+
+var MANIFEST_URL = "courses/" + COURSE + "/manifest.json";
+
+var TITLE_CACHE_KEY = COURSE === "kr"
+  ? "learnc.titles"
+  : "learnc.titles." + COURSE;
 
 function el(tag, attrs, children) {
   var e = document.createElement(tag);
@@ -25,16 +36,21 @@ function el(tag, attrs, children) {
 }
 
 function lessonURL(id) {
-  return "lesson.html?id=" + encodeURIComponent(id);
+  // Only emit ?course= for non-kr courses so K&R URLs remain unchanged.
+  return COURSE === "kr"
+    ? "lesson.html?id=" + encodeURIComponent(id)
+    : "lesson.html?course=" + encodeURIComponent(COURSE) +
+        "&id=" + encodeURIComponent(id);
 }
 
 function renderIndex(manifest, root) {
   root.innerHTML = "";
-  // Hide stubs by default — the index has hundreds of them and the eye
-  // glazes over. Future stub entries stay hidden unless a UI affordance
-  // is added back to toggle them; the per-status chips that used to live
-  // in this slot were removed once every lesson reached "done".
-  root.classList.add("lesson-list--hide-stub");
+  // Hide stubs by default — the K&R index has hundreds of done items and a
+  // long tail of stubs; the eye glazes over. Courses that *start* mostly-stub
+  // (antirez, etc.) opt out by setting `window.__hideStubs = false` before
+  // app.js loads, so the chapter outline stays visible from day one.
+  var hideStubs = !(typeof window !== "undefined" && window.__hideStubs === false);
+  if (hideStubs) root.classList.add("lesson-list--hide-stub");
 
   function makeLessonLi(item) {
     var status = item.status || "stub";
@@ -145,7 +161,7 @@ function cacheTitleMap(manifest) {
         titles[it.id] = t;
       });
     });
-    localStorage.setItem("learnc.titles", JSON.stringify(titles));
+    localStorage.setItem(TITLE_CACHE_KEY, JSON.stringify(titles));
   } catch (e) { /* private mode — paint hint is best-effort */ }
 }
 

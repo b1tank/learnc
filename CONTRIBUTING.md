@@ -37,7 +37,7 @@ block).
 If you'd rather scaffold by hand: copy [`lessons/_template.md`](lessons/_template.md)
 to `lessons/<id>.md`, fill in the frontmatter (`id`, `chapter`, `label`, `title`,
 `prev`, `next`, `status`), and add `"status": "draft"` to the matching entry in
-[`lessons/manifest.json`](lessons/manifest.json) on the same one-line item.
+[`courses/kr/manifest.json`](courses/kr/manifest.json) on the same one-line item.
 
 Then:
 

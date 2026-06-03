@@ -44,8 +44,8 @@ WATCH_GLOBS = (
     "*.html",
     "*.css",
     "*.js",
-    "lessons/*.md",
-    "lessons/*.json",
+    "courses/*/manifest.json",
+    "courses/*/lessons/*.md",
 )
 IGNORE_PARTS = {".git", "node_modules", "__pycache__", ".vscode", "dist", "build"}
 

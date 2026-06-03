@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bin/new-lesson — scaffold a K&R lesson stub into a draft .md file.
 
-Reads lessons/manifest.json, finds the requested item (or the next stub in
+Reads courses/kr/manifest.json, finds the requested item (or the next stub in
 reading order), and writes a pre-filled lesson .md with the correct
 frontmatter and neighbour links. Then flips the manifest entry's status
 from "stub" to "draft" so the index page shows it in-progress.
@@ -19,7 +19,9 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-MANIFEST = ROOT / "lessons" / "manifest.json"
+COURSE_DIR = ROOT / "courses" / "kr"
+MANIFEST = COURSE_DIR / "manifest.json"
+LESSONS_DIR = COURSE_DIR / "lessons"
 
 # Section lessons get a title from the manifest; exercises don't carry K&R's
 # wording (copyright + brevity), so we synthesise a title and leave a placeholder
@@ -192,10 +194,10 @@ def scaffold(id_):
     items = flat_items(m)
     idx = find_index(items, id_)
     if idx is None:
-        sys.exit(f"error: id {id_!r} is not in lessons/manifest.json")
+        sys.exit(f"error: id {id_!r} is not in {MANIFEST.relative_to(ROOT)}")
 
     chapter, item = items[idx]
-    out_path = ROOT / "lessons" / f"{id_}.md"
+    out_path = LESSONS_DIR / f"{id_}.md"
     if out_path.exists():
         sys.exit(f"error: {out_path.relative_to(ROOT)} already exists "
                  f"— refusing to clobber. Edit it directly.")
@@ -232,7 +234,7 @@ def mark_done(id_):
     m = load_manifest()
     items = flat_items(m)
     if find_index(items, id_) is None:
-        sys.exit(f"error: id {id_!r} is not in lessons/manifest.json")
+        sys.exit(f"error: id {id_!r} is not in {MANIFEST.relative_to(ROOT)}")
     old = status_of(items[find_index(items, id_)][1])
     set_status(id_, "done")
     print(f"{id_}: status {old} -> done")

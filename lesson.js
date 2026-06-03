@@ -7,9 +7,6 @@ import { run as runC, onProgress as runOnProgress } from "./runner.js";
 import { mountToggle as mountThemeToggle } from "./theme.js";
 import { mountHelp as mountShortcuts } from "./shortcuts.js";
 
-var GITHUB_BLOB_BASE = "https://github.com/b1tank/learnc/blob/main/lessons/";
-var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/lessons";
-
 var params = new URLSearchParams(location.search);
 var lessonId = params.get("id");
 // Guard: lesson ids are flat slugs (letters/digits/hyphens). Anything else
@@ -19,6 +16,37 @@ var lessonId = params.get("id");
 if (lessonId !== null && !/^[A-Za-z0-9_-]+$/.test(lessonId)) {
   lessonId = null;
 }
+
+// Course routing. ?course=<slug> picks which course directory we read from.
+// Default "kr" keeps every pre-multi-course URL (lesson.html?id=...) working
+// without changes. All courses live in parallel under courses/<slug>/.
+var courseId = params.get("course") || "kr";
+if (!/^[a-z][a-z0-9-]{0,31}$/.test(courseId)) courseId = "kr";
+
+function courseLessonsDir() {
+  return "courses/" + courseId + "/lessons";
+}
+function courseManifestUrl() {
+  return "courses/" + courseId + "/manifest.json";
+}
+function courseIndexHref() {
+  // Each course gets a sibling top-level HTML page (kr.html, antirez.html).
+  // Keeping the entry points at the root means short bookmarkable URLs and
+  // keeps GitHub Pages happy without per-course rewrite rules.
+  return courseId + ".html";
+}
+function lessonHref(id) {
+  // Only emit ?course= for non-kr so K&R bookmarks stay byte-identical.
+  return courseId === "kr"
+    ? "lesson.html?id=" + encodeURIComponent(id)
+    : "lesson.html?course=" + encodeURIComponent(courseId) +
+        "&id=" + encodeURIComponent(id);
+}
+
+var GITHUB_BLOB_BASE = "https://github.com/b1tank/learnc/blob/main/" +
+  courseLessonsDir() + "/";
+var GITHUB_NEW_BASE = "https://github.com/b1tank/learnc/new/main/" +
+  courseLessonsDir();
 
 // Cached manifest (loaded lazily for the chapter breadcrumb).
 //
@@ -31,7 +59,7 @@ if (lessonId !== null && !/^[A-Za-z0-9_-]+$/.test(lessonId)) {
 var manifestPromise = null;
 function getManifest() {
   if (manifestPromise) return manifestPromise;
-  manifestPromise = fetch("lessons/manifest.json")
+  manifestPromise = fetch(courseManifestUrl())
     .then(function (r) { return r.ok ? r.json() : null; })
     .catch(function () {
       // Clear the cache so the next call retries instead of returning a
@@ -185,7 +213,12 @@ function clearUrlCode() {
 }
 
 function lessonStorageKey() {
-  return "learnc:code:" + lessonId;
+  // K&R keys stay as "learnc:code:<id>" so existing learners don't lose
+  // their in-progress code; non-kr courses get namespaced to prevent any
+  // theoretical collision between slugs across courses.
+  return courseId === "kr"
+    ? "learnc:code:" + lessonId
+    : "learnc:code:" + courseId + ":" + lessonId;
 }
 
 // Tiny DOM helper. Same shape as app.js's `el`. Kept local to avoid the
@@ -220,11 +253,11 @@ function renderStub() {
     " This lesson is a stub waiting for content. Want to contribute? ",
     el("a", { href: createHref }, [
       "Create ",
-      el("code", {}, ["lessons/" + lessonId + ".md"]),
+      el("code", {}, [courseLessonsDir() + "/" + lessonId + ".md"]),
       " on GitHub"
     ]),
     " using ",
-    el("a", { href: "https://github.com/b1tank/learnc/blob/main/lessons/_template.md" },
+    el("a", { href: "https://github.com/b1tank/learnc/blob/main/" + courseLessonsDir() + "/_template.md" },
       ["the lesson template"]),
     "."
   ]);
@@ -232,8 +265,8 @@ function renderStub() {
 
   var pointer = el("p", { class: "muted small" }, [
     "The site loads lessons from markdown files in the ",
-    el("a", { href: "https://github.com/b1tank/learnc/tree/main/lessons" },
-      ["lessons/"]),
+    el("a", { href: "https://github.com/b1tank/learnc/tree/main/" + courseLessonsDir() },
+      [courseLessonsDir() + "/"]),
     " directory at runtime. See ",
     el("a", { href: "https://github.com/b1tank/learnc/blob/main/CONTRIBUTING.md" },
       ["CONTRIBUTING.md"]),
@@ -249,11 +282,11 @@ function setupNav(meta) {
   var prev = document.getElementById("prev-link");
   var next = document.getElementById("next-link");
   if (meta.prev) {
-    prev.href = "lesson.html?id=" + encodeURIComponent(meta.prev);
+    prev.href = lessonHref(meta.prev);
     prev.classList.remove("disabled");
   }
   if (meta.next) {
-    next.href = "lesson.html?id=" + encodeURIComponent(meta.next);
+    next.href = lessonHref(meta.next);
     next.classList.remove("disabled");
   }
 
@@ -270,10 +303,10 @@ function setupNav(meta) {
     }
     if (e.key === "ArrowLeft" && meta.prev) {
       e.preventDefault();
-      location.href = "lesson.html?id=" + encodeURIComponent(meta.prev);
+      location.href = lessonHref(meta.prev);
     } else if (e.key === "ArrowRight" && meta.next) {
       e.preventDefault();
-      location.href = "lesson.html?id=" + encodeURIComponent(meta.next);
+      location.href = lessonHref(meta.next);
     }
   });
 }
@@ -619,18 +652,29 @@ async function loadLesson() {
   if (!lessonId) {
     document.getElementById("lesson-title").textContent = "No lesson selected";
     document.getElementById("lesson-prose").innerHTML =
-      '<p>Pick a lesson from the <a href="index.html">index</a>.</p>';
+      '<p>Pick a lesson from the <a href="' + courseIndexHref() + '">index</a>.</p>';
     document.getElementById("runner-container").hidden = true;
     return;
   }
 
   document.getElementById("edit-link").href = GITHUB_BLOB_BASE + lessonId + ".md";
 
+  // Point the "all lessons" affordances (header logo + lessons icon) at the
+  // current course's index page so K&R lessons go back to kr.html and
+  // antirez lessons go back to antirez.html.
+  var indexHref = courseIndexHref();
+  var headerLink = document.querySelector(".site-header h1 a");
+  if (headerLink) headerLink.setAttribute("href", indexHref);
+  var lessonsNavLink = document.querySelector('.site-header a[aria-label="all lessons"]');
+  if (lessonsNavLink) lessonsNavLink.setAttribute("href", indexHref);
+  var crumbsHome = document.querySelector("#crumbs a");
+  if (crumbsHome) crumbsHome.setAttribute("href", indexHref);
+
   // Kick off the manifest fetch in parallel with the lesson fetch — both are
   // needed to populate the breadcrumb without a visible flash.
   var manifestPromise = getManifest().catch(function () { return null; });
 
-  var url = "lessons/" + lessonId + ".md";
+  var url = courseLessonsDir() + "/" + lessonId + ".md";
   // If the inline boot script in lesson.html kicked off the fetch
   // already, await its promise instead of issuing a duplicate request.
   // That lets the fetch overlap with HTML parse + lesson.js download

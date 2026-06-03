@@ -131,7 +131,8 @@
   // Misses (no ?id, first-ever visit, private mode) just fall through;
   // the page still works, it just loses these micro-optimisations.
   (function () {
-    var m = location.search.match(/[?&]id=([^&]+)/);
+    var qs = location.search;
+    var m = qs.match(/[?&]id=([^&]+)/);
     if (!m) return;
     var id;
     try { id = decodeURIComponent(m[1]); } catch (e) { return; }
@@ -139,6 +140,19 @@
     // against ?id=../etc/passwd style probes that would otherwise be
     // pushed into a <link href> attribute.
     if (!/^[A-Za-z0-9_-]+$/.test(id)) return;
+
+    // Course routing — defaults to "kr" so pre-multi-course URLs (just
+    // ?id=...) still resolve. Every course's lessons live under
+    // courses/<slug>/lessons/<id>.md.
+    var courseMatch = qs.match(/[?&]course=([^&]+)/);
+    var course = "kr";
+    if (courseMatch) {
+      try {
+        var c = decodeURIComponent(courseMatch[1]);
+        if (/^[a-z][a-z0-9-]{0,31}$/.test(c)) course = c;
+      } catch (e) { /* keep default */ }
+    }
+    var mdPath = "courses/" + course + "/lessons/" + id + ".md";
 
     // 1. Start the markdown fetch immediately.
     //
@@ -151,12 +165,14 @@
     // lands while lesson.js is still downloading, and lesson.js awaits
     // window.__lessonMdPromise instead of issuing its own fetch.
     try {
-      window.__lessonMdPromise = fetch("lessons/" + id + ".md");
+      window.__lessonMdPromise = fetch(mdPath);
     } catch (e) { /* old browsers — lesson.js falls back to its own fetch */ }
 
-    // 2. Paint title from cache
+    // 2. Paint title from cache. Title map is namespaced by course so two
+    // courses with colliding slugs cannot show the wrong title.
     try {
-      var titles = JSON.parse(localStorage.getItem("learnc.titles") || "{}");
+      var cacheKey = course === "kr" ? "learnc.titles" : "learnc.titles." + course;
+      var titles = JSON.parse(localStorage.getItem(cacheKey) || "{}");
       var t = titles[id];
       if (!t) return;
       var h1 = document.getElementById("lesson-title");

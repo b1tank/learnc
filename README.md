@@ -90,7 +90,7 @@ bin/new-lesson done 01-04-define   # mark a draft as done in the manifest
 ```
 
 It writes `lessons/<id>.md` from the right template (section vs. exercise),
-fills in the frontmatter from `lessons/manifest.json`, and surgically bumps the
+fills in the frontmatter from `courses/kr/manifest.json`, and surgically bumps the
 manifest entry to `status: draft`. Open the URL it prints in your browser and
 start writing.
 
