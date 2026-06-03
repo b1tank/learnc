@@ -27,7 +27,7 @@
       "title": "Branching, Recursion, and Switch",
       "items": [
         { "kind": "section", "id": "07-if-goto-recursion",            "label": "3.1", "title": "if, goto, and recursion",                         "status": "draft",  "videoId": "lc7aYXNl1T8", "transcript": "transcripts/en/07-lc7aYXNl1T8.md" },
-        { "kind": "section", "id": "08-while-for-switch",             "label": "3.2", "title": "while vs for, and the switch statement",          "status": "stub",  "videoId": "HCRthhjbfAg", "transcript": "transcripts/en/08-HCRthhjbfAg.md" }
+        { "kind": "section", "id": "08-while-for-switch",             "label": "3.2", "title": "while vs for, and the switch statement",          "status": "draft",  "videoId": "HCRthhjbfAg", "transcript": "transcripts/en/08-HCRthhjbfAg.md" }
       ]
     },
     {
