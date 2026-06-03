@@ -18,7 +18,7 @@
       "title": "Operators and Control Flow",
       "items": [
         { "kind": "section", "id": "04-functions-and-expressions",   "label": "2.1", "title": "Functions, expressions, and the increment operator", "status": "draft" , "videoId": "mw4gUqsGPZw", "transcript": "transcripts/en/04-mw4gUqsGPZw.md" },
-        { "kind": "section", "id": "05-integer-types",                "label": "2.2", "title": "Integer types in depth",                          "status": "stub" , "videoId": "YNsXyasn4R4", "transcript": "transcripts/en/05-YNsXyasn4R4.md" },
+        { "kind": "section", "id": "05-integer-types",                "label": "2.2", "title": "Integer types in depth",                          "status": "draft" , "videoId": "YNsXyasn4R4", "transcript": "transcripts/en/05-YNsXyasn4R4.md" },
         { "kind": "section", "id": "06-chars-and-strings",            "label": "2.3", "title": "Chars and strings as char arrays",                "status": "stub" , "videoId": "SWWHqgSwQFw", "transcript": "transcripts/en/06-SWWHqgSwQFw.md" }
       ]
     },
