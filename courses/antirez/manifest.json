@@ -41,7 +41,7 @@
       "n": 5,
       "title": "Pointers",
       "items": [
-        { "kind": "section", "id": "10-pointers-intro",               "label": "5.1", "title": "Introduction to pointers",                        "status": "stub",  "videoId": "BBgZs-jd_QY", "transcript": "transcripts/en/10-BBgZs-jd_QY.md" },
+        { "kind": "section", "id": "10-pointers-intro",               "label": "5.1", "title": "Introduction to pointers",                        "status": "draft",  "videoId": "BBgZs-jd_QY", "transcript": "transcripts/en/10-BBgZs-jd_QY.md" },
         { "kind": "section", "id": "11-pointer-arithmetic",           "label": "5.2", "title": "Pointer arithmetic",                              "status": "stub",  "videoId": "lc7hL9Wt-ho", "transcript": "transcripts/en/11-lc7hL9Wt-ho.md" },
         { "kind": "section", "id": "12-pointers-clarifications",      "label": "5.3", "title": "Clarifications on the pointer concepts",          "status": "stub",  "videoId": "msGzuneFpDU", "transcript": "transcripts/en/12-msGzuneFpDU.md" }
       ]
