@@ -70,7 +70,7 @@
       "title": "Systems Programming",
       "items": [
         { "kind": "section", "id": "20-random-variables",             "label": "8.1", "title": "Random variables (video only — transcripts disabled)", "status": "video-only", "videoId": "HzBqda0Jg3E" },
-        { "kind": "section", "id": "21-opaque-types-and-files",       "label": "8.2", "title": "Opaque types, typedef, and stdio files",          "status": "stub",  "videoId": "3w73xjUSUEU", "transcript": "transcripts/en/21-3w73xjUSUEU.md" },
+        { "kind": "section", "id": "21-opaque-types-and-files",       "label": "8.2", "title": "Opaque types, typedef, and stdio files",          "status": "draft",  "videoId": "3w73xjUSUEU", "transcript": "transcripts/en/21-3w73xjUSUEU.md" },
         { "kind": "section", "id": "22-system-calls",                 "label": "8.3", "title": "System calls",                                    "status": "stub",  "videoId": "QWLJ7CBAu_I", "transcript": "transcripts/en/22-QWLJ7CBAu_I.md" },
         { "kind": "section", "id": "23-libc-buffering-and-mmap",      "label": "8.4", "title": "libc buffering and memory-mapped files",          "status": "stub",  "videoId": "yKavhObop5I", "transcript": "transcripts/en/23-yKavhObop5I.md" },
         { "kind": "section", "id": "24-union-and-bitfield",           "label": "8.5", "title": "union and bitfield",                              "status": "stub",  "videoId": "TM4jgODgdFY", "transcript": "transcripts/en/24-TM4jgODgdFY.md" }
