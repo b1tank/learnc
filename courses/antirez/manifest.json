@@ -60,7 +60,7 @@
       "title": "Designing with Structures",
       "items": [
         { "kind": "section", "id": "16-structs-as-data-structure-bricks","label": "7.1", "title": "Structs as the building blocks of data structures", "status": "draft", "videoId": "aTT2W5NACEY", "transcript": "transcripts/en/16-aTT2W5NACEY.md" },
-        { "kind": "section", "id": "17-strings-with-reference-counting","label": "7.2", "title": "A string library with reference counting",       "status": "stub",  "videoId": "VPs_QtlLNcs", "transcript": "transcripts/en/17-VPs_QtlLNcs.md" },
+        { "kind": "section", "id": "17-strings-with-reference-counting","label": "7.2", "title": "A string library with reference counting",       "status": "draft",  "videoId": "VPs_QtlLNcs", "transcript": "transcripts/en/17-VPs_QtlLNcs.md" },
         { "kind": "section", "id": "18-string-design-and-hexdump",    "label": "7.3", "title": "More on structures, string-design choices, hexdump()", "status": "stub", "videoId": "grkIJjw6o18", "transcript": "transcripts/en/18-grkIJjw6o18.md" },
         { "kind": "section", "id": "19-algorithm-archaeology",        "label": "7.4", "title": "Special — recovering algorithms from memory without docs", "status": "stub", "videoId": "soiBgJjAmP8", "transcript": "transcripts/en/19-soiBgJjAmP8.md" }
       ]
