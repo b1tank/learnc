@@ -92,7 +92,7 @@
         { "kind": "section", "id": "34-zx-spectrum-image-1",          "label": "9.10", "title": "Evolving an image for the ZX Spectrum (part 1)",  "status": "draft",  "videoId": "D1U3uCe-kok", "transcript": "transcripts/en/34-D1U3uCe-kok.md" },
         { "kind": "section", "id": "35-zx-spectrum-image-2",          "label": "9.11", "title": "Evolving an image for the ZX Spectrum (part 2)",  "status": "draft",  "videoId": "fZmdsh0gQig", "transcript": "transcripts/en/35-fZmdsh0gQig.md" },
         { "kind": "section", "id": "36-zx-spectrum-appendix",         "label": "9.12", "title": "Appendix to the ZX Spectrum lesson",              "status": "draft",  "videoId": "xaEr-XSlWfo", "transcript": "transcripts/en/36-xaEr-XSlWfo.md" },
-        { "kind": "section", "id": "37-3d-graphics-basics",           "label": "9.13", "title": "Rudiments of 3D graphics",                        "status": "stub",  "videoId": "4EofabMH41M", "transcript": "transcripts/en/37-4EofabMH41M.md" }
+        { "kind": "section", "id": "37-3d-graphics-basics",           "label": "9.13", "title": "Rudiments of 3D graphics",                        "status": "draft",  "videoId": "4EofabMH41M", "transcript": "transcripts/en/37-4EofabMH41M.md" }
       ]
     }
   ]
