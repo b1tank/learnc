@@ -34,7 +34,7 @@
       "n": 4,
       "title": "First Real Project — Conway's Game of Life",
       "items": [
-        { "kind": "section", "id": "09-game-of-life",                 "label": "4.1", "title": "Implementing Conway's Game of Life",              "status": "stub",  "videoId": "c5atNuYdKK8", "transcript": "transcripts/en/09-c5atNuYdKK8.md" }
+        { "kind": "section", "id": "09-game-of-life",                 "label": "4.1", "title": "Implementing Conway's Game of Life",              "status": "draft",  "videoId": "c5atNuYdKK8", "transcript": "transcripts/en/09-c5atNuYdKK8.md" }
       ]
     },
     {
