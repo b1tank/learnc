@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Fetch antirez "Impariamo il C" transcripts from YouTube into
+# courses/antirez/transcripts/{it,en}/NN-VIDEOID.md
+#
+# Reads courses/antirez/playlist.tsv (header line + rows: NN<TAB>VID<TAB>TITLE).
+# Idempotent: skips a file if it already exists and is non-empty.
+#
+# Flags:
+#   --refresh             Force re-fetch (also passes --refresh to the skill)
+#   --only=N1,N2,...      Only fetch these lesson numbers (zero-padded or not)
+#   --lang=it|en|it,en    Languages to fetch (default: it,en).
+#                         "it" = original Italian, "en" = YouTube auto-translation.
+#   --sleep=N             Seconds to sleep between videos (default: 3)
+#
+# Note: video IDs starting with "-" (e.g. -QxrmHo-V7Y) are passed as URLs to
+# avoid being parsed as flags by the underlying skill.
+
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SKILL="$REPO_ROOT/.agents/skills/baoyu-youtube-transcript/scripts/main.ts"
+PLAYLIST="$REPO_ROOT/courses/antirez/playlist.tsv"
+OUT_BASE="$REPO_ROOT/courses/antirez/transcripts"
+LOG="/tmp/fetch-antirez.log"
+
+REFRESH=0
+ONLY=""
+LANGS="it,en"
+SLEEP_SECS=3
+
+for arg in "$@"; do
+  case "$arg" in
+    --refresh) REFRESH=1 ;;
+    --only=*)  ONLY="${arg#*=}" ;;
+    --lang=*)  LANGS="${arg#*=}" ;;
+    --sleep=*) SLEEP_SECS="${arg#*=}" ;;
+    *) echo "unknown flag: $arg" >&2; exit 2 ;;
+  esac
+done
+
+[[ -f "$PLAYLIST" ]] || { echo "missing $PLAYLIST" >&2; exit 1; }
+[[ -f "$SKILL" ]] || { echo "missing $SKILL" >&2; exit 1; }
+
+mkdir -p "$OUT_BASE/it" "$OUT_BASE/en"
+
+ok=0; failed=0; total=0
+IFS=',' read -ra LANG_LIST <<< "$LANGS"
+IFS=',' read -ra ONLY_LIST <<< "$ONLY"
+
+while IFS=$'\t' read -r n vid title; do
+  [[ "$n" =~ ^# ]] && continue
+  [[ -z "$n" ]] && continue
+  total=$((total + 1))
+
+  if [[ -n "$ONLY" ]]; then
+    keep=0
+    for o in "${ONLY_LIST[@]}"; do
+      if [[ "$(printf '%02d' "$o" 2>/dev/null || echo "$o")" == "$n" ]]; then keep=1; break; fi
+    done
+    [[ $keep -eq 1 ]] || continue
+  fi
+
+  echo "==== [$n/37] $vid — $title"
+
+  for lang in "${LANG_LIST[@]}"; do
+    out_path="$OUT_BASE/$lang/${n}-${vid}.md"
+    if [[ $REFRESH -eq 0 && -s "$out_path" ]]; then
+      echo "  [$lang] skip (exists)"
+      continue
+    fi
+
+    # Use URL form so video IDs starting with '-' aren't parsed as flags.
+    url="https://www.youtube.com/watch?v=$vid"
+    skill_args=("$url" "--chapters" "--languages" "it" "-o" "$out_path")
+    [[ "$lang" == "en" ]] && skill_args+=("--translate" "en")
+    [[ $REFRESH -eq 1 ]] && skill_args+=("--refresh")
+
+    echo "  [$lang] fetching..."
+    if npx -y bun "$SKILL" "${skill_args[@]}" >"$LOG" 2>&1; then
+      lines=$(wc -l < "$out_path" 2>/dev/null || echo 0)
+      echo "  [$lang] ok ($lines lines)"
+      ok=$((ok + 1))
+    else
+      echo "  [$lang] FAILED (see $LOG)"
+      tail -5 "$LOG" | sed 's/^/    /'
+      failed=$((failed + 1))
+    fi
+  done
+
+  sleep "$SLEEP_SECS"
+done < "$PLAYLIST"
+
+echo ""
+echo "summary: $ok fetched, $failed failed, $total total"

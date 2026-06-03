@@ -1,0 +1,99 @@
+{
+  "title": "antirez — Impariamo il C — learnc lesson manifest",
+  "_note": "Source: Salvatore Sanfilippo, 'Impariamo il C' YouTube playlist (37 episodes, Italian). Chapter groupings are editorial; rearrange freely. Each item carries the YouTube videoId and the relative path to its English transcript under courses/antirez/transcripts/en/. Transcripts are gitignored regenerable artifacts — never committed.",
+  "_format": "Hand-formatted, one item per line, columns roughly aligned by eye. If we add a bin/new-lesson equivalent for this course it MUST keep line-based regex compatibility — do not reformat with jq/prettier.",
+  "_status_values": ["done", "draft", "stub", "video-only"],
+  "chapters": [
+    {
+      "n": 1,
+      "title": "Getting Started",
+      "items": [
+        { "kind": "section", "id": "01-hello-world",                  "label": "1.1", "title": "Hello, world — your first C program",            "status": "draft", "videoId": "HjXBXBgfKyk", "transcript": "transcripts/en/01-HjXBXBgfKyk.md" },
+        { "kind": "section", "id": "02-dismantling-hello-world",     "label": "1.2", "title": "Dismantling Hello, world — stdio, headers, functions", "status": "stub" , "videoId": "Z84vlG1RRtg", "transcript": "transcripts/en/02-Z84vlG1RRtg.md" },
+        { "kind": "section", "id": "03-local-variable-lifetimes",     "label": "1.3", "title": "Appendix — the lifetime of local variables",     "status": "draft", "videoId": "r6mU_IHXEps", "transcript": "transcripts/en/03-r6mU_IHXEps.md" }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "Operators and Control Flow",
+      "items": [
+        { "kind": "section", "id": "04-functions-and-expressions",   "label": "2.1", "title": "Functions, expressions, and the increment operator", "status": "stub" , "videoId": "mw4gUqsGPZw", "transcript": "transcripts/en/04-mw4gUqsGPZw.md" },
+        { "kind": "section", "id": "05-integer-types",                "label": "2.2", "title": "Integer types in depth",                          "status": "stub" , "videoId": "YNsXyasn4R4", "transcript": "transcripts/en/05-YNsXyasn4R4.md" },
+        { "kind": "section", "id": "06-chars-and-strings",            "label": "2.3", "title": "Chars and strings as char arrays",                "status": "stub" , "videoId": "SWWHqgSwQFw", "transcript": "transcripts/en/06-SWWHqgSwQFw.md" }
+      ]
+    },
+    {
+      "n": 3,
+      "title": "Branching, Recursion, and Switch",
+      "items": [
+        { "kind": "section", "id": "07-if-goto-recursion",            "label": "3.1", "title": "if, goto, and recursion",                         "status": "stub",  "videoId": "lc7aYXNl1T8", "transcript": "transcripts/en/07-lc7aYXNl1T8.md" },
+        { "kind": "section", "id": "08-while-for-switch",             "label": "3.2", "title": "while vs for, and the switch statement",          "status": "stub",  "videoId": "HCRthhjbfAg", "transcript": "transcripts/en/08-HCRthhjbfAg.md" }
+      ]
+    },
+    {
+      "n": 4,
+      "title": "First Real Project — Conway's Game of Life",
+      "items": [
+        { "kind": "section", "id": "09-game-of-life",                 "label": "4.1", "title": "Implementing Conway's Game of Life",              "status": "stub",  "videoId": "c5atNuYdKK8", "transcript": "transcripts/en/09-c5atNuYdKK8.md" }
+      ]
+    },
+    {
+      "n": 5,
+      "title": "Pointers",
+      "items": [
+        { "kind": "section", "id": "10-pointers-intro",               "label": "5.1", "title": "Introduction to pointers",                        "status": "stub",  "videoId": "BBgZs-jd_QY", "transcript": "transcripts/en/10-BBgZs-jd_QY.md" },
+        { "kind": "section", "id": "11-pointer-arithmetic",           "label": "5.2", "title": "Pointer arithmetic",                              "status": "stub",  "videoId": "lc7hL9Wt-ho", "transcript": "transcripts/en/11-lc7hL9Wt-ho.md" },
+        { "kind": "section", "id": "12-pointers-clarifications",      "label": "5.3", "title": "Clarifications on the pointer concepts",          "status": "stub",  "videoId": "msGzuneFpDU", "transcript": "transcripts/en/12-msGzuneFpDU.md" }
+      ]
+    },
+    {
+      "n": 6,
+      "title": "Dynamic Memory and Structures",
+      "items": [
+        { "kind": "section", "id": "13-malloc-first-encounter",       "label": "6.1", "title": "A first encounter with malloc()",                 "status": "stub",  "videoId": "ZkaKwWXJXs8", "transcript": "transcripts/en/13-ZkaKwWXJXs8.md" },
+        { "kind": "section", "id": "14-hidden-metadata-behind-pointer","label": "6.2", "title": "The hidden-metadata-behind-the-pointer trick",   "status": "stub",  "videoId": "9AhaOdEBmPc", "transcript": "transcripts/en/14-9AhaOdEBmPc.md" },
+        { "kind": "section", "id": "15-structs-of-c",                 "label": "6.3", "title": "The structs of C",                                "status": "stub",  "videoId": "p4IMHau2lq8", "transcript": "transcripts/en/15-p4IMHau2lq8.md" }
+      ]
+    },
+    {
+      "n": 7,
+      "title": "Designing with Structures",
+      "items": [
+        { "kind": "section", "id": "16-structs-as-data-structure-bricks","label": "7.1", "title": "Structs as the building blocks of data structures", "status": "stub", "videoId": "aTT2W5NACEY", "transcript": "transcripts/en/16-aTT2W5NACEY.md" },
+        { "kind": "section", "id": "17-strings-with-reference-counting","label": "7.2", "title": "A string library with reference counting",       "status": "stub",  "videoId": "VPs_QtlLNcs", "transcript": "transcripts/en/17-VPs_QtlLNcs.md" },
+        { "kind": "section", "id": "18-string-design-and-hexdump",    "label": "7.3", "title": "More on structures, string-design choices, hexdump()", "status": "stub", "videoId": "grkIJjw6o18", "transcript": "transcripts/en/18-grkIJjw6o18.md" },
+        { "kind": "section", "id": "19-algorithm-archaeology",        "label": "7.4", "title": "Special — recovering algorithms from memory without docs", "status": "stub", "videoId": "soiBgJjAmP8", "transcript": "transcripts/en/19-soiBgJjAmP8.md" }
+      ]
+    },
+    {
+      "n": 8,
+      "title": "Systems Programming",
+      "items": [
+        { "kind": "section", "id": "20-random-variables",             "label": "8.1", "title": "Random variables (video only — transcripts disabled)", "status": "video-only", "videoId": "HzBqda0Jg3E" },
+        { "kind": "section", "id": "21-opaque-types-and-files",       "label": "8.2", "title": "Opaque types, typedef, and stdio files",          "status": "stub",  "videoId": "3w73xjUSUEU", "transcript": "transcripts/en/21-3w73xjUSUEU.md" },
+        { "kind": "section", "id": "22-system-calls",                 "label": "8.3", "title": "System calls",                                    "status": "stub",  "videoId": "QWLJ7CBAu_I", "transcript": "transcripts/en/22-QWLJ7CBAu_I.md" },
+        { "kind": "section", "id": "23-libc-buffering-and-mmap",      "label": "8.4", "title": "libc buffering and memory-mapped files",          "status": "stub",  "videoId": "yKavhObop5I", "transcript": "transcripts/en/23-yKavhObop5I.md" },
+        { "kind": "section", "id": "24-union-and-bitfield",           "label": "8.5", "title": "union and bitfield",                              "status": "stub",  "videoId": "TM4jgODgdFY", "transcript": "transcripts/en/24-TM4jgODgdFY.md" }
+      ]
+    },
+    {
+      "n": 9,
+      "title": "Function Pointers, Toy Forth, and Graphics",
+      "items": [
+        { "kind": "section", "id": "25-function-pointers",            "label": "9.1",  "title": "Pointers to functions",                          "status": "stub",  "videoId": "OIseV5lcx8w", "transcript": "transcripts/en/25-OIseV5lcx8w.md" },
+        { "kind": "section", "id": "26-toy-forth-part-1",             "label": "9.2",  "title": "Writing the Toy Forth interpreter (part 1)",      "status": "stub",  "videoId": "vYODKK8TQGE", "transcript": "transcripts/en/26-vYODKK8TQGE.md" },
+        { "kind": "section", "id": "27-toy-forth-part-2",             "label": "9.3",  "title": "Toy Forth interpreter (part 2)",                  "status": "stub",  "videoId": "-QxrmHo-V7Y", "transcript": "transcripts/en/27--QxrmHo-V7Y.md" },
+        { "kind": "section", "id": "28-toy-forth-part-3",             "label": "9.4",  "title": "Toy Forth interpreter (part 3)",                  "status": "stub",  "videoId": "-1ZhCgaIPOk", "transcript": "transcripts/en/28--1ZhCgaIPOk.md" },
+        { "kind": "section", "id": "29-toy-forth-exec-internals",     "label": "9.5",  "title": "Toy Forth — inside exec() (part 4)",              "status": "stub",  "videoId": "oMj3N6jYIUU", "transcript": "transcripts/en/29-oMj3N6jYIUU.md" },
+        { "kind": "section", "id": "30-toy-forth-function-registration","label": "9.6", "title": "Toy Forth — registering functions (part 5)",     "status": "stub",  "videoId": "C4AHEK3fSjg", "transcript": "transcripts/en/30-C4AHEK3fSjg.md" },
+        { "kind": "section", "id": "31-reference-counting-deep-dive", "label": "9.7",  "title": "Deep-dive on reference counting",                 "status": "stub",  "videoId": "QdZc1JV_oCw", "transcript": "transcripts/en/31-QdZc1JV_oCw.md" },
+        { "kind": "section", "id": "32-variadic-functions",           "label": "9.8",  "title": "Functions with a variable number of arguments",   "status": "stub",  "videoId": "cvWbCx0lLjs", "transcript": "transcripts/en/32-cvWbCx0lLjs.md" },
+        { "kind": "section", "id": "33-toy-forth-first-program",      "label": "9.9",  "title": "Toy Forth — running the first program",           "status": "stub",  "videoId": "nHzlRqPnlrE", "transcript": "transcripts/en/33-nHzlRqPnlrE.md" },
+        { "kind": "section", "id": "34-zx-spectrum-image-1",          "label": "9.10", "title": "Evolving an image for the ZX Spectrum (part 1)",  "status": "stub",  "videoId": "D1U3uCe-kok", "transcript": "transcripts/en/34-D1U3uCe-kok.md" },
+        { "kind": "section", "id": "35-zx-spectrum-image-2",          "label": "9.11", "title": "Evolving an image for the ZX Spectrum (part 2)",  "status": "stub",  "videoId": "fZmdsh0gQig", "transcript": "transcripts/en/35-fZmdsh0gQig.md" },
+        { "kind": "section", "id": "36-zx-spectrum-appendix",         "label": "9.12", "title": "Appendix to the ZX Spectrum lesson",              "status": "stub",  "videoId": "xaEr-XSlWfo", "transcript": "transcripts/en/36-xaEr-XSlWfo.md" },
+        { "kind": "section", "id": "37-3d-graphics-basics",           "label": "9.13", "title": "Rudiments of 3D graphics",                        "status": "stub",  "videoId": "4EofabMH41M", "transcript": "transcripts/en/37-4EofabMH41M.md" }
+      ]
+    }
+  ]
+}
