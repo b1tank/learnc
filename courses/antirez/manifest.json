@@ -9,7 +9,7 @@
       "title": "Getting Started",
       "items": [
         { "kind": "section", "id": "01-hello-world",                  "label": "1.1", "title": "Hello, world — your first C program",            "status": "draft", "videoId": "HjXBXBgfKyk", "transcript": "transcripts/en/01-HjXBXBgfKyk.md" },
-        { "kind": "section", "id": "02-dismantling-hello-world",     "label": "1.2", "title": "Dismantling Hello, world — stdio, headers, functions", "status": "stub" , "videoId": "Z84vlG1RRtg", "transcript": "transcripts/en/02-Z84vlG1RRtg.md" },
+        { "kind": "section", "id": "02-dismantling-hello-world",     "label": "1.2", "title": "Dismantling Hello, world — stdio, headers, functions", "status": "draft" , "videoId": "Z84vlG1RRtg", "transcript": "transcripts/en/02-Z84vlG1RRtg.md" },
         { "kind": "section", "id": "03-local-variable-lifetimes",     "label": "1.3", "title": "Appendix — the lifetime of local variables",     "status": "draft", "videoId": "r6mU_IHXEps", "transcript": "transcripts/en/03-r6mU_IHXEps.md" }
       ]
     },
