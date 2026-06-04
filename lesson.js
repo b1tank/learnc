@@ -314,16 +314,35 @@ function setupNav(meta) {
 // Decorate every <pre> in the prose with a small "copy" button. The editor
 // (CodeMirror) and the terminal already have their own buttons; only the
 // inert markdown code blocks need this.
+//
+// We wrap each <pre> in a .codeblock container and put the button in a
+// .codeblock-header strip ABOVE the <pre> rather than overlaying its
+// top-right corner. Earlier the button sat inside the <pre> and long
+// lines rendered behind it: overflow:auto clips text at the padding-box
+// edge, not the content-edge, so padding-right on <pre> can't keep text
+// out from under an absolutely-positioned child. A separate header row
+// is the only layout that genuinely avoids occlusion.
 function addCopyButtons(root) {
   if (!root) return;
   var pres = root.querySelectorAll("pre");
   for (var i = 0; i < pres.length; i++) {
     var pre = pres[i];
+    if (pre.parentNode && pre.parentNode.classList && pre.parentNode.classList.contains("codeblock")) {
+      continue; // idempotent — don't double-wrap on re-render
+    }
+    var wrap = document.createElement("div");
+    wrap.className = "codeblock";
+    var header = document.createElement("div");
+    header.className = "codeblock-header";
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "copy-btn";
     btn.textContent = "copy";
     btn.setAttribute("aria-label", "copy code to clipboard");
+    header.appendChild(btn);
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(header);
+    wrap.appendChild(pre);
     (function (pre, btn) {
       btn.addEventListener("click", function () {
         var code = pre.querySelector("code");
@@ -348,7 +367,6 @@ function addCopyButtons(root) {
         }
       });
     })(pre, btn);
-    pre.appendChild(btn);
   }
 }
 
