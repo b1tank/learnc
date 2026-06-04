@@ -109,6 +109,27 @@ binop_t ops[2] = { add, mul };
 
 This is also how most real APIs document their callback types (`pthread_create` takes a `void *(*)(void *)`; libcurl's `CURLOPT_WRITEFUNCTION` is a typedef'd signature). If your call site looks like noise, the fix is a typedef, not a comment.
 
+## Under the hood (asm)
+
+Direct vs indirect call, distilled:
+
+```asm
+call_direct:                   ; calls the known symbol `add`
+        endbr64
+        jmp     add            ; tail-call: literal address baked into the jump
+                               ; (branch predictor: "I know where this goes")
+call_indirect:                 ; calls through `op f`, a function-pointer arg
+        endbr64
+        mov     rax, rdi       ; save the function pointer
+        mov     edi, esi       ; shift args left: drop f, promote a, b
+        mov     esi, edx
+        jmp     rax            ; indirect tail-call — predictor must GUESS
+```
+
+Direct calls have one literal target the CPU's branch predictor pre-fetches perfectly. Indirect calls go through a register; a wrong guess flushes the pipeline (≈20+ cycles wasted). This is the same primitive Spectre v2 abuses and that retpolines + Intel CET's `endbr64` are designed to harden. The cost of "polymorphism in C" is exactly one mispredicted branch per dispatch.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Add a third entry `int sub(int, int)` to `ops[]` and a matching `"sub"` to `names[]`. Predict the new output before you run.
