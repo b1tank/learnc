@@ -99,6 +99,33 @@ For workloads that scan a file once end-to-end, `read` with a decent buffer is o
 - `io_uring` (Linux) is the modern high-throughput alternative for pure-syscall I/O — async submission queues, fewer transitions, no `mmap` quirks. Worth knowing once you outgrow blocking `read`/`write`.
 - On a `SIGBUS`-prone path (file truncated while mapped) you need a signal handler or careful `fstat` checks before touching the mapping.
 
+## Under the hood (asm)
+
+What does "libc adds a buffering layer" actually look like? The asm for `fopen` → `fread` → `fclose`:
+
+```asm
+main:
+        endbr64
+        push    rbp
+        mov     esi, OFFSET FLAT:.LC0   ; "r"
+        mov     edi, OFFSET FLAT:.LC1   ; "/etc/hostname"
+        sub     rsp, 64                 ; 64-byte stack buffer for fread
+        call    fopen                   ; ← libc function call, no syscall yet
+        mov     rdi, rsp                ; buf = the 64 bytes we just reserved
+        mov     edx, 64                 ; size
+        mov     esi, 1                  ; nmemb stride
+        mov     rbp, rax                ; save FILE*
+        mov     rcx, rax                ; arg4 = FILE*
+        call    fread                   ; ← libc again — open(2)/read(2) hidden inside
+        mov     rdi, rbp
+        call    fclose
+        ...
+```
+
+The binary contains no `syscall` instruction at all — every kernel transition happens *inside* the libc functions. That's the whole abstraction this lesson is about: `FILE *` is a user-space buffer wrapped around the raw file descriptor, and the buffering decides *when* the syscalls fire. `mmap`, by contrast, makes the kernel transition happen on first dereference — as a page fault, no `call` in your asm.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for the libc-vs-syscall ABI comparison.
+
 ## Try it
 
 1. Remove the `fflush` from the runner above and add a deliberate `abort();` between the two `fputs` calls. Locally, observe that "first chunk..." never appears.
