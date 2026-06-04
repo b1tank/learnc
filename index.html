@@ -22,17 +22,17 @@
      already active by the time the visitor opens any lesson. Forces
      require-corp instead of credentialless so older iOS Safari works. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=74b0e9f7"></script>
-<link rel="stylesheet" href="style.css?v=74b0e9f7">
+<script src="coi-serviceworker.js?v=de84c975"></script>
+<link rel="stylesheet" href="style.css?v=de84c975">
 <!-- Warm the cache for the most likely next click. Both course indexes
      pull the same shared assets (style.css, theme.js, shortcuts.js,
      app.js, vendor/marked) so we prefetch them once here. -->
-<link rel="modulepreload" href="theme.js?v=74b0e9f7">
-<link rel="modulepreload" href="shortcuts.js?v=74b0e9f7">
+<link rel="modulepreload" href="theme.js?v=de84c975">
+<link rel="modulepreload" href="shortcuts.js?v=de84c975">
 <link rel="prefetch" href="kr.html">
 <link rel="prefetch" href="antirez.html">
 <link rel="prefetch" href="lesson.html">
-<link rel="prefetch" href="app.js?v=74b0e9f7" as="script" crossorigin>
+<link rel="prefetch" href="app.js?v=de84c975" as="script" crossorigin>
 <style>
   .course-grid {
     display: grid;
@@ -99,7 +99,7 @@
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-05-31T07:39Z">2026-05-31 07:39 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/74b0e9f7" rel="noopener">74b0e9f7</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T05:37Z">2026-06-04 05:37 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/de84c975" rel="noopener">de84c975</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
 <!-- The picker page doesn't need the full app.js (no lesson index to

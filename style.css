@@ -108,7 +108,10 @@ pre {
   line-height: 1.45;
   position: relative;
 }
-pre code { background: none; padding: 0; }
+/* Reset the inline-code chrome inside <pre>. Without `border: 0` the
+   inline <code> inside a <pre> picks up the top/bottom border on every
+   visual line fragment, drawing a separator between every code line. */
+pre code { background: none; padding: 0; border: 0; border-radius: 0; }
 
 /* Copy button on prose code blocks (the editor has its own buttons). */
 .copy-btn {
