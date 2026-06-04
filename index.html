@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>learnc — interactive C in your browser</title>
+<!-- INJECT:site.index_meta_description -->
 <meta name="description" content="Two parallel learn-C courses, both runnable in your browser: a hand-revised K&amp;R 2e companion and an English transcript-based companion to Salvatore Sanfilippo's Let's Learn C video series. No signup. No tracking.">
+<!-- /INJECT -->
 <!-- Boot the theme BEFORE paint so the page never flashes the wrong palette.
      Same script lives in kr.html / antirez.html / lesson.html — duplicated
      here on purpose so the picker also respects the saved theme. -->
@@ -22,17 +24,17 @@
      already active by the time the visitor opens any lesson. Forces
      require-corp instead of credentialless so older iOS Safari works. -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=0b906d5b"></script>
-<link rel="stylesheet" href="style.css?v=0b906d5b">
+<script src="coi-serviceworker.js?v=ca360cc8"></script>
+<link rel="stylesheet" href="style.css?v=ca360cc8">
 <!-- Warm the cache for the most likely next click. Both course indexes
      pull the same shared assets (style.css, theme.js, shortcuts.js,
      app.js, vendor/marked) so we prefetch them once here. -->
-<link rel="modulepreload" href="theme.js?v=0b906d5b">
-<link rel="modulepreload" href="shortcuts.js?v=0b906d5b">
+<link rel="modulepreload" href="theme.js?v=ca360cc8">
+<link rel="modulepreload" href="shortcuts.js?v=ca360cc8">
 <link rel="prefetch" href="kr.html">
 <link rel="prefetch" href="antirez.html">
 <link rel="prefetch" href="lesson.html">
-<link rel="prefetch" href="app.js?v=0b906d5b" as="script" crossorigin>
+<link rel="prefetch" href="app.js?v=ca360cc8" as="script" crossorigin>
 <style>
   .course-grid {
     display: grid;
@@ -80,26 +82,32 @@
 <main id="main">
 
 <section class="intro">
-  <p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading — every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>
+  <!-- INJECT:site.index_intro -->
+<p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading — every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>
+<!-- /INJECT -->
 </section>
 
 <div class="course-grid">
-  <a class="course-card" href="kr.html">
+  <!-- INJECT:courses.kr.index_card -->
+<a class="course-card" href="kr.html">
     <h2>K&amp;R 2e companion &rarr;</h2>
     <p>A hand-revised walkthrough of <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2nd edition, 1988) — every section paraphrased, every example runnable, every K&amp;R exercise solved.</p>
     <p class="meta"><span class="lang">EN</span> · 8 chapters · ~140 lessons + exercises · status: complete</p>
   </a>
-  <a class="course-card" href="antirez.html">
+<!-- /INJECT -->
+  <!-- INJECT:courses.antirez.index_card -->
+<a class="course-card" href="antirez.html">
     <h2>antirez &middot; <em>Let&rsquo;s Learn C</em> &rarr;</h2>
     <p>Companion notes to Salvatore Sanfilippo's <em>Let&rsquo;s Learn C</em> video series (37 episodes). Each lesson distils one video into a focused walkthrough with runnable code, modern-C notes, links back to the source video, and cross-references to K&amp;R.</p>
     <p class="meta"><span class="lang">EN</span> &middot; 9 chapters &middot; 37 lessons &middot; status: in progress</p>
   </a>
+<!-- /INJECT -->
 </div>
 
 </main>
 
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T06:07Z">2026-06-04 06:07 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/0b906d5b" rel="noopener">0b906d5b</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T06:27Z">2026-06-04 06:27 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/ca360cc8" rel="noopener">ca360cc8</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 
 <!-- The picker page doesn't need the full app.js (no lesson index to
