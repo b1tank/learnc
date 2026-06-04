@@ -97,6 +97,29 @@ prefix:  b = 6, y = 6
 
 Both forms increment the variable; they differ only in what the surrounding expression sees.
 
+## Under the hood (asm)
+
+Strip the printing away and look at what `gcc -O2 -masm=intel` makes of bare `x++` vs `++x` vs `x++; ++x;`:
+
+```asm
+post:                          ; int post(int x) { return x++; }
+        endbr64
+        mov     eax, edi       ; return the OLD value of x
+        ret                    ; (the increment is dead — never observed)
+pre:                           ; int pre(int x) { return ++x; }
+        endbr64
+        lea     eax, [rdi+1]   ; return x + 1, in one instruction
+        ret
+both:                          ; { x++; ++x; return x; }
+        endbr64
+        lea     eax, [rdi+2]   ; two increments collapsed to x + 2
+        ret
+```
+
+`lea` ("load effective address") is x86-64's swiss-army arithmetic instruction: it does an `add` without touching memory. At `-O2`, gcc proves the post-increment's side-effect is never observed and drops it; the asm for `post` is literally just a move. The whole "prefix vs postfix" hand-wringing disappears once the optimiser sees the value isn't used.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Drop the `return x;` from `inc` and change its return type to `void`. What does `a = inc(a)` now do? (Spoiler: it won't compile.)
