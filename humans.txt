@@ -2,10 +2,11 @@
 
 Built by:    a human (github.com/b1tank)
 Reading:     The C Programming Language, Kernighan & Ritchie, 2nd ed. (1988)
+             Let's Learn C, Salvatore Sanfilippo (antirez), 37-episode YouTube series
 Writing:     vim, eyes, fingers
 LLM usage:   AI may help draft lesson prose; a human verifies it against
-             K&R and revises before it lands. Also used for the WASM C
-             runtime spike.
+             the source (K&R text or antirez's video) and revises before
+             it lands. Also used for the WASM C runtime spike.
 
 /* SITE */
 
@@ -21,7 +22,7 @@ Servers:     none — pure static, runs in your browser
 
 /* PROMISE */
 
-- Lesson prose is hand-revised against K&R (AI may draft, humans verify).
+- Lesson prose is hand-revised against the source (AI may draft, humans verify).
 - No signup.
 - No tracking.
 - No ads.
