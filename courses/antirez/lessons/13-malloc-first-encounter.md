@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=ZkaKwWXJXs8
 ---
 
-> **Source video.** [Impariamo il C — lezione 12: primo incontro con malloc()](https://www.youtube.com/watch?v=ZkaKwWXJXs8) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 12: primo incontro con malloc()](https://www.youtube.com/watch?v=ZkaKwWXJXs8) by Salvatore Sanfilippo.
 
 ## TL;DR
 

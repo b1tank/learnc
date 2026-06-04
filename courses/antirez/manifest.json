@@ -1,6 +1,6 @@
 {
-  "title": "antirez — Impariamo il C — learnc lesson manifest",
-  "_note": "Source: Salvatore Sanfilippo, 'Impariamo il C' YouTube playlist (37 episodes, Italian). Chapter groupings are editorial; rearrange freely. Each item carries the YouTube videoId and the relative path to its English transcript under courses/antirez/transcripts/en/. Transcripts are gitignored regenerable artifacts — never committed.",
+  "title": "antirez — Corso di programmazione in C (Let's Learn C) — learnc lesson manifest",
+  "_note": "Source: Salvatore Sanfilippo, 'Corso di programmazione in C (Let''s Learn C)' YouTube playlist at https://www.youtube.com/playlist?list=PLrEMgOSrS_3cFJpM2gdw8EGFyRBZOyAKY (37 episodes, Italian). Chapter groupings are editorial; rearrange freely. Each item carries the YouTube videoId and the relative path to its English transcript under courses/antirez/transcripts/en/. Transcripts are gitignored regenerable artifacts — never committed.",
   "_format": "Hand-formatted, one item per line, columns roughly aligned by eye. If we add a bin/new-lesson equivalent for this course it MUST keep line-based regex compatibility — do not reformat with jq/prettier.",
   "_status_values": ["done", "draft", "stub", "video-only"],
   "chapters": [

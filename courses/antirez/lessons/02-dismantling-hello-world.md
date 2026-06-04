@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=Z84vlG1RRtg
 ---
 
-> **Source video.** [Impariamo il C — lezione 2](https://www.youtube.com/watch?v=Z84vlG1RRtg) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 2](https://www.youtube.com/watch?v=Z84vlG1RRtg) by Salvatore Sanfilippo.
 
 ## TL;DR
 

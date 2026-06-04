@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=OIseV5lcx8w
 ---
 
-> **Source video.** [Impariamo il C — lezione 22: i puntatori a funzione](https://www.youtube.com/watch?v=OIseV5lcx8w) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 22: i puntatori a funzione](https://www.youtube.com/watch?v=OIseV5lcx8w) by Salvatore Sanfilippo.
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=3w73xjUSUEU
 ---
 
-> **Source video.** [Impariamo il C — lezione 18: strutture come tipi opachi, typedef, file con la libreria standard](https://www.youtube.com/watch?v=3w73xjUSUEU) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 18: strutture come tipi opachi, typedef, file con la libreria standard](https://www.youtube.com/watch?v=3w73xjUSUEU) by Salvatore Sanfilippo.
 
 ## TL;DR
 

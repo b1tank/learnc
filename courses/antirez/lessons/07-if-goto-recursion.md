@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=lc7aYXNl1T8
 ---
 
-> **Source video.** [Impariamo il C — lezione 6: IF, GOTO e ricorsione](https://www.youtube.com/watch?v=lc7aYXNl1T8) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 6: IF, GOTO e ricorsione](https://www.youtube.com/watch?v=lc7aYXNl1T8) by Salvatore Sanfilippo.
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=soiBgJjAmP8
 ---
 
-> **Source video.** [Impariamo il C — episodio speciale: come resuscitare un algoritmo dalla memoria, senza documentazione](https://www.youtube.com/watch?v=soiBgJjAmP8) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — episodio speciale: come resuscitare un algoritmo dalla memoria, senza documentazione](https://www.youtube.com/watch?v=soiBgJjAmP8) by Salvatore Sanfilippo.
 
 ## TL;DR
 

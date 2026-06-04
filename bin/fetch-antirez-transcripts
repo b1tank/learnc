@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch antirez "Impariamo il C" transcripts from YouTube into
+# Fetch antirez "Corso di programmazione in C (Let's Learn C)" transcripts from YouTube into
 # courses/antirez/transcripts/{it,en}/NN-VIDEOID.md
 #
 # Reads courses/antirez/playlist.tsv (header line + rows: NN<TAB>VID<TAB>TITLE).

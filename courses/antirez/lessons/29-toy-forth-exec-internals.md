@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=oMj3N6jYIUU
 ---
 
-> **Source video.** [Impariamo il C — lezione 26: Toy Forth, nei dettagli di exec() (parte 4)](https://www.youtube.com/watch?v=oMj3N6jYIUU) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 26: Toy Forth, nei dettagli di exec() (parte 4)](https://www.youtube.com/watch?v=oMj3N6jYIUU) by Salvatore Sanfilippo.
 
 ## TL;DR
 

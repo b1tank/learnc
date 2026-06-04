@@ -1,38 +1,38 @@
 #	id	title
-01	HjXBXBgfKyk	Impariamo il C: lezione 1
-02	Z84vlG1RRtg	Impariamo il C: lezione 2
-03	r6mU_IHXEps	Impariamo il C: appendice alla lezione 2: la vita delle variabili locali
-04	mw4gUqsGPZw	Impariamo il C: lezione 3
-05	YNsXyasn4R4	Impariamo il C: lezione 4
-06	SWWHqgSwQFw	Impariamo il C: lezione 5
-07	lc7aYXNl1T8	Impariamo il C, lezione 6: IF, GOTO e ricorsione
-08	HCRthhjbfAg	Impariamo il C, lezione 7: ancora sulla ricorsione, l'equivalenza tra while e for, lo switch.
-09	c5atNuYdKK8	Impariamo il C: lezione 8 (implementiamo il Conway's Game of Life)
-10	BBgZs-jd_QY	Impariamo il C, lezione 9: Introduzione ai puntatori
-11	lc7hL9Wt-ho	Impariamo il C, lezione 10: la matematica dei puntatori
-12	msGzuneFpDU	Impariamo il C, lezione 11: chiarimenti sui concetti espressi nella lezione precedente
-13	ZkaKwWXJXs8	Impariamo il C, lezione 12: un primo incontro con malloc()
-14	9AhaOdEBmPc	Impariamo il C, lezione 13: il trucco dei metadati nascosti dietro al puntatore
-15	p4IMHau2lq8	Impariamo il C, lezione 14: le strutture del C
-16	aTT2W5NACEY	Impariamo il C, lezione 15: le struct del C come mattone delle strutture dati
-17	VPs_QtlLNcs	Impariamo il C, lezione 16: le strutture nella nostra libreria delle stringhe col reference counting
-18	grkIJjw6o18	Impariamo il C, lezione 17: ancora sulle strutture, scelte di design sulle stringhe, hexdump().
-19	soiBgJjAmP8	Impariamo il C, puntata speciale: come riesumare gli algoritmi dalla memoria senza la documentazione
-20	HzBqda0Jg3E	Impariamo il C: random variables (transcripts disabled — author manually)
-21	3w73xjUSUEU	Impariamo il C, lezione 18: la strutture come tipi opachi, typedef, i file con la lib standard
-22	QWLJ7CBAu_I	Impariamo il C, puntata 19: le chiamate di sistema
-23	yKavhObop5I	Impariamo il C, lezione 20: il buffering della libc e i file mappati in memoria
-24	TM4jgODgdFY	Impariamo il C, lezione 21: union e bitfield
-25	OIseV5lcx8w	Impariamo il C, lezione 22: i puntatori a funzione
-26	vYODKK8TQGE	Impariamo il C, lezione 23: scriviamo l'interprete Toy Forth (parte 1)
-27	-QxrmHo-V7Y	Impariamo il C, lezione 24: l'interprete Toy Forth (parte 2)
-28	-1ZhCgaIPOk	Impariamo il C, lezione 25: l'interprete Toy Forth (parte 3)
-29	oMj3N6jYIUU	Impariamo il C, lezione 26: Toy Forth, nei meandri della exec() (parte 4)
-30	C4AHEK3fSjg	Impariamo il C, lezione 27: Toy Forth, la registrazione delle funzioni (parte 5)
-31	QdZc1JV_oCw	Impariamo il C: approfondimento sul reference counting
-32	cvWbCx0lLjs	Impariamo il C, lezione 28: le funzioni con un numero variabile di argomenti
-33	nHzlRqPnlrE	Impariamo il C, lezione 29: ToyForth, esecuzione del primo semplice programma
-34	D1U3uCe-kok	Impariamo il C, lezione 30: evolvere un'immagine per lo ZX Spectrum (parte 1)
-35	fZmdsh0gQig	Impariamo il C, lezione 31: evolvere un'immagine per lo ZX Spectrum (parte 2 di 2)
+01	HjXBXBgfKyk	Corso di programmazione in C: lezione 1
+02	Z84vlG1RRtg	Corso di programmazione in C: lezione 2
+03	r6mU_IHXEps	Corso di programmazione in C: appendice alla lezione 2: la vita delle variabili locali
+04	mw4gUqsGPZw	Corso di programmazione in C: lezione 3
+05	YNsXyasn4R4	Corso di programmazione in C: lezione 4
+06	SWWHqgSwQFw	Corso di programmazione in C: lezione 5
+07	lc7aYXNl1T8	Corso di programmazione in C, lezione 6: IF, GOTO e ricorsione
+08	HCRthhjbfAg	Corso di programmazione in C, lezione 7: ancora sulla ricorsione, l'equivalenza tra while e for, lo switch.
+09	c5atNuYdKK8	Corso di programmazione in C: lezione 8 (implementiamo il Conway's Game of Life)
+10	BBgZs-jd_QY	Corso di programmazione in C, lezione 9: Introduzione ai puntatori
+11	lc7hL9Wt-ho	Corso di programmazione in C, lezione 10: la matematica dei puntatori
+12	msGzuneFpDU	Corso di programmazione in C, lezione 11: chiarimenti sui concetti espressi nella lezione precedente
+13	ZkaKwWXJXs8	Corso di programmazione in C, lezione 12: un primo incontro con malloc()
+14	9AhaOdEBmPc	Corso di programmazione in C, lezione 13: il trucco dei metadati nascosti dietro al puntatore
+15	p4IMHau2lq8	Corso di programmazione in C, lezione 14: le strutture del C
+16	aTT2W5NACEY	Corso di programmazione in C, lezione 15: le struct del C come mattone delle strutture dati
+17	VPs_QtlLNcs	Corso di programmazione in C, lezione 16: le strutture nella nostra libreria delle stringhe col reference counting
+18	grkIJjw6o18	Corso di programmazione in C, lezione 17: ancora sulle strutture, scelte di design sulle stringhe, hexdump().
+19	soiBgJjAmP8	Corso di programmazione in C, puntata speciale: come riesumare gli algoritmi dalla memoria senza la documentazione
+20	HzBqda0Jg3E	Corso di programmazione in C: random variables (transcripts disabled — author manually)
+21	3w73xjUSUEU	Corso di programmazione in C, lezione 18: la strutture come tipi opachi, typedef, i file con la lib standard
+22	QWLJ7CBAu_I	Corso di programmazione in C, puntata 19: le chiamate di sistema
+23	yKavhObop5I	Corso di programmazione in C, lezione 20: il buffering della libc e i file mappati in memoria
+24	TM4jgODgdFY	Corso di programmazione in C, lezione 21: union e bitfield
+25	OIseV5lcx8w	Corso di programmazione in C, lezione 22: i puntatori a funzione
+26	vYODKK8TQGE	Corso di programmazione in C, lezione 23: scriviamo l'interprete Toy Forth (parte 1)
+27	-QxrmHo-V7Y	Corso di programmazione in C, lezione 24: l'interprete Toy Forth (parte 2)
+28	-1ZhCgaIPOk	Corso di programmazione in C, lezione 25: l'interprete Toy Forth (parte 3)
+29	oMj3N6jYIUU	Corso di programmazione in C, lezione 26: Toy Forth, nei meandri della exec() (parte 4)
+30	C4AHEK3fSjg	Corso di programmazione in C, lezione 27: Toy Forth, la registrazione delle funzioni (parte 5)
+31	QdZc1JV_oCw	Corso di programmazione in C: approfondimento sul reference counting
+32	cvWbCx0lLjs	Corso di programmazione in C, lezione 28: le funzioni con un numero variabile di argomenti
+33	nHzlRqPnlrE	Corso di programmazione in C, lezione 29: ToyForth, esecuzione del primo semplice programma
+34	D1U3uCe-kok	Corso di programmazione in C, lezione 30: evolvere un'immagine per lo ZX Spectrum (parte 1)
+35	fZmdsh0gQig	Corso di programmazione in C, lezione 31: evolvere un'immagine per lo ZX Spectrum (parte 2 di 2)
 36	xaEr-XSlWfo	Appendice alla lezione 31 del corso di programmazione in C
-37	4EofabMH41M	Impariamo il C, lezione 32: rudimenti di grafica 3D
+37	4EofabMH41M	Corso di programmazione in C, lezione 32: rudimenti di grafica 3D

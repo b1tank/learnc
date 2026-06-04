@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=aTT2W5NACEY
 ---
 
-> **Source video.** [Impariamo il C — lezione 15: gli struct come mattoni delle strutture dati](https://www.youtube.com/watch?v=aTT2W5NACEY) by Salvatore Sanfilippo.
+> **Source video.** [Corso di programmazione in C — lezione 15: gli struct come mattoni delle strutture dati](https://www.youtube.com/watch?v=aTT2W5NACEY) by Salvatore Sanfilippo.
 
 ## TL;DR
 
