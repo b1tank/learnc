@@ -68,6 +68,27 @@ Hello, 30
 
 `sum` is declared *above* `main` so the compiler has already seen its prototype by the time `main` calls it. If you flip the order, you'll either get an implicit-declaration warning or an error depending on the standard — fix it by either moving the definition up or adding a forward prototype (`int sum(int, int);`) before `main`.
 
+## Under the hood (asm)
+
+Compile `int main(void){ printf("hello, world\n"); }` with `gcc -O2 -masm=intel` and the body of `main` collapses to:
+
+```asm
+.LC0:
+        .string "hello, world"
+main:
+        endbr64
+        sub     rsp, 8                ; align stack to 16 bytes before the call
+        mov     edi, OFFSET FLAT:.LC0 ; first arg in rdi (SysV calling convention)
+        call    puts                  ; ← printf was rewritten to puts!
+        xor     eax, eax              ; return 0
+        add     rsp, 8
+        ret
+```
+
+Two surprises: `printf` with a literal string + trailing `\n` and no `%` is silently rewritten to `puts` (one fewer scan over the format string), and `xor eax, eax` is the compiler's idiomatic way to load zero — shorter and faster than `mov eax, 0`.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 - Add a second `%d` to the format string but pass only one argument. Compile and observe the warning, then run anyway and see what prints.
