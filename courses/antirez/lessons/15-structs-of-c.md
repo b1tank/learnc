@@ -88,6 +88,27 @@ Two ergonomic touches the lesson does not show:
 
 Both are standard since C99.
 
+## Under the hood (asm)
+
+A struct is a name for an offset table — the compiler resolves field names at compile time. For `struct Point { int x; int y; int z; }`:
+
+```asm
+get_y:                         ; int get_y(struct Point *p) { return p->y; }
+        endbr64
+        mov     eax, DWORD PTR [rdi+4]   ; offset 4 = where y lives
+        ret
+sum:                           ; return p->x + p->y + p->z
+        endbr64
+        mov     eax, DWORD PTR [rdi+4]
+        add     eax, DWORD PTR [rdi]
+        add     eax, DWORD PTR [rdi+8]
+        ret
+```
+
+`p->y` is literally `[base + 4]` — there is no "field lookup" at runtime; the offset was burned into the instruction stream. Reorder the fields and the offsets change. This is why adding a field to a struct in a shared header is an ABI break: every compiled caller has the old offsets baked in.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Add `char tag;` as the first field of `struct point` and re-run — what does `sizeof` print now? Move `tag` to the end and re-check.
