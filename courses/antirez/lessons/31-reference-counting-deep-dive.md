@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=QdZc1JV_oCw
 ---
 
-> **Source video.** [Corso di programmazione in C — approfondimento sul reference counting](https://www.youtube.com/watch?v=QdZc1JV_oCw) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — deep dive on reference counting](https://www.youtube.com/watch?v=QdZc1JV_oCw) (originally *Corso di programmazione in C — approfondimento sul reference counting*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

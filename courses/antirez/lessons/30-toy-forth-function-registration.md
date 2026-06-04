@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=C4AHEK3fSjg
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 27: Toy Forth, registrazione di funzioni (parte 5)](https://www.youtube.com/watch?v=C4AHEK3fSjg) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 27](https://www.youtube.com/watch?v=C4AHEK3fSjg) (originally *Corso di programmazione in C — lezione 27: Toy Forth, registrazione di funzioni (parte 5)*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=xaEr-XSlWfo
 ---
 
-> **Source video.** [Corso di programmazione in C — appendice alla lezione sullo ZX Spectrum](https://www.youtube.com/watch?v=xaEr-XSlWfo) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — appendix to the ZX Spectrum lesson](https://www.youtube.com/watch?v=xaEr-XSlWfo) (originally *Corso di programmazione in C — appendice alla lezione sullo ZX Spectrum*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

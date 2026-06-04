@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=msGzuneFpDU
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 11: chiarimenti sui puntatori](https://www.youtube.com/watch?v=msGzuneFpDU) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 11](https://www.youtube.com/watch?v=msGzuneFpDU) (originally *Corso di programmazione in C — lezione 11: chiarimenti sui puntatori*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=QWLJ7CBAu_I
 ---
 
-> **Source video.** [Corso di programmazione in C — episodio 19: le system call](https://www.youtube.com/watch?v=QWLJ7CBAu_I) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — episode 19](https://www.youtube.com/watch?v=QWLJ7CBAu_I) (originally *Corso di programmazione in C — episodio 19: le system call*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=HCRthhjbfAg
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 7: ancora ricorsione, while = for, switch](https://www.youtube.com/watch?v=HCRthhjbfAg) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 7](https://www.youtube.com/watch?v=HCRthhjbfAg) (originally *Corso di programmazione in C — lezione 7: ancora ricorsione, while = for, switch*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

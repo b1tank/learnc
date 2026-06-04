@@ -1,7 +1,8 @@
-# antirez &middot; *Corso di programmazione in C (Let's Learn C)* &mdash; learnc
+# antirez &middot; *Let's Learn C* &mdash; learnc
 
-Companion notes to [*Corso di programmazione in C (Let's Learn C)*](https://www.youtube.com/playlist?list=PLrEMgOSrS_3cFJpM2gdw8EGFyRBZOyAKY)
-by [Salvatore Sanfilippo](https://antirez.com) (creator of Redis) &mdash;
+Companion notes to [*Let's Learn C*](https://www.youtube.com/playlist?list=PLrEMgOSrS_3cFJpM2gdw8EGFyRBZOyAKY)
+(originally *Corso di programmazione in C*) by
+[Salvatore Sanfilippo](https://antirez.com) (creator of Redis) &mdash;
 a 37-episode walk through the C language and the craft of writing real
 programs in it.
 

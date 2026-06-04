@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=p4IMHau2lq8
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 14: le strutture del C](https://www.youtube.com/watch?v=p4IMHau2lq8) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 14](https://www.youtube.com/watch?v=p4IMHau2lq8) (originally *Corso di programmazione in C — lezione 14: le strutture del C*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

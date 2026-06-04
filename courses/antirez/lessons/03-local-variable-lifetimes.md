@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=r6mU_IHXEps
 ---
 
-> **Source video.** [Corso di programmazione in C — appendice alla lezione 2: la vita delle variabili locali](https://www.youtube.com/watch?v=r6mU_IHXEps) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — appendix to lesson 2](https://www.youtube.com/watch?v=r6mU_IHXEps) (originally *Corso di programmazione in C — appendice alla lezione 2: la vita delle variabili locali*) by Salvatore Sanfilippo.
 
 ## TL;DR
 

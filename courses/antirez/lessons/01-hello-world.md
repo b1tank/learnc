@@ -13,7 +13,7 @@ source:
   date: 2025-05-18
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 1](https://www.youtube.com/watch?v=HjXBXBgfKyk) by Salvatore Sanfilippo (creator of Redis).
+> **Source video.** [Let's Learn C — lesson 1](https://www.youtube.com/watch?v=HjXBXBgfKyk) (originally *Corso di programmazione in C — lezione 1*) by Salvatore Sanfilippo (creator of Redis).
 
 ## TL;DR
 

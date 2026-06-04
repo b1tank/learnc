@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=4EofabMH41M
 ---
 
-> **Source video.** [Corso di programmazione in C — lezione 32: rudimenti di grafica 3D](https://www.youtube.com/watch?v=4EofabMH41M) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 32](https://www.youtube.com/watch?v=4EofabMH41M) (originally *Corso di programmazione in C — lezione 32: rudimenti di grafica 3D*) by Salvatore Sanfilippo.
 
 ## TL;DR
 
