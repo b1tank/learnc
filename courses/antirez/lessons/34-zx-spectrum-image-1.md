@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=D1U3uCe-kok
 ---
 
-> **Source video.** [Let's Learn C — lesson 30](https://www.youtube.com/watch?v=D1U3uCe-kok) (originally *Corso di programmazione in C — lezione 30: evolvere un'immagine per lo ZX Spectrum (parte 1)*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 30](https://www.youtube.com/watch?v=D1U3uCe-kok) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

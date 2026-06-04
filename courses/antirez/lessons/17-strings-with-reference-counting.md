@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=VPs_QtlLNcs
 ---
 
-> **Source video.** [Let's Learn C — lesson 16](https://www.youtube.com/watch?v=VPs_QtlLNcs) (originally *Corso di programmazione in C — lezione 16: la libreria di stringhe con reference counting*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 16](https://www.youtube.com/watch?v=VPs_QtlLNcs) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

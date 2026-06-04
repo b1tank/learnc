@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=grkIJjw6o18
 ---
 
-> **Source video.** [Let's Learn C — lesson 17](https://www.youtube.com/watch?v=grkIJjw6o18) (originally *Corso di programmazione in C — lezione 17: ancora struct, scelte di design sulle stringhe, hexdump()*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 17](https://www.youtube.com/watch?v=grkIJjw6o18) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

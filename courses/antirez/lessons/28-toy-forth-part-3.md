@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=-1ZhCgaIPOk
 ---
 
-> **Source video.** [Let's Learn C — lesson 25](https://www.youtube.com/watch?v=-1ZhCgaIPOk) (originally *Corso di programmazione in C — lezione 25: l'interprete Toy Forth (parte 3)*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 25](https://www.youtube.com/watch?v=-1ZhCgaIPOk) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

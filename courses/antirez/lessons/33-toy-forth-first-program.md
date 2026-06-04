@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=nHzlRqPnlrE
 ---
 
-> **Source video.** [Let's Learn C — lesson 29](https://www.youtube.com/watch?v=nHzlRqPnlrE) (originally *Corso di programmazione in C — lezione 29: Toy Forth, esecuzione del primo programma*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 29](https://www.youtube.com/watch?v=nHzlRqPnlrE) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

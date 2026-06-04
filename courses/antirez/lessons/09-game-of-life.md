@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=c5atNuYdKK8
 ---
 
-> **Source video.** [Let's Learn C — lesson 8](https://www.youtube.com/watch?v=c5atNuYdKK8) (originally *Corso di programmazione in C — lezione 8: implementiamo Game of Life*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 8](https://www.youtube.com/watch?v=c5atNuYdKK8) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

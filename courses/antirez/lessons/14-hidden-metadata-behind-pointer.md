@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=9AhaOdEBmPc
 ---
 
-> **Source video.** [Let's Learn C — lesson 13](https://www.youtube.com/watch?v=9AhaOdEBmPc) (originally *Corso di programmazione in C — lezione 13: il trucco dei metadati nascosti dietro al puntatore*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 13](https://www.youtube.com/watch?v=9AhaOdEBmPc) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

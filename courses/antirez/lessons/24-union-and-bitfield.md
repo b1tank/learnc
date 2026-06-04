@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=TM4jgODgdFY
 ---
 
-> **Source video.** [Let's Learn C — lesson 21](https://www.youtube.com/watch?v=TM4jgODgdFY) (originally *Corso di programmazione in C — lezione 21: union e bitfield*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 21](https://www.youtube.com/watch?v=TM4jgODgdFY) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

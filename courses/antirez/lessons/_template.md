@@ -12,7 +12,7 @@ source:
   duration: "MM:SS"
 ---
 
-> **Source video.** [Let's Learn C — lesson N](https://www.youtube.com/watch?v=XXXXXXXXXXX) (originally *Corso di programmazione in C — lezione N*) (Salvatore Sanfilippo, MM:SS).
+> **Source video.** [Let's Learn C — lesson N](https://www.youtube.com/watch?v=XXXXXXXXXXX) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

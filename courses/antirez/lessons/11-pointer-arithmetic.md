@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=lc7hL9Wt-ho
 ---
 
-> **Source video.** [Let's Learn C — lesson 10](https://www.youtube.com/watch?v=lc7hL9Wt-ho) (originally *Corso di programmazione in C — lezione 10: aritmetica dei puntatori*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 10](https://www.youtube.com/watch?v=lc7hL9Wt-ho) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

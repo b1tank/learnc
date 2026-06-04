@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=3w73xjUSUEU
 ---
 
-> **Source video.** [Let's Learn C — lesson 18](https://www.youtube.com/watch?v=3w73xjUSUEU) (originally *Corso di programmazione in C — lezione 18: strutture come tipi opachi, typedef, file con la libreria standard*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 18](https://www.youtube.com/watch?v=3w73xjUSUEU) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=cvWbCx0lLjs
 ---
 
-> **Source video.** [Let's Learn C — lesson 28](https://www.youtube.com/watch?v=cvWbCx0lLjs) (originally *Corso di programmazione in C — lezione 28: funzioni con un numero variabile di argomenti*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 28](https://www.youtube.com/watch?v=cvWbCx0lLjs) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

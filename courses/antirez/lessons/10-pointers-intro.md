@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=BBgZs-jd_QY
 ---
 
-> **Source video.** [Let's Learn C — lesson 9](https://www.youtube.com/watch?v=BBgZs-jd_QY) (originally *Corso di programmazione in C — lezione 9: introduzione ai puntatori*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 9](https://www.youtube.com/watch?v=BBgZs-jd_QY) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 

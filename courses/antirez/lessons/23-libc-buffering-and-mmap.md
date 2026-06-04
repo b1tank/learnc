@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=yKavhObop5I
 ---
 
-> **Source video.** [Let's Learn C — lesson 20](https://www.youtube.com/watch?v=yKavhObop5I) (originally *Corso di programmazione in C — lezione 20: il buffering della libc e i file mappati in memoria*) by Salvatore Sanfilippo.
+> **Source video.** [Let's Learn C — lesson 20](https://www.youtube.com/watch?v=yKavhObop5I) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
