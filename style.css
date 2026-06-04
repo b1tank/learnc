@@ -108,6 +108,13 @@ pre {
   line-height: 1.45;
   position: relative;
 }
+/* Reserve top-right room for the copy button so it never overlays the
+   first line of code. We can't put this on the .copy-btn itself — that
+   button is position:absolute and doesn't reflow its siblings. Scoped
+   with :has() so plain <pre> blocks (none in current build) keep their
+   tight padding. */
+pre:has(> .copy-btn) { padding-right: 3.2rem; }
+
 /* Reset the inline-code chrome inside <pre>. Without `border: 0` the
    inline <code> inside a <pre> picks up the top/bottom border on every
    visual line fragment, drawing a separator between every code line. */
