@@ -7,9 +7,10 @@
 <!-- INJECT:site.index_meta_description -->
 <meta name="description" content="Two parallel learn-C courses, both runnable in your browser: a hand-revised K&amp;R 2e companion and an English transcript-based companion to Salvatore Sanfilippo's Let's Learn C video series. No signup. No tracking.">
 <!-- /INJECT -->
+<!-- INJECT:partial:theme-boot -->
 <!-- Boot the theme BEFORE paint so the page never flashes the wrong palette.
-     Same script lives in kr.html / antirez.html / lesson.html — duplicated
-     here on purpose so the picker also respects the saved theme. -->
+     Reads localStorage; falls back to prefers-color-scheme. The toggle lives
+     in theme.js, mounted after DOM ready. -->
 <script>
   (function () {
     try {
@@ -20,21 +21,35 @@
     } catch (e) { /* private mode — fall through */ }
   })();
 </script>
-<!-- Register the COOP/COEP service worker on the landing page too so it's
-     already active by the time the visitor opens any lesson. Forces
-     require-corp instead of credentialless so older iOS Safari works. -->
+<!-- /INJECT -->
+<!-- INJECT:partial:coi-sw -->
+<!--
+  coi-serviceworker installs COOP/COEP response headers via a service worker
+  so SharedArrayBuffer is available (needed by the WASM C compiler). GitHub
+  Pages cannot set these headers itself. First visit causes one auto-reload;
+  after that it's cached.
+
+  Override coepCredentialless to always return false: the library defaults
+  to credentialless on Safari, but `COEP: credentialless` only shipped in
+  iOS 17.4 — older iPhones see an unknown value, fall back to no COEP, and
+  the page never becomes crossOriginIsolated. require-corp has worked since
+  iOS 15.2 and is satisfied by our CDNs.
+
+  bin/stamp rewrites ?v=PLACEHOLDER to the current commit SHA on every build.
+-->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=ca360cc8"></script>
-<link rel="stylesheet" href="style.css?v=ca360cc8">
+<script src="coi-serviceworker.js?v=1ce65dc1"></script>
+<!-- /INJECT -->
+<link rel="stylesheet" href="style.css?v=1ce65dc1">
 <!-- Warm the cache for the most likely next click. Both course indexes
      pull the same shared assets (style.css, theme.js, shortcuts.js,
      app.js, vendor/marked) so we prefetch them once here. -->
-<link rel="modulepreload" href="theme.js?v=ca360cc8">
-<link rel="modulepreload" href="shortcuts.js?v=ca360cc8">
+<link rel="modulepreload" href="theme.js?v=1ce65dc1">
+<link rel="modulepreload" href="shortcuts.js?v=1ce65dc1">
 <link rel="prefetch" href="kr.html">
 <link rel="prefetch" href="antirez.html">
 <link rel="prefetch" href="lesson.html">
-<link rel="prefetch" href="app.js?v=ca360cc8" as="script" crossorigin>
+<link rel="prefetch" href="app.js?v=1ce65dc1" as="script" crossorigin>
 <style>
   .course-grid {
     display: grid;
@@ -72,9 +87,11 @@
 <header class="site-header">
   <h1><a href="index.html">learnc</a></h1>
   <nav aria-label="primary">
-    <a href="https://github.com/b1tank/learnc" aria-label="source on GitHub" title="source on GitHub">
+    <!-- INJECT:partial:github-link -->
+<a href="https://github.com/b1tank/learnc" aria-label="source on GitHub" title="source on GitHub">
       <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55v-2.05c-3.2.7-3.87-1.36-3.87-1.36-.53-1.35-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.17.08 1.79 1.21 1.79 1.21 1.04 1.79 2.74 1.27 3.41.97.11-.76.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.04 11.04 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.26 5.69.42.36.8 1.08.8 2.18v3.23c0 .31.21.67.79.55C20.22 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
     </a>
+<!-- /INJECT -->
     <span id="theme-toggle-slot"></span>
   </nav>
 </header>
@@ -106,9 +123,11 @@
 
 </main>
 
+<!-- INJECT:partial:footer -->
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T06:27Z">2026-06-04 06:27 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/ca360cc8" rel="noopener">ca360cc8</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T06:33Z">2026-06-04 06:33 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/1ce65dc1" rel="noopener">1ce65dc1</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
+<!-- /INJECT -->
 
 <!-- The picker page doesn't need the full app.js (no lesson index to
      render). Mount only the theme toggle so dark/light works here too. -->

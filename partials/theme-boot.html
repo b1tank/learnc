@@ -1,0 +1,13 @@
+<!-- Boot the theme BEFORE paint so the page never flashes the wrong palette.
+     Reads localStorage; falls back to prefers-color-scheme. The toggle lives
+     in theme.js, mounted after DOM ready. -->
+<script>
+  (function () {
+    try {
+      var pref = localStorage.getItem("learnc.theme");
+      var dark = pref === "dark" || (pref !== "light" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      if (dark) document.documentElement.dataset.theme = "dark";
+    } catch (e) { /* private mode — fall through */ }
+  })();
+</script>

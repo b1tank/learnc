@@ -53,6 +53,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML_FILES = ["index.html", "lesson.html", "kr.html", "antirez.html"]
 REPO_URL = "https://github.com/b1tank/learnc"
 DATA_FILE = "_data.json"
+PARTIALS_DIR = "partials"
 
 # Sibling ES modules to version-stamp. Anything in this list gets `?v=<sha>`
 # appended to <script type="module" src="…"> and <link rel="modulepreload"
@@ -64,15 +65,27 @@ STAMP_START = "<!-- BUILD-STAMP-START -->"
 STAMP_END = "<!-- BUILD-STAMP-END -->"
 
 # Generic copy-injection markers — see _data.json for rationale.
-# Format:
-#   <!-- INJECT:dotted.key.path -->
-#   <html or text fragment...>
-#   <!-- /INJECT -->
-# The injector looks up the dotted key in _data.json and replaces
-# everything between the markers with the value (inserted verbatim — the
-# JSON value is responsible for being valid HTML).
+# Two flavours, sharing the same INJECT/[/INJECT] envelope so the regex is one:
+#
+#   1. Prose from _data.json — for short HTML fragments. Key is a dotted
+#      path into the JSON tree:
+#         <!-- INJECT:courses.antirez.page_intro -->
+#         <p>…</p>
+#         <!-- /INJECT -->
+#
+#   2. Partials from disk — for multi-line chrome (header chunks, footer,
+#      SVG icons). Avoids JSON-escaping a screenful of HTML. Key starts
+#      with `partial:` and names a file under partials/<name>.html:
+#         <!-- INJECT:partial:theme-boot -->
+#         …file contents…
+#         <!-- /INJECT -->
+#
+# Unknown keys / missing files raise SystemExit. Subsequent stamp passes
+# (cache-busting, build stamp) still see the injected content, so a partial
+# that contains `?v=PLACEHOLDER` will get rewritten with the current SHA
+# after injection — which is exactly what we want.
 INJECT_RE = re.compile(
-    r"<!-- INJECT:([A-Za-z0-9_.]+) -->(.*?)<!-- /INJECT -->",
+    r"<!-- INJECT:([A-Za-z0-9_.:\-]+) -->(.*?)<!-- /INJECT -->",
     re.DOTALL,
 )
 
@@ -96,24 +109,44 @@ def resolve_dotted(data: dict, key: str) -> str:
     return node
 
 
+def resolve_partial(name: str) -> str:
+    """Load partials/<name>.html. Rejects path-traversal attempts."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        raise SystemExit(
+            f"bin/stamp: partial name {name!r} must match [A-Za-z0-9_-]+"
+        )
+    path = ROOT / PARTIALS_DIR / f"{name}.html"
+    if not path.is_file():
+        raise SystemExit(f"bin/stamp: partial file not found: {path.relative_to(ROOT)}")
+    # Strip trailing newline so injection doesn't add a blank line every
+    # round-trip; the injector adds its own surrounding newlines.
+    return path.read_text().rstrip("\n")
+
+
 def inject_copy(text: str, data: dict, *, filename: str) -> str:
-    """Replace each INJECT block with the matching value from _data.json.
+    """Replace each INJECT block with the matching value.
+
+    Two key forms:
+      * `partial:<name>` → contents of partials/<name>.html
+      * `dotted.key`     → string at that path in _data.json
 
     Inserts the value verbatim between the markers, preceded and followed
     by a newline so the injected content sits on its own line(s) regardless
     of where the markers were placed. Idempotent — re-running yields no diff.
-    Unknown keys raise; the build should be loud if _data.json drifts from
-    the markers in HTML.
+    Unknown keys/files raise; the build should be loud if state drifts.
     """
     def _sub(m: re.Match) -> str:
         key = m.group(1)
-        try:
-            value = resolve_dotted(data, key)
-        except KeyError:
-            raise SystemExit(
-                f"bin/stamp: {filename}: INJECT marker references unknown key "
-                f"{key!r} (add it to {DATA_FILE} or remove the marker)"
-            )
+        if key.startswith("partial:"):
+            value = resolve_partial(key[len("partial:"):])
+        else:
+            try:
+                value = resolve_dotted(data, key)
+            except KeyError:
+                raise SystemExit(
+                    f"bin/stamp: {filename}: INJECT marker references unknown key "
+                    f"{key!r} (add it to {DATA_FILE} or remove the marker)"
+                )
         return f"<!-- INJECT:{key} -->\n{value}\n<!-- /INJECT -->"
 
     return INJECT_RE.sub(_sub, text)
