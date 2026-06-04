@@ -4,7 +4,7 @@ chapter: 9
 label: "9.13"
 title: Rudiments of 3D graphics
 prev: 36-zx-spectrum-appendix
-next: null
+next: 00-asm-primer
 status: draft
 source:
   videoId: 4EofabMH41M

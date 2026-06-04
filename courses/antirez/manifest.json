@@ -94,6 +94,15 @@
         { "kind": "section", "id": "36-zx-spectrum-appendix",         "label": "9.12", "title": "Appendix to the ZX Spectrum lesson",              "status": "draft",  "videoId": "xaEr-XSlWfo", "transcript": "transcripts/en/36-xaEr-XSlWfo.md" },
         { "kind": "section", "id": "37-3d-graphics-basics",           "label": "9.13", "title": "Rudiments of 3D graphics",                        "status": "draft",  "videoId": "4EofabMH41M", "transcript": "transcripts/en/37-4EofabMH41M.md" }
       ]
+    },
+    {
+      "n": 10,
+      "title": "Optional — Assembly Detours",
+      "_note": "Synthetic side trips, not tied to a video. The 'Under the hood (asm)' sections inside individual C lessons link back here.",
+      "items": [
+        { "kind": "section", "id": "00-asm-primer",                   "label": "10.1", "title": "A primer on x86-64 assembly (for C readers)",      "status": "draft" },
+        { "kind": "section", "id": "36a-6502-detour",                 "label": "10.2", "title": "A 6502 detour — meet the 8-bit cousin (easy6502)", "status": "draft" }
+      ]
     }
   ]
 }
