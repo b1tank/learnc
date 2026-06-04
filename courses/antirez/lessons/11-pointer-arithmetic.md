@@ -100,6 +100,22 @@ a[3]=40  *(a+3)=40
 a[4]=50  *(a+4)=50
 ```
 
+## Under the hood (asm)
+
+Why `p[i]` is "free" — x86 has an indexed addressing mode that does the multiply *inside* the load:
+
+```asm
+idx:                           ; int idx(int *p, int i) { return p[i]; }
+        endbr64
+        movsx   rsi, esi              ; widen i from 32 → 64 bits
+        mov     eax, DWORD PTR [rdi+rsi*4]  ; *(p + i) in ONE instruction
+        ret
+```
+
+The `[rdi+rsi*4]` is the full "base + index × scale" addressing mode. The `*4` is the `sizeof(int)` your C code never wrote — the compiler bakes it in. `p[i]` and `*(p + i)` produce **byte-identical** asm; they're the same operation spelled two ways.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Change `int a[]` to `short a[]` in the first runnable (and `int *p` to `short *p`); the output is identical because the loop is written in terms of *elements*, not bytes.
