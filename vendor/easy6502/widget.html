@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>easy6502 — embedded simulator (learnc vendor)</title>
+
+<!--
+  Embedded easy6502 widget.
+
+  Why this file exists:
+    skilldrick.github.io sends `X-Frame-Options: deny` so the live site
+    cannot be iframed cross-origin. We vendor the simulator locally to
+    serve it same-origin from learnc, which sidesteps the frame block
+    and also makes the asm detour work offline.
+
+  Files in this directory are unmodified upstream artifacts plus this
+  host page. See LICENSE.md for attribution.
+-->
+
+<link rel="stylesheet" href="sim.css">
+<style>
+  /* Dark theme to match the parent lesson page; we leave the upstream
+     sim.css untouched and override only what's visually jarring on dark. */
+  :root { color-scheme: dark; }
+  html, body {
+    background: #1d1f21;
+    color: #e6e6e6;
+    margin: 0;
+    padding: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  .widget {
+    width: auto;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .widget pre, .widget code { color: #e6e6e6; }
+  .code {
+    background: #111418;
+    color: #e6e6e6;
+    border: 1px solid #444;
+    font-size: 13px;
+    line-height: 1.4;
+    box-sizing: border-box;
+  }
+  .screen { background: #000; border: 1px solid #444; }
+  .debugger {
+    background: #111418;
+    border-color: #444;
+  }
+  .messages, .monitor {
+    background: #111418;
+    border-color: #444;
+    color: #c9c9c9;
+  }
+  input[type="button"] {
+    background: #2b2f33;
+    color: #e6e6e6;
+    border: 1px solid #555;
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  input[type="button"]:hover { background: #3a3f44; }
+  input[type="text"] {
+    background: #111418; color: #e6e6e6;
+    border: 1px solid #555; padding: 2px 4px;
+  }
+  /* On narrow viewports, stack the editor and the screen. */
+  @media (max-width: 560px) {
+    .code { float: none; width: 100%; height: 220px; }
+    .screen { float: none; display: block; margin: 8px auto; }
+    .debugger { float: none; width: 100%; box-sizing: border-box; }
+  }
+  .attribution {
+    margin: 14px auto 4px;
+    max-width: 640px;
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+  }
+  .attribution a { color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="widget">
+  <div class="buttons">
+    <input type="button" value="Assemble" class="assembleButton">
+    <input type="button" value="Run" class="runButton">
+    <input type="button" value="Reset" class="resetButton">
+    <input type="button" value="Hexdump" class="hexdumpButton">
+    <input type="button" value="Disassemble" class="disassembleButton">
+  </div>
+
+  <textarea class="code">; Try me! Click Assemble, then Run.
+; Three coloured pixels at the top-left of the 32x32 screen.
+
+LDA #$01     ; A = white
+STA $0200    ; screen[0,0] := white
+LDA #$05     ; A = green
+STA $0201    ; screen[0,1] := green
+LDA #$08     ; A = orange
+STA $0202    ; screen[0,2] := orange
+BRK          ; halt</textarea>
+
+  <canvas class="screen" width="160" height="160"></canvas>
+
+  <div class="debugger">
+    <input type="checkbox" class="debug" name="debug" id="dbg">
+    <label for="dbg">Debugger</label>
+    <div class="minidebugger"></div>
+    <div class="buttons">
+      <input type="button" value="Step" class="stepButton">
+      <input type="button" value="Jump…" class="gotoButton">
+    </div>
+  </div>
+
+  <div class="monitorControls">
+    <label><input type="checkbox" class="monitoring" name="monitoring"> Monitor</label>
+    <label>Start: $<input type="text" value="0" class="start" name="start"></label>
+    <label>Length: $<input type="text" value="ff" class="length" name="length"></label>
+  </div>
+
+  <div class="monitor"><pre><code></code></pre></div>
+  <div class="messages"><pre><code></code></pre></div>
+</div>
+
+<p class="attribution">
+  Embedded <a href="https://skilldrick.github.io/easy6502/" target="_blank" rel="noopener">easy6502</a>
+  by Nick Morgan (CC BY 4.0); 6502 assembler by Stian Soreng (6502asm.com).
+  Vendored locally in <code>vendor/easy6502/</code>.
+</p>
+
+<script src="jquery-1.7.2.min.js"></script>
+<script src="assembler.js"></script>
+</body>
+</html>

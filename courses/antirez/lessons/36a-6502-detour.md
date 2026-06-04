@@ -60,19 +60,21 @@ to a framebuffer the same way a 1977 game did.
 
 ## Try it now (interactive)
 
-The simulator below is the real easy6502 from skilldrick.github.io. Paste
-the snippet into the editor, click **Assemble** then **Run**:
+The simulator below is Nick Morgan's [easy6502](https://skilldrick.github.io/easy6502/),
+vendored into this site so it works offline and across iframes. Edit the
+code in the textarea, click **Assemble** then **Run** — coloured pixels
+should appear at the top-left of the 32×32 black canvas:
 
 <p><iframe
-  src="https://skilldrick.github.io/easy6502/#first-program"
-  width="100%" height="640" loading="lazy"
-  sandbox="allow-scripts allow-same-origin allow-popups"
+  src="vendor/easy6502/widget.html"
+  width="100%" height="720" loading="lazy"
+  sandbox="allow-scripts allow-same-origin"
   title="easy6502 interactive 6502 simulator"
-  style="border:1px solid var(--ui-border, #ccc); border-radius:6px;"></iframe></p>
+  style="border:1px solid var(--ui-border, #444); border-radius:6px; background:#1d1f21;"></iframe></p>
 
-If the iframe is blocked (some browsers refuse third-party frames), open
-[easy6502 in a new tab](https://skilldrick.github.io/easy6502/#first-program)
-instead.
+If you want the full tutorial environment with all the worked examples
+(Snake included), open it on the original site:
+[easy6502 on skilldrick.github.io](https://skilldrick.github.io/easy6502/#first-program).
 
 ## Mapping it back to x86-64
 
