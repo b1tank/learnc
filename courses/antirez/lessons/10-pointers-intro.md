@@ -105,6 +105,25 @@ int main(void) {
 8
 ```
 
+## Under the hood (asm)
+
+A pointer is *just an integer holding an address*; dereferencing it is one instruction. `gcc -O2 -masm=intel`:
+
+```asm
+load:                          ; int  load (int *p)        { return *p; }
+        endbr64
+        mov     eax, DWORD PTR [rdi]   ; read 4 bytes at address rdi
+        ret
+store:                         ; void store(int *p, int v) { *p = v;   }
+        endbr64
+        mov     DWORD PTR [rdi], esi   ; write esi (v) to address rdi (*p)
+        ret
+```
+
+The square brackets are "the memory at". `DWORD PTR` is just the assembler's hint that we're touching 4 bytes (because `int`). A pointer parameter arrives in `rdi`; "dereference" is the bracketed addressing mode. That's the whole concept.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Change `int *p = &x;` to `int *p = NULL;` and dereference it — what happens? (You're reading address 0; most OSes will kill the program.)
