@@ -74,6 +74,25 @@ The first four lines are reliable on every mainstream platform. `sizeof(long)` w
 
 The video reaches for `(unsigned long)sizeof(x)` with `%lu` to silence the compiler. Since C99 (1999) you can just write `%zu` and pass `sizeof` directly, which is what the runnable above does. New code should prefer `%zu`; you'll still see the cast-and-`%lu` idiom in older codebases that target pre-C99 compilers.
 
+## Under the hood (asm)
+
+Signedness is invisible in C source but very visible in the asm. `gcc -O2 -masm=intel` produces:
+
+```asm
+s:                             ; int s(signed char x)   { return x; }
+        endbr64
+        movsx   eax, dil       ; sign-extend 8 → 32 bits (high bit replicated)
+        ret
+u:                             ; int u(unsigned char x) { return x; }
+        endbr64
+        movzx   eax, dil       ; zero-extend 8 → 32 bits (high bits cleared)
+        ret
+```
+
+Same C, **different instruction**: `movsx` copies the sign bit upward so `(signed char)-1` stays `-1` as an `int`; `movzx` pads with zeros so `(unsigned char)0xFF` becomes `255`. This is the entire semantic difference between signed and unsigned at the silicon level — three letters in the opcode.
+
+[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
+
 ## Try it
 
 1. Change `%d` to `%u` for `INT_MIN` and re-run — the negative value reinterprets as a huge unsigned number. That's two's-complement reading the same bits two ways.
