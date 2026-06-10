@@ -477,6 +477,11 @@ function renderPageToc(prose) {
   }
   nav.appendChild(ul);
   setupScrollSpy(prose, nav);
+
+  // On mobile the page TOC is reachable through a header toggle; reveal it
+  // now that we know the lesson actually has sections.
+  var pageToggle = document.getElementById("page-toc-toggle");
+  if (pageToggle) pageToggle.hidden = false;
 }
 
 // Highlight the topmost heading scrolled into the upper part of the viewport.
@@ -512,8 +517,9 @@ function setupScrollSpy(prose, nav) {
   highlight();
 }
 
-// Left rail: the whole-course outline (every chapter + lesson) with the
-// current lesson highlighted, so you can jump anywhere in the course.
+// Left rail: the whole-course outline as a collapsible tree. Each chapter is
+// an expandable node (expanded by default); the chapter containing the current
+// lesson is highlighted and forced open. Every lesson is a link.
 function renderCourseToc(manifest) {
   var root = document.getElementById("course-toc");
   if (!root || !manifest || !manifest.chapters) return;
@@ -525,17 +531,33 @@ function renderCourseToc(manifest) {
   root.appendChild(title);
 
   manifest.chapters.forEach(function (ch) {
-    var hasSection = (ch.items || []).some(function (it) { return it.kind === "section"; });
-    if (!hasSection) return;
-    var chHead = document.createElement("div");
-    chHead.className = "course-toc-chapter";
-    chHead.textContent = ch.n + ". " + ch.title;
-    root.appendChild(chHead);
+    var sections = (ch.items || []).filter(function (it) { return it.kind === "section"; });
+    if (!sections.length) return;
+
+    var isCurrentChapter = sections.some(function (it) { return it.id === lessonId; });
+
+    var group = document.createElement("div");
+    group.className = "course-toc-group" + (isCurrentChapter ? " current-chapter" : "");
+
+    // Chapter row is a button so the whole row toggles the subtree and is
+    // keyboard-operable. Default expanded; nothing starts collapsed.
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "course-toc-chapter";
+    btn.setAttribute("aria-expanded", "true");
+    var caret = document.createElement("span");
+    caret.className = "course-toc-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "\u25be"; // ▾
+    var label = document.createElement("span");
+    label.className = "course-toc-chapter-label";
+    label.textContent = ch.n + ". " + ch.title;
+    btn.appendChild(caret);
+    btn.appendChild(label);
 
     var ul = document.createElement("ul");
     ul.className = "course-toc-list";
-    ch.items.forEach(function (item) {
-      if (item.kind !== "section") return;
+    sections.forEach(function (item) {
       var li = document.createElement("li");
       var a = document.createElement("a");
       a.href = lessonHref(item.id);
@@ -548,7 +570,16 @@ function renderCourseToc(manifest) {
       li.appendChild(a);
       ul.appendChild(li);
     });
-    root.appendChild(ul);
+
+    btn.addEventListener("click", function () {
+      var open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      group.classList.toggle("collapsed", open);
+    });
+
+    group.appendChild(btn);
+    group.appendChild(ul);
+    root.appendChild(group);
   });
 
   // Bring the current lesson into view within the sidebar without scrolling
@@ -559,6 +590,51 @@ function renderCourseToc(manifest) {
     var eRect = cur.getBoundingClientRect();
     root.scrollTop += (eRect.top - cRect.top) - root.clientHeight / 2 + eRect.height / 2;
   }
+}
+
+// On narrow screens the two sidebars collapse into slide-in drawers opened
+// from header toggles. One backdrop serves both; Escape, a backdrop tap, or
+// following any link closes whatever is open. Idempotent - safe to call once.
+function setupTocDrawers() {
+  var backdrop = document.getElementById("toc-backdrop");
+  var courseToggle = document.getElementById("toc-toggle");
+  var pageToggle = document.getElementById("page-toc-toggle");
+  var courseToc = document.getElementById("course-toc");
+  var pageToc = document.getElementById("page-toc");
+  if (!backdrop) return;
+
+  function close() {
+    document.body.classList.remove("toc-open", "page-toc-open");
+    backdrop.hidden = true;
+    if (courseToggle) courseToggle.setAttribute("aria-expanded", "false");
+    if (pageToggle) pageToggle.setAttribute("aria-expanded", "false");
+  }
+  function open(which) {
+    var isCourse = which === "course";
+    document.body.classList.toggle("toc-open", isCourse);
+    document.body.classList.toggle("page-toc-open", !isCourse);
+    backdrop.hidden = false;
+    if (courseToggle) courseToggle.setAttribute("aria-expanded", String(isCourse));
+    if (pageToggle) pageToggle.setAttribute("aria-expanded", String(!isCourse));
+  }
+
+  if (courseToggle) courseToggle.addEventListener("click", function () {
+    if (document.body.classList.contains("toc-open")) close(); else open("course");
+  });
+  if (pageToggle) pageToggle.addEventListener("click", function () {
+    if (document.body.classList.contains("page-toc-open")) close(); else open("page");
+  });
+  backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") close();
+  });
+  // Tapping any link inside a drawer navigates and should dismiss it.
+  if (courseToc) courseToc.addEventListener("click", function (e) {
+    if (e.target.closest("a")) close();
+  });
+  if (pageToc) pageToc.addEventListener("click", function (e) {
+    if (e.target.closest("a")) close();
+  });
 }
 
 var editorAPI = null;
@@ -936,6 +1012,7 @@ async function loadLesson() {
 
   await renderCrumbs(manifestPromise, meta);
   getManifest().then(function (m) { if (m) renderCourseToc(m); });
+  setupTocDrawers();
   scrollToHash();
 }
 

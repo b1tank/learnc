@@ -120,18 +120,40 @@ body.lesson-page { max-width: 84rem; }
   margin-bottom: 0.5rem;
 }
 
-/* Left: whole-course outline */
+/* Left: whole-course outline as a collapsible tree */
+.course-toc-group { margin-bottom: 0.15rem; }
 .course-toc-chapter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0.55rem 0 0.2rem;
+  padding: 0.1rem 0.2rem;
+  font: inherit;
   font-weight: bold;
-  margin: 0.8rem 0 0.25rem;
+  text-align: left;
   color: var(--fg);
+  background: none;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
 }
-.course-toc-chapter:first-of-type { margin-top: 0; }
+.course-toc-group:first-of-type .course-toc-chapter { margin-top: 0; }
+.course-toc-chapter:hover { background: var(--hl); }
+.course-toc-caret {
+  display: inline-block;
+  font-size: 0.7em;
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+.course-toc-group.collapsed .course-toc-caret { transform: rotate(-90deg); }
+.course-toc-group.current-chapter > .course-toc-chapter { color: var(--accent); }
 .course-toc-list { list-style: none; margin: 0 0 0.3rem; padding: 0; }
+.course-toc-group.collapsed .course-toc-list { display: none; }
 .course-toc-list li { margin: 0; }
 .course-toc-list a {
   display: block;
-  padding: 0.12rem 0.4rem;
+  padding: 0.12rem 0.4rem 0.12rem 0.95rem;
   color: var(--muted);
   text-decoration: none;
   border-left: 2px solid transparent;
@@ -163,16 +185,77 @@ body.lesson-page { max-width: 84rem; }
   font-weight: bold;
 }
 
+/* Header toggles that summon the sidebar drawers - hidden on desktop, shown
+   at each breakpoint as its sidebar leaves the grid. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  color: var(--fg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.nav-toggle:hover { background: var(--hl); }
+#toc-toggle { margin-right: 0.1rem; }
+
+/* Backdrop dims the page behind an open drawer. */
+.toc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.4);
+}
+
 /* Drop the right TOC first (it's the most optional), then the left one,
-   collapsing back to the original single readable column on narrow screens. */
+   collapsing back to the original single readable column on narrow screens.
+   When a sidebar leaves the grid it can still be summoned as a drawer. */
 @media (max-width: 1180px) {
   .lesson-layout { grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; }
-  .page-toc { display: none; }
+  .page-toc {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 50;
+    width: 16rem;
+    max-width: 80vw;
+    height: 100vh;
+    max-height: none;
+    margin: 0;
+    padding: 4rem 1rem 1rem;
+    background: var(--bg);
+    border-left: 1px solid var(--panel-border);
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.18s ease;
+  }
+  body.page-toc-open .page-toc { transform: translateX(0); }
+  #page-toc-toggle { display: inline-flex; }
 }
 @media (max-width: 920px) {
   body.lesson-page { max-width: 74ch; }
   .lesson-layout { display: block; }
-  .course-toc { display: none; }
+  .course-toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: 18rem;
+    max-width: 84vw;
+    height: 100vh;
+    max-height: none;
+    margin: 0;
+    padding: 4rem 1rem 1rem;
+    background: var(--bg);
+    border-right: 1px solid var(--panel-border);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.18);
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+  }
+  body.toc-open .course-toc { transform: translateX(0); }
+  #toc-toggle { display: inline-flex; }
 }
 
 h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
