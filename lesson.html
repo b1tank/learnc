@@ -35,9 +35,9 @@
   bin/stamp rewrites ?v=PLACEHOLDER to the current commit SHA on every build.
 -->
 <script>window.coi = { coepCredentialless: function () { return false; } };</script>
-<script src="coi-serviceworker.js?v=1ce65dc1"></script>
+<script src="coi-serviceworker.js?v=1cd82f70"></script>
 <!-- /INJECT -->
-<link rel="stylesheet" href="style.css?v=1ce65dc1">
+<link rel="stylesheet" href="style.css?v=1cd82f70">
 <!-- Open TLS to esm.sh early so the CodeMirror submodule graph can start
      downloading as soon as the importmap is parsed. marked is self-hosted
      under vendor/, so no third-party preconnect is needed for it. -->
@@ -50,10 +50,10 @@
      the browser try to resolve those specifiers as URLs and fail. We rely
      on the static import "./editor.js" in lesson.js to pull it in once the
      importmap is parsed. -->
-<link rel="modulepreload" href="lesson.js?v=1ce65dc1">
-<link rel="modulepreload" href="runner.js?v=1ce65dc1">
-<link rel="modulepreload" href="theme.js?v=1ce65dc1">
-<link rel="modulepreload" href="shortcuts.js?v=1ce65dc1">
+<link rel="modulepreload" href="lesson.js?v=1cd82f70">
+<link rel="modulepreload" href="runner.js?v=1cd82f70">
+<link rel="modulepreload" href="theme.js?v=1cd82f70">
+<link rel="modulepreload" href="shortcuts.js?v=1cd82f70">
 <!-- `defer` lets the HTML parser finish before fetching/executing marked, so
      the title and prose container are in the DOM by the time module scripts
      start. Modules are implicitly deferred and run after this script, which
@@ -240,10 +240,10 @@
 
 <!-- INJECT:partial:footer -->
 <footer class="site-footer">
-  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-04T06:33Z">2026-06-04 06:33 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/1ce65dc1" rel="noopener">1ce65dc1</a></span><!-- BUILD-STAMP-END --></p>
+  <p>learnc &middot; <a href="humans.txt">credits</a> &middot; MIT &middot; <!-- BUILD-STAMP-START --><span class="build-stamp">updated <time datetime="2026-06-10T07:41Z">2026-06-10 07:41 UTC</time> &middot; <a href="https://github.com/b1tank/learnc/commit/1cd82f70" rel="noopener">1cd82f70</a></span><!-- BUILD-STAMP-END --></p>
 </footer>
 <!-- /INJECT -->
 
-<script type="module" src="lesson.js?v=1ce65dc1"></script>
+<script type="module" src="lesson.js?v=1cd82f70"></script>
 </body>
 </html>
