@@ -17,26 +17,52 @@ source:
 
 Every `for` loop is just a `while` with extra slots for *init*, *test*, and *step* - once you see the rewrite, you can read any C loop. `switch` is C's multi-way branch on an integer value, with two sharp edges to remember: cases **fall through** unless you write `break`, and you can't declare a variable directly under a `case` label without opening a block.
 
-## Walkthrough
-
-### `for` is sugar for `while` `[09:36 → 10:58]`
+## for is sugar for while `[09:36 → 10:58]`
 
 The C `for (init; test; step) body` rewrites mechanically into `init; while (test) { body; step; }`. Salvatore demonstrates by deleting one piece of the `for` header at a time: drop the `init` and you initialise `i` above the loop; drop the `test` and you need an inner `break` to escape; drop the `step` and you advance `i` yourself. Strip all three and you're left with `for (;;) { … }` - the canonical C infinite loop, equivalent to `while (1)`.
 
-### `break`, and where the loop variable lives `[13:25 → 14:44]`
+The two forms run the same way. Here is a count to 4 written both as a `while` and as a `for`:
+
+```c:run
+#include <stdio.h>
+
+int main(void) {
+    /* while form */
+    int i = 0;
+    while (i < 5) {
+        printf("%d ", i);
+        i++;
+    }
+    printf("\n");
+
+    /* for form -- identical behaviour */
+    for (int j = 0; j < 5; j++) {
+        printf("%d ", j);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+```output
+0 1 2 3 4 
+0 1 2 3 4 
+```
+
+The `for` just hoists the init and step into the header so the body stays focused on the work.
+
+## break, and where the loop variable lives `[13:25 → 14:44]`
 
 C99 lets you declare the counter inside the header: `for (int i = 0; i < 10; i++)`. Cleaner, but `i` then **doesn't exist after the loop** - print it on the next line and you get a compile error. When you need to inspect the index *after* the loop (e.g. to tell whether a search hit or ran off the end of the array), declare `i` outside.
 
-### `switch` is a jump table, not a chain of `if`s `[20:35 → 24:49]`
+## switch is a jump table, not a chain of ifs `[20:35 → 24:49]`
 
 `switch (expr)` dispatches on an integer (or `char`, or `enum`). Each `case LABEL:` is literally a label - like a `goto` target - and the compiler may lower the whole construct to a *jump table* for speed. Two consequences:
 
 - **Fall-through is the default.** Without `break`, execution keeps running into the next `case`. Sometimes you want that (grouping cases); usually it's a bug.
 - **You can't declare a variable straight under `case`.** Wrap the body in `{ … }` first - blocks can appear anywhere in C.
 
-`default:` runs when no `case` matches; it's the `else` of the `switch`.
-
-## A tiny `switch` over a digit
+`default:` runs when no `case` matches; it's the `else` of the `switch`. Here is a small `switch` that exercises both kinds of fall-through:
 
 ```c:run
 #include <stdio.h>
@@ -71,50 +97,61 @@ it's a 7
 
 Two things to notice. `case 1:` and `case 2:` fall through to `case 3:` *on purpose* - that's the idiomatic way to group values. Then `case 5:` falls through to `case 7:` *by accident*, because the `break` is missing - exactly the bug Salvatore demonstrates in the video. Change `n` to `2` to see the grouped path, or to `10` to hit `default`.
 
-## The same loop, written both ways
+## for and while compile to the same branches
 
-```c:run
-#include <stdio.h>
+The "`for` is a masked `while`" claim is checkable: compile two functions that sum `0..n-1`, one written as a `while` and one as a `for`, and diff the assembly. At `-O2`:
 
-int main(void) {
-    /* while form */
-    int i = 0;
-    while (i < 5) {
-        printf("%d ", i);
-        i++;
-    }
-    printf("\n");
-
-    /* for form -- identical behaviour */
-    for (int j = 0; j < 5; j++) {
-        printf("%d ", j);
-    }
-    printf("\n");
-    return 0;
-}
+```
+gcc -O2 -S -masm=intel -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE forwhile.c -o fw.s
 ```
 
-```output
-0 1 2 3 4 
-0 1 2 3 4 
+```asm
+with_while:                           with_for:
+        endbr64                               endbr64
+        test    edi, edi                      test    edi, edi
+        jle     .L4                           jle     .L10
+        xor     eax, eax                      xor     eax, eax
+        xor     r8d, r8d                      xor     r8d, r8d
+.L3:                                  .L9:
+        add     r8d, eax                      add     r8d, eax
+        add     eax, 1                        add     eax, 1
+        cmp     edi, eax                      cmp     edi, eax
+        jne     .L3                           jne     .L9
+        mov     eax, r8d                      mov     eax, r8d
+        ret                                   ret
 ```
 
-The two loops emit the same bytes. The `for` just hoists the init and step into the header so the body stays focused on the work.
+The two functions are instruction-for-instruction identical; only the auto-generated label numbers differ (`.L3` vs `.L9`). The compiler does the `for`-to-`while` rewrite before it ever reaches code generation, so by the time machine code exists there is no trace of which keyword you typed.
 
-## Try it
+## A switch becomes a jump table
 
-1. In the `switch`, add `break;` after the `case 5:` body and re-run. Output collapses to one line.
-2. In the loop demo, replace `int j = 0` with `j = 0` and declare `int j;` above - the program still works, and `j` is now visible after the `for`. Print it.
-3. Rewrite the `for` loop as `for (;;) { if (j >= 5) break; printf("%d ", j); j++; }` and confirm the output is unchanged.
+When the cases are small and dense, the compiler doesn't emit a chain of comparisons - it builds a *jump table*: an array of code addresses it indexes with the switch value. Compile a five-way dispatch at `-O2`:
 
-## Cross-reference to K&R
+```
+gcc -O2 -S -masm=intel -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE jt.c -o jt.s
+```
 
-See [K&R § 3.4 - Switch](../../kr/lessons/03-04-switch.md) and [K&R § 3.5 - Loops While and For](../../kr/lessons/03-05-loops-while-and-for.md). K&R presents the constructs formally and uses a `getchar`-driven digit counter as the canonical `switch` example. Salvatore's contribution is the *intuition*: `for` is mechanically rewritable into `while`, and `switch` is a labelled jump rather than a chain of comparisons.
+```asm
+dispatch:
+        endbr64
+        cmp     edi, 4                ; out of [0,4] range?
+        ja      .L1                   ; if so, skip the whole switch
+        lea     rdx, .L4[rip]         ; rdx = base of the jump table
+        mov     edi, edi
+        movsx   rax, DWORD PTR [rdx+rdi*4] ; load table[x]
+        add     rax, rdx              ; turn offset into an address
+        notrack jmp     rax           ; one indirect jump to the case
+```
 
-## Go deeper
+There is no `cmp x,0 / cmp x,1 / cmp x,2 ...` ladder: a single bounds check, one table lookup, one indirect `jmp`. The table itself sits in read-only data, holding a relative offset per case:
 
-- Duff's device - the most notorious legal use of `switch` fall-through: <https://en.wikipedia.org/wiki/Duff%27s_device>.
-- Compiler Explorer (<https://godbolt.org>): paste a `switch` with dense integer cases and watch GCC emit a jump table; make the cases sparse and watch it fall back to comparisons.
-- GCC's `-Wimplicit-fallthrough` warning, and the `[[fallthrough]]` attribute (C23) for marking intentional fall-through.
+```asm
+.L4:
+        .long   .L8-.L4               ; case 0 -> a()
+        .long   .L7-.L4               ; case 1 -> b()
+        .long   .L6-.L4               ; case 2 -> c()
+        .long   .L5-.L4               ; case 3 -> d()
+        .long   .L3-.L4               ; case 4 -> e()
+```
 
-*Click **next →** for Conway's Game of Life - our first non-trivial program built from loops and conditionals.*
+Dispatch is now O(1) regardless of how many cases there are - that's the speed advantage over a chain of `if`s. Make the case values sparse (say `0`, `100`, `10000`) and the compiler gives up on the table and falls back to comparisons, because a table indexed by value would be mostly empty.
