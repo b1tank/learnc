@@ -113,12 +113,12 @@ author will revise after watching each video; do NOT over-author.
 Two-part sprint (YOLO). Part A is navigation/UX; Part B is the big content pass.
 
 ## Part A - 3-column docs nav (FastAPI/MkDocs style)
-- [ ] Left TOC: collapsible **tree** (chapters expand/collapse, default expanded,
+- [x] Left TOC: collapsible **tree** (chapters expand/collapse, default expanded,
       current chapter auto-expanded + highlighted). Every lesson link verified.
-- [ ] Mobile: sidebars become slide-in **drawers** with a hamburger toggle +
+- [x] Mobile: sidebars become slide-in **drawers** with a hamburger toggle +
       backdrop (course TOC from left, on-this-page from right). Close on
       link-click / backdrop / Escape.
-- [ ] Browser-verify desktop tree + mobile drawers + link targets.
+- [x] Browser-verify desktop tree + mobile drawers + link targets.
 
 ## Part B - restructure every antirez lesson to the lesson-1 gold standard
 Lesson 1 is the reference: flat `##` sections (no `## Walkthrough` wrapper, no
@@ -137,7 +137,25 @@ Per lesson:
 - `python3 playground/verify.py <lesson>` must pass before commit.
 - One atomic commit per lesson: `docs(antirez/<id>): restructure to ground-up style`.
 
-- [ ] 02-37 (minus 20 video-only) restructured + verified
-- [ ] Build check (bin/stamp) + push
+- [x] 02-37 (minus 20 video-only) restructured + verified
+- [x] Build check (bin/stamp) + push
 
 ## Hiccups & Notes (phase 4)
+- Calibration subagent (03/04) initially kept `Cross-reference to K&R` /
+  `Go deeper` / `Modern note`; user wanted those gone everywhere. Fixed and
+  added an explicit DELETE list to every later subagent spec.
+- Existing `Under the hood (asm)` sections were hand-waved (fabricated asm).
+  Replaced with real compiled output via
+  `gcc -O2 -S -masm=intel -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE`
+  (the `-U_FORTIFY_SOURCE` keeps `printf` instead of `__printf_chk`).
+- `_template.md` shows a verify.py `[MISMATCH]` by design (placeholder); all 33
+  real video lessons pass clean.
+- Project-walkthrough lessons (Forth, ZX Spectrum, 3D) keep the full external
+  program as non-runnable ```c snippets; only self-contained author deep-dives
+  use ```c:run with verified output.
+- `00-asm-primer` and `36a-6502-detour` are author-written synthetic detours
+  (no video). Left their curated `Go deeper` / `Try it` link lists intact since
+  those are hand-picked references, not the generic boilerplate stripped from
+  the video lessons; only fixed stale `Under the hood (asm)` cross-references.
+- All work pushed to origin/main, site version-stamped (`1cd82f70`) for
+  cache-busting; GitHub Actions handles the Docker build + deploy.
