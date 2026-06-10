@@ -105,3 +105,39 @@ author will revise after watching each video; do NOT over-author.
   (the placeholder reminds authors to replace the body).
 - Each lesson landed as a single atomic commit (`docs(antirez/<id>):
   first-pass draft`) and was pushed to `origin/main` immediately.
+
+---
+
+# Phase 4 - Navigation polish + ground-up lesson restructure
+
+Two-part sprint (YOLO). Part A is navigation/UX; Part B is the big content pass.
+
+## Part A - 3-column docs nav (FastAPI/MkDocs style)
+- [ ] Left TOC: collapsible **tree** (chapters expand/collapse, default expanded,
+      current chapter auto-expanded + highlighted). Every lesson link verified.
+- [ ] Mobile: sidebars become slide-in **drawers** with a hamburger toggle +
+      backdrop (course TOC from left, on-this-page from right). Close on
+      link-click / backdrop / Escape.
+- [ ] Browser-verify desktop tree + mobile drawers + link targets.
+
+## Part B - restructure every antirez lesson to the lesson-1 gold standard
+Lesson 1 is the reference: flat `##` sections (no `## Walkthrough` wrapper, no
+boilerplate `Try it` / `Under the hood (asm)` / `Demo` headings), each section a
+descriptive title with an optional `[MM:SS]` video timestamp suffix. Where the
+video lacks the depth I want, **add my own deep-dive section** (no timestamp
+suffix - that signals "author addition", like the assembly step-by-step in
+lesson 1). Grab **real command output** by compiling in `playground/` and pasting
+verified `output` fences.
+
+Per lesson:
+- Flatten `## Walkthrough` + `###` into flat `##` sections.
+- Drop boilerplate section headers; fold their content into prose sections.
+- Add author deep-dive section(s) where needed (no timestamp).
+- Replace hand-waved output with real, verified `output` fences.
+- `python3 playground/verify.py <lesson>` must pass before commit.
+- One atomic commit per lesson: `docs(antirez/<id>): restructure to ground-up style`.
+
+- [ ] 02-37 (minus 20 video-only) restructured + verified
+- [ ] Build check (bin/stamp) + push
+
+## Hiccups & Notes (phase 4)
