@@ -17,17 +17,15 @@ source:
 
 A **system call** is the request a user-space program makes to the kernel for a service it can't perform itself - opening a file, reading bytes off a disk, writing to a socket. Libc's `fopen`/`fread`/`fwrite`/`fclose` are thin wrappers over the POSIX system calls `open`, `read`, `write`, `close`. At the lower layer you trade buffered `FILE *` streams for raw integer file descriptors, short counts, and `errno`.
 
-## Walkthrough
-
-### Why POSIX exists `[01:34 → 03:21]`
+## Why POSIX exists `[01:34 → 03:21]`
 
 Solaris, macOS, and Linux are all Unixes - three vendors, three kernels, but one **standard system-call surface** thanks to POSIX. That standardisation is why a large program like Redis is mostly portable across them: the architecture-specific code is tiny. Non-portable APIs (audio, advanced multiplexing like `epoll`/`kqueue`) live outside POSIX.
 
-### Why a `FILE *` lives in user space and a file doesn't `[04:44 → 07:11]`
+## Why a `FILE *` lives in user space and a file doesn't `[04:44 → 07:11]`
 
 A C process is sealed inside its own address space - a Turing machine that only reads and writes its own memory. Files live *outside* that capsule, on devices the process can't touch. The kernel mediates: when you ask it to `open` a file, it allocates the bookkeeping in kernel space and hands back an **integer** - the *file descriptor* - that both sides then use to refer to that file. The integer is the entire interface between the two worlds.
 
-### `open()` and the flag word `[08:48 → 11:42]`
+## `open()` and the flag word `[08:48 → 11:42]`
 
 `open()` lives in `<fcntl.h>` and returns an `int`:
 
@@ -35,7 +33,7 @@ A C process is sealed inside its own address space - a Turing machine that only 
 - The second is a flag word: exactly one of `O_RDONLY`, `O_WRONLY`, `O_RDWR`, OR-ed with optional modifiers like `O_CREAT`, `O_APPEND`, `O_TRUNC`. (`O_CREAT` requires a third argument: the new file's permission bits.)
 - It returns the new descriptor, or **-1** on error. POSIX uses -1 as the universal failure sentinel for integer-returning calls - no real descriptor is ever negative.
 
-### `read()`, `write()`, and short counts `[17:12 → 19:03]`
+## `read()`, `write()`, and short counts `[17:12 → 19:03]`
 
 `read(fd, buf, n)` returns `ssize_t` - signed, because **-1 means error**. The other return values:
 
@@ -44,7 +42,7 @@ A C process is sealed inside its own address space - a Turing machine that only 
 
 `write(fd, buf, n)` has the same shape and the same short-count rule.
 
-### `errno` and `perror()` `[14:37 → 16:32]`
+## `errno` and `perror()` `[14:37 → 16:32]`
 
 When a system call fails it sets the thread-local global `errno` (declared in `<errno.h>`) to a code that names the failure: `ENOENT` (no such file), `EACCES` (permission denied), and so on. `perror("opening file")` from `<stdio.h>` prints your prefix, a colon, and the human-readable translation of `errno` - the cheap, idiomatic way to report I/O errors. `close()` lives in `<unistd.h>` rather than `<fcntl.h>` because closing applies to many things that aren't files (sockets, pipes).
 
@@ -63,11 +61,11 @@ Unable to open file: No such file or directory
 
 The ERRORS section of `man 2 open` lists `ENOENT` - value `2` - for a path that doesn't exist; when the file *is* there, `open` succeeds and `errno` is left at 0.
 
-### Bypassing libc to write to stdout
+## Bypassing libc to write to stdout `[20:27 → 21:06]`
 
 The three fixed descriptors are 0, 1, 2 - stdin, stdout, stderr. So you can produce output without `printf` at all:
 
-```c:run write(2) to stdout
+```c:run write() to stdout
 #include <unistd.h>
 
 int main(void) {
@@ -82,48 +80,83 @@ hi
 
 `write()` takes a raw byte count: no format string, no buffering, no `\0`-terminator convention - it sends exactly the bytes you point at. `STDOUT_FILENO` is just the constant `1` defined in `<unistd.h>`.
 
-## Modern note
+## Calling the kernel directly
 
-For one-file-at-a-time work, `read`/`write` are still exactly the right primitives. When you scale to thousands of concurrent connections, the loop "block in `read`, do something, block in `write`" becomes the bottleneck - which is what `select`, `poll`, `epoll` (Linux), `kqueue` (BSD/macOS), and finally `io_uring` (Linux 5.1+) exist to solve, by letting one thread drive many descriptors or submit batched I/O without trapping into the kernel for every operation.
+`write()` is still a libc function - a thin wrapper. You can drop one layer lower and ask libc to fire an arbitrary syscall by number with `syscall()` from `<sys/syscall.h>`. Here the same bytes reach stdout two ways: through the raw syscall, then through `printf`:
 
-## Under the hood (asm)
+```c:run raw syscall vs printf
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <stdio.h>
 
-The `write(1, "hi\n", 3)` runnable above compiles to:
+int main(void) {
+    syscall(SYS_write, 1, "raw syscall\n", 12);   /* straight to the kernel */
+    printf("via printf\n");                       /* libc buffers, then write() */
+    return 0;
+}
+```
+
+```output
+raw syscall
+via printf
+```
+
+`SYS_write` is just the number `1` on x86-64 Linux. On this machine a syscall is literally one CPU instruction. Compile a raw-syscall program statically and disassemble libc's `syscall` helper:
+
+```
+gcc -O2 -static rawmin.c -o rawmin
+objdump -d rawmin
+```
 
 ```asm
-.LC0:
-        .string "hi\n"
-main:
+<syscall>:
         endbr64
-        sub     rsp, 8
-        mov     edx, 3                  ; arg 3: count
-        mov     esi, OFFSET FLAT:.LC0   ; arg 2: buffer
-        mov     edi, 1                  ; arg 1: fd = stdout
-        call    write                   ; libc wrapper - NOT the syscall yet
-        xor     eax, eax
-        add     rsp, 8
+        mov    %rdi,%rax      ; syscall number (SYS_write = 1) -> rax
+        mov    %rsi,%rdi       ; shuffle the rest into the syscall ABI registers
+        mov    %rdx,%rsi
+        mov    %rcx,%rdx
+        mov    %r8,%r10
+        mov    %r9,%r8
+        mov    0x8(%rsp),%r9
+        syscall                ; trap into the kernel
+        ...
         ret
 ```
 
-Notice we `call write` like any C function - registers `edi`/`esi`/`edx` carry the args per the SysV ABI. Inside libc, `write` re-packs them into the **syscall ABI** (`rax = 1` for `__NR_write`, then `syscall`) - slightly different register set, hidden one layer deeper. `strace ./a.out` shows the syscall; `objdump -d a.out` shows the `call`. The [asm primer](00-asm-primer.md) has both register tables side-by-side.
+That is the whole user/kernel boundary in one picture: the number goes in `rax`, the arguments go in `rdi`/`rsi`/`rdx`/`r10`/`r8`/`r9`, and the single `syscall` instruction switches the CPU into kernel mode to run the handler for number 1. Everything `fopen`/`fread`/`printf` do eventually funnels down to a `syscall` instruction like this one.
 
-[Open in **Compiler Explorer** →](https://godbolt.org/)
+## What strace reveals
 
-## Try it
+`strace` prints every system call a process makes. Run it on the tiny `write()` program and you see far more than one call - the dynamic linker opens and maps libc before `main` even starts:
 
-1. Compile a tiny program and run `strace ./a.out` - every system call your binary makes scrolls past, including the dynamic linker's `openat` calls before `main` even starts.
-2. Replace `STDOUT_FILENO` with `STDERR_FILENO` (`2`) and pipe stdout to `/dev/null`: `./a.out >/dev/null`. The text still appears, because stderr isn't redirected.
-3. `man 2 open` - section **2** of the manual is the system-call reference. Read the ERRORS section at the bottom: it lists every `errno` value that call can produce.
+```
+gcc hi.c -o hi
+strace -c ./hi
+```
 
-## Cross-reference to K&R
+```output
+hi
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+  0.00    0.000000           0         1           read
+  0.00    0.000000           0         1           write
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         8           mmap
+  0.00    0.000000           0         4           mprotect
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         4           pread64
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+  0.00    0.000000           0         2         1 arch_prctl
+  0.00    0.000000           0         1           set_tid_address
+  0.00    0.000000           0         2           openat
+  0.00    0.000000           0         2           newfstatat
+  0.00    0.000000           0         1           set_robust_list
+  0.00    0.000000           0         1           prlimit64
+  0.00    0.000000           0         1           rseq
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000000           0        34         2 total
+```
 
-[K&R § 8.2 - Low-Level I/O Read and Write](../../kr/lessons/08-02-low-level-io-read-and-write.md) covers the same `read`/`write`/descriptor model in K&R's own words - a useful side-by-side, written 40 years before this episode but unchanged in substance.
-
-## Go deeper
-
-- `man 2 read`, `man 2 write`, `man 2 open` - the canonical references. Prefer Linux man pages to macOS's; they're more thorough.
-- `man 2 syscalls` - every Linux system call, one page.
-- *The Open Group POSIX specification* (<https://pubs.opengroup.org/onlinepubs/9699919799/>) - the standard itself, free online.
-- Tanenbaum, *Modern Operating Systems* - chapter 1 explains the user/kernel divide that makes system calls necessary in the first place.
-
-*Click **next →** to see the buffering that libc adds on top of these primitives.*
+Your code makes exactly **one** `write`. The other 33 calls are startup machinery: `execve` launched the binary, `openat`/`read`/`mmap`/`mprotect` loaded and protected libc, and `brk`/`arch_prctl` set up the heap and thread state. Tracing a program once is the fastest way to see that "a process" is a long conversation with the kernel, not an isolated computation.
