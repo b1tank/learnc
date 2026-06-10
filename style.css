@@ -84,10 +84,121 @@ body {
   padding: 0 1rem 4rem;
 }
 
+/* Lesson pages use a wider canvas so the course TOC (left) and on-this-page
+   TOC (right) can flank the readable centre column, FastAPI/MkDocs style.
+   The body cap is lifted; the centre column keeps its own readable width. */
+body.lesson-page { max-width: 84rem; }
+.lesson-layout {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr) 14rem;
+  gap: 2.5rem;
+  align-items: start;
+}
+.lesson-layout > #main { min-width: 0; }
+
+/* Both sidebars stick alongside the scrolling article and scroll internally
+   when their own content overflows the viewport. */
+.course-toc,
+.page-toc {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.course-toc { border-right: 1px solid var(--panel-border); padding-right: 0.6rem; }
+.page-toc { border-left: 1px solid var(--panel-border); padding-left: 0.8rem; }
+
+.toc-title {
+  font-weight: bold;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Left: whole-course outline */
+.course-toc-chapter {
+  font-weight: bold;
+  margin: 0.8rem 0 0.25rem;
+  color: var(--fg);
+}
+.course-toc-chapter:first-of-type { margin-top: 0; }
+.course-toc-list { list-style: none; margin: 0 0 0.3rem; padding: 0; }
+.course-toc-list li { margin: 0; }
+.course-toc-list a {
+  display: block;
+  padding: 0.12rem 0.4rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 2px 2px 0;
+}
+.course-toc-list a:hover { background: var(--hl); color: var(--fg); }
+.course-toc-list a.current {
+  color: var(--fg);
+  font-weight: bold;
+  border-left-color: var(--accent);
+  background: var(--panel-bg);
+}
+
+/* Right: on-this-page anchors */
+.page-toc-list { list-style: none; margin: 0; padding: 0; }
+.page-toc-list li { margin: 0; }
+.page-toc-list a {
+  display: block;
+  padding: 0.12rem 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid var(--panel-border);
+}
+.page-toc-list .page-toc-h3 a { padding-left: 1.2rem; font-size: 0.95em; }
+.page-toc-list a:hover { color: var(--fg); background: var(--hl); }
+.page-toc-list a.active {
+  color: var(--fg);
+  border-left-color: var(--accent);
+  font-weight: bold;
+}
+
+/* Drop the right TOC first (it's the most optional), then the left one,
+   collapsing back to the original single readable column on narrow screens. */
+@media (max-width: 1180px) {
+  .lesson-layout { grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; }
+  .page-toc { display: none; }
+}
+@media (max-width: 920px) {
+  body.lesson-page { max-width: 74ch; }
+  .lesson-layout { display: block; }
+  .course-toc { display: none; }
+}
+
 h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
 h2 { font-size: 1.25rem; margin: 1.8rem 0 0.4rem; }
 h3 { font-size: 1.05rem; margin: 1.4rem 0 0.3rem; }
 h1, h2, h3 { font-weight: bold; }
+
+/* Canonical MkDocs/Material-style permalinks (added by lesson.js
+   addHeadingAnchors): a small `#` at the end of each heading that fades in on
+   hover. Only the symbol is clickable. scroll-margin keeps a deep-linked
+   heading from hiding under the top of the viewport. */
+h2[id], h3[id], h4[id] { scroll-margin-top: 1rem; }
+.heading-anchor {
+  margin-left: 0.5rem;
+  color: var(--link);
+  text-decoration: none;
+  font-weight: normal;
+  opacity: 0;
+  transition: opacity 0.1s ease-in;
+}
+h2:hover .heading-anchor,
+h3:hover .heading-anchor,
+h4:hover .heading-anchor,
+.heading-anchor:focus { opacity: 0.5; }
+.heading-anchor:hover { opacity: 1; background: none; text-decoration: underline; }
+@media (hover: none) { .heading-anchor { opacity: 0.35; } }
 
 p { margin: 0.6rem 0; }
 

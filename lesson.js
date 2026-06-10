@@ -370,6 +370,197 @@ function addCopyButtons(root) {
   }
 }
 
+// Give each heading a stable slug `id` and a clickable anchor link, so
+// sections are deep-linkable (lesson.html?id=...#reading-the-manual). marked
+// runs with headerIds disabled (it would otherwise mangle our backtick
+// timestamps), so we do it here where we control the slug rules.
+function addHeadingAnchors(root) {
+  if (!root) return;
+  var used = Object.create(null);
+  var heads = root.querySelectorAll("h2, h3, h4");
+  for (var i = 0; i < heads.length; i++) {
+    var h = heads[i];
+    if (h.querySelector(".heading-anchor")) continue; // idempotent
+    // Build the slug from the heading's plain text only, ignoring inline
+    // <code> children - those hold the `[mm:ss]` timestamp tags we don't
+    // want in the URL fragment.
+    var slugText = "";
+    for (var c = 0; c < h.childNodes.length; c++) {
+      var node = h.childNodes[c];
+      if (node.nodeType === 3) slugText += node.nodeValue;        // text node
+      else if (node.nodeName !== "CODE") slugText += node.textContent || "";
+    }
+    var slug = slugify(slugText);
+    if (!slug) slug = "section";
+    // De-duplicate collisions: foo, foo-1, foo-2, ...
+    if (used[slug]) {
+      var n = used[slug]++;
+      slug = slug + "-" + n;
+    } else {
+      used[slug] = 1;
+    }
+    h.id = slug;
+    // Canonical MkDocs/Material-style permalink: a small `#` at the END of
+    // the heading that fades in on hover. Only the symbol is the link; the
+    // heading text stays plain.
+    var a = document.createElement("a");
+    a.className = "heading-anchor";
+    a.href = "#" + slug;
+    a.setAttribute("aria-label", "Permalink to this section");
+    a.textContent = "#";
+    h.appendChild(a);
+  }
+}
+
+// Slugify heading text into a URL fragment: lowercase, drop punctuation,
+// collapse whitespace to hyphens.
+function slugify(text) {
+  return String(text)
+    .replace(/[\u2192]/g, " ")          // arrows
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")        // non-alphanumerics -> hyphen
+    .replace(/^-+|-+$/g, "");            // trim leading/trailing hyphens
+}
+
+// After prose is in the DOM, honour any #fragment in the URL by scrolling
+// the matching heading into view (the browser won't do this itself because
+// the element didn't exist at initial load).
+function scrollToHash() {
+  if (!location.hash) return;
+  var id = decodeURIComponent(location.hash.slice(1));
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) return;
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView();
+}
+
+// Plain text of a heading, excluding the trailing `#` permalink and the
+// inline `[mm:ss]` timestamp <code> tag - used as the TOC label.
+function headingText(h) {
+  var s = "";
+  for (var i = 0; i < h.childNodes.length; i++) {
+    var node = h.childNodes[i];
+    if (node.nodeType === 3) { s += node.nodeValue; continue; }
+    if (node.nodeName === "CODE") continue;
+    if (node.classList && node.classList.contains("heading-anchor")) continue;
+    s += node.textContent || "";
+  }
+  return s.trim();
+}
+
+// Right rail: an "on this page" list of the lesson's own headings, with a
+// scroll-spy that highlights the section currently in view (FastAPI-style).
+function renderPageToc(prose) {
+  var nav = document.getElementById("page-toc");
+  if (!nav) return;
+  nav.innerHTML = "";
+  var heads = prose.querySelectorAll("h2[id], h3[id]");
+  if (!heads.length) { nav.hidden = true; return; }
+  nav.hidden = false;
+
+  var title = document.createElement("div");
+  title.className = "toc-title";
+  title.textContent = "On this page";
+  nav.appendChild(title);
+
+  var ul = document.createElement("ul");
+  ul.className = "page-toc-list";
+  for (var i = 0; i < heads.length; i++) {
+    var h = heads[i];
+    var li = document.createElement("li");
+    li.className = "page-toc-" + h.tagName.toLowerCase();
+    var a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.textContent = headingText(h);
+    a.setAttribute("data-target", h.id);
+    li.appendChild(a);
+    ul.appendChild(li);
+  }
+  nav.appendChild(ul);
+  setupScrollSpy(prose, nav);
+}
+
+// Highlight the topmost heading scrolled into the upper part of the viewport.
+function setupScrollSpy(prose, nav) {
+  var heads = prose.querySelectorAll("h2[id], h3[id]");
+  var links = nav.querySelectorAll("a[data-target]");
+  if (!heads.length || !links.length || !("IntersectionObserver" in window)) return;
+
+  var visible = Object.create(null);
+  function highlight() {
+    var activeId = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (visible[heads[i].id]) { activeId = heads[i].id; break; }
+    }
+    // Fall back to the last heading scrolled above the fold if none qualifies.
+    if (!activeId) {
+      for (var j = heads.length - 1; j >= 0; j--) {
+        if (heads[j].getBoundingClientRect().top < 120) { activeId = heads[j].id; break; }
+      }
+    }
+    for (var k = 0; k < links.length; k++) {
+      links[k].classList.toggle("active", links[k].getAttribute("data-target") === activeId);
+    }
+  }
+  var obs = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      var id = entries[i].target.id;
+      if (entries[i].isIntersecting) visible[id] = true; else delete visible[id];
+    }
+    highlight();
+  }, { rootMargin: "-80px 0px -70% 0px", threshold: 0 });
+  for (var n = 0; n < heads.length; n++) obs.observe(heads[n]);
+  highlight();
+}
+
+// Left rail: the whole-course outline (every chapter + lesson) with the
+// current lesson highlighted, so you can jump anywhere in the course.
+function renderCourseToc(manifest) {
+  var root = document.getElementById("course-toc");
+  if (!root || !manifest || !manifest.chapters) return;
+  root.innerHTML = "";
+
+  var title = document.createElement("div");
+  title.className = "toc-title";
+  title.textContent = "Contents";
+  root.appendChild(title);
+
+  manifest.chapters.forEach(function (ch) {
+    var hasSection = (ch.items || []).some(function (it) { return it.kind === "section"; });
+    if (!hasSection) return;
+    var chHead = document.createElement("div");
+    chHead.className = "course-toc-chapter";
+    chHead.textContent = ch.n + ". " + ch.title;
+    root.appendChild(chHead);
+
+    var ul = document.createElement("ul");
+    ul.className = "course-toc-list";
+    ch.items.forEach(function (item) {
+      if (item.kind !== "section") return;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = lessonHref(item.id);
+      a.textContent = (item.label ? item.label + " " : "") + (item.title || item.id);
+      if (item.id === lessonId) {
+        a.className = "current";
+        a.setAttribute("aria-current", "page");
+        li.className = "current";
+      }
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    root.appendChild(ul);
+  });
+
+  // Bring the current lesson into view within the sidebar without scrolling
+  // the whole window.
+  var cur = root.querySelector("a.current");
+  if (cur) {
+    var cRect = root.getBoundingClientRect();
+    var eRect = cur.getBoundingClientRect();
+    root.scrollTop += (eRect.top - cRect.top) - root.clientHeight / 2 + eRect.height / 2;
+  }
+}
+
 var editorAPI = null;
 
 // Render a {stdout, stderr} result into a terminal element, and (when an
@@ -733,6 +924,8 @@ async function loadLesson() {
     prose.innerHTML = "<pre>" + escapeHTML(runnables.body) + "</pre>";
   }
   addCopyButtons(prose);
+  addHeadingAnchors(prose);
+  renderPageToc(prose);
   mountInlineRunnables(prose, runnables.blocks);
 
   if (fences.starter !== null) {
@@ -742,6 +935,8 @@ async function loadLesson() {
   setupNav(meta);
 
   await renderCrumbs(manifestPromise, meta);
+  getManifest().then(function (m) { if (m) renderCourseToc(m); });
+  scrollToHash();
 }
 
 // Populate the breadcrumb with `lessons / Ch N. Title / X.Y Lesson title` and
