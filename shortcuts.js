@@ -1,4 +1,4 @@
-// learnc — shortcuts.js
+// learnc - shortcuts.js
 // Tiny keyboard-shortcut help overlay. Press `?` to open, Esc to close.
 // Items are passed in by each page so the list matches what actually works
 // (the landing page has fewer shortcuts than a lesson page).
@@ -75,7 +75,7 @@ export function mountHelp(items) {
 			close();
 			return;
 		}
-		// "?" opens help — but only when the user isn't typing somewhere.
+		// "?" opens help - but only when the user isn't typing somewhere.
 		// Shift+/ produces "?" on US layouts; we check e.key directly so
 		// other layouts still work.
 		if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {

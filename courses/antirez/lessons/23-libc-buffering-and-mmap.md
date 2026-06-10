@@ -11,11 +11,11 @@ source:
   url: https://www.youtube.com/watch?v=yKavhObop5I
 ---
 
-> **Source video.** [Let's Learn C — lesson 20](https://www.youtube.com/watch?v=yKavhObop5I) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 20](https://www.youtube.com/watch?v=yKavhObop5I) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
-`stdio` doesn't talk to the kernel on every `putchar` — it accumulates bytes in a user-space buffer and flushes them on a newline (line mode), when full (block mode), or when you call `fflush`. For truly low-overhead I/O, skip the buffer entirely with `mmap`: ask the kernel to page the file into your address space and access it as plain memory through a pointer.
+`stdio` doesn't talk to the kernel on every `putchar` - it accumulates bytes in a user-space buffer and flushes them on a newline (line mode), when full (block mode), or when you call `fflush`. For truly low-overhead I/O, skip the buffer entirely with `mmap`: ask the kernel to page the file into your address space and access it as plain memory through a pointer.
 
 ## Walkthrough
 
@@ -51,11 +51,11 @@ int main(void) {
 first chunk... second chunk
 ```
 
-Two `write` syscalls instead of two-per-byte. That is the entire point of `stdio`: trade a small amount of memory for far fewer kernel transitions. The same buffering speeds up *reads* — `fgets` does one big `read` and serves you one line at a time from its buffer, while a hand-rolled loop calling `read(fd, &c, 1)` per character pays the syscall cost on every byte.
+Two `write` syscalls instead of two-per-byte. That is the entire point of `stdio`: trade a small amount of memory for far fewer kernel transitions. The same buffering speeds up *reads* - `fgets` does one big `read` and serves you one line at a time from its buffer, while a hand-rolled loop calling `read(fd, &c, 1)` per character pays the syscall cost on every byte.
 
 ### When buffering bites you `[06:01 → 11:34]`
 
-- **Mixed `printf` and `write`** on the same fd interleaves out of order — one path goes through the buffer, the other doesn't.
+- **Mixed `printf` and `write`** on the same fd interleaves out of order - one path goes through the buffer, the other doesn't.
 - **A crash before exit** loses whatever sits in the buffer. Add `fflush(stdout)` before anything that might abort, or use `stderr` for diagnostics (it's unbuffered).
 - **Pipes change the mode.** A program that's line-buffered on a terminal becomes block-buffered when its stdout is piped, which is why `./prog | grep foo` sometimes appears to hang. Force line buffering with `setvbuf(stdout, NULL, _IOLBF, 0)`.
 
@@ -82,14 +82,14 @@ const char *s = mem;
 
 A few things to internalise:
 
-- The error sentinel is **`MAP_FAILED`**, not `NULL` — `NULL` is a legal target address, so it can't double as "failed".
+- The error sentinel is **`MAP_FAILED`**, not `NULL` - `NULL` is a legal target address, so it can't double as "failed".
 - `length` and `offset` are page-aligned (4 KiB on most systems). Ask for 100 bytes and you get a whole page; bytes past the file end read as zero.
-- **`MAP_PRIVATE`** gives you a copy-on-write view: writes stay in memory and never reach the file. **`MAP_SHARED`** propagates writes back, but the kernel decides when — call `msync` to force it, or let dirty pages drift out lazily.
+- **`MAP_PRIVATE`** gives you a copy-on-write view: writes stay in memory and never reach the file. **`MAP_SHARED`** propagates writes back, but the kernel decides when - call `msync` to force it, or let dirty pages drift out lazily.
 - Pair every `mmap` with `munmap(mem, length)`.
 
 ### Reading the mapping as an array `[26:29 → 32:50]`
 
-`open` hands back the first free descriptor — `3`, because 0/1/2 are already stdin/stdout/stderr (and it's `3` on every fresh run, since exiting closes everything). Map the file, then index the returned pointer like an array — the first bytes *are* the file's first bytes:
+`open` hands back the first free descriptor - `3`, because 0/1/2 are already stdin/stdout/stderr (and it's `3` on every fresh run, since exiting closes everything). Map the file, then index the returned pointer like an array - the first bytes *are* the file's first bytes:
 
 ```c
 int fd = open("stdio3.c", O_RDONLY);
@@ -114,7 +114,7 @@ s[8] =
 s[9] = <
 ```
 
-No `read`, no buffer copy: the file's source (`#include <`...) is just memory behind a pointer. Get the flags wrong (e.g. drop `MAP_SHARED`) and `mmap` returns `MAP_FAILED` — the all-ones address `2^64 - 1` — and the first dereference segfaults.
+No `read`, no buffer copy: the file's source (`#include <`...) is just memory behind a pointer. Get the flags wrong (e.g. drop `MAP_SHARED`) and `mmap` returns `MAP_FAILED` - the all-ones address `2^64 - 1` - and the first dereference segfaults.
 
 ### The cost model `[32:50 → 35:43]`
 
@@ -125,7 +125,7 @@ For workloads that scan a file once end-to-end, `read` with a decent buffer is o
 ## Modern note
 
 - Tell the kernel how you'll touch the mapping: `madvise(mem, len, MADV_SEQUENTIAL)` for streaming, `MADV_RANDOM` for hops, `MADV_WILLNEED` to prefetch. The equivalent for `read`-style code is `posix_fadvise`.
-- `io_uring` (Linux) is the modern high-throughput alternative for pure-syscall I/O — async submission queues, fewer transitions, no `mmap` quirks. Worth knowing once you outgrow blocking `read`/`write`.
+- `io_uring` (Linux) is the modern high-throughput alternative for pure-syscall I/O - async submission queues, fewer transitions, no `mmap` quirks. Worth knowing once you outgrow blocking `read`/`write`.
 - On a `SIGBUS`-prone path (file truncated while mapped) you need a signal handler or careful `fstat` checks before touching the mapping.
 
 ## Under the hood (asm)
@@ -145,31 +145,31 @@ main:
         mov     esi, 1                  ; nmemb stride
         mov     rbp, rax                ; save FILE*
         mov     rcx, rax                ; arg4 = FILE*
-        call    fread                   ; ← libc again — open(2)/read(2) hidden inside
+        call    fread                   ; ← libc again - open(2)/read(2) hidden inside
         mov     rdi, rbp
         call    fclose
         ...
 ```
 
-The binary contains no `syscall` instruction at all — every kernel transition happens *inside* the libc functions. That's the whole abstraction this lesson is about: `FILE *` is a user-space buffer wrapped around the raw file descriptor, and the buffering decides *when* the syscalls fire. `mmap`, by contrast, makes the kernel transition happen on first dereference — as a page fault, no `call` in your asm.
+The binary contains no `syscall` instruction at all - every kernel transition happens *inside* the libc functions. That's the whole abstraction this lesson is about: `FILE *` is a user-space buffer wrapped around the raw file descriptor, and the buffering decides *when* the syscalls fire. `mmap`, by contrast, makes the kernel transition happen on first dereference - as a page fault, no `call` in your asm.
 
 [Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for the libc-vs-syscall ABI comparison.
 
 ## Try it
 
 1. Remove the `fflush` from the runner above and add a deliberate `abort();` between the two `fputs` calls. Locally, observe that "first chunk..." never appears.
-2. Pipe a chatty program through `cat` (`./prog | cat`) and notice the output stalls — that's stdout switching to fully-buffered mode.
+2. Pipe a chatty program through `cat` (`./prog | cat`) and notice the output stalls - that's stdout switching to fully-buffered mode.
 3. Write a one-page `mmap` of a small text file and `printf("%c", ((char*)mem)[i])` the first 20 bytes. Then `munmap` and confirm a subsequent read segfaults.
 
 ## Cross-reference to K&R
 
-[K&R § 8.5 — Example: fopen and getc](../../kr/lessons/08-05-example-fopen-and-getc.md) builds a miniature `stdio` from `read`/`write` — the exact layer this lesson is pulling apart. K&R doesn't cover `mmap` (it's POSIX, not ANSI C), so this lesson is where the two diverge.
+[K&R § 8.5 - Example: fopen and getc](../../kr/lessons/08-05-example-fopen-and-getc.md) builds a miniature `stdio` from `read`/`write` - the exact layer this lesson is pulling apart. K&R doesn't cover `mmap` (it's POSIX, not ANSI C), so this lesson is where the two diverge.
 
 ## Go deeper
 
-- `man 2 mmap`, `man 2 munmap`, `man 2 madvise` — the authoritative reference.
-- `man 3 setvbuf`, `man 3 fflush` — the buffering knobs.
-- W. Richard Stevens & Stephen Rago, *Advanced Programming in the UNIX Environment* — chapters 3, 5, and 14 cover this material in depth.
+- `man 2 mmap`, `man 2 munmap`, `man 2 madvise` - the authoritative reference.
+- `man 3 setvbuf`, `man 3 fflush` - the buffering knobs.
+- W. Richard Stevens & Stephen Rago, *Advanced Programming in the UNIX Environment* - chapters 3, 5, and 14 cover this material in depth.
 - Linux kernel docs on `io_uring`: <https://kernel.dk/io_uring.pdf>.
 
 *Click **next →** for `union` and bitfields.*

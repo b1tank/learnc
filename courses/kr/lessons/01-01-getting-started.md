@@ -27,19 +27,19 @@ hello, world
 
 `cc hello.c` is really four programs in a trench coat ([Wikipedia: compiler](https://en.wikipedia.org/wiki/Compiler)):
 
-1. **Preprocessor** — `#include <stdio.h>` is literally pasted in (it's just text substitution; the header *declares* `printf`, it does not contain its code).
-2. **Compiler** — translates C into target [assembly](https://en.wikipedia.org/wiki/Assembly_language).
-3. **Assembler** — turns assembly into an object file (`.o`) of machine code + relocation entries.
-4. **Linker** — stitches your `.o` together with the C runtime startup (`crt0`) and libc into an executable ([ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) on Linux).
+1. **Preprocessor** - `#include <stdio.h>` is literally pasted in (it's just text substitution; the header *declares* `printf`, it does not contain its code).
+2. **Compiler** - translates C into target [assembly](https://en.wikipedia.org/wiki/Assembly_language).
+3. **Assembler** - turns assembly into an object file (`.o`) of machine code + relocation entries.
+4. **Linker** - stitches your `.o` together with the C runtime startup (`crt0`) and libc into an executable ([ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) on Linux).
 
-`main` is **not** the first thing that runs. The loader jumps to `_start` (from [crt0](https://en.wikipedia.org/wiki/Crt0)), which sets up the stack and argument vector, calls `main`, then passes `main`'s return value to `exit()`. That `int` becomes the process **exit status** the shell reads as `$?` — `0` means success by convention.
+`main` is **not** the first thing that runs. The loader jumps to `_start` (from [crt0](https://en.wikipedia.org/wiki/Crt0)), which sets up the stack and argument vector, calls `main`, then passes `main`'s return value to `exit()`. That `int` becomes the process **exit status** the shell reads as `$?` - `0` means success by convention.
 
 ## `printf` is a library call, not a kernel call
 
-`printf` lives in libc. It formats your string into a userspace buffer, then hands the bytes to the kernel with the [`write(2)`](https://man7.org/linux/man-pages/man2/write.2.html) **system call** — the only way a normal program can touch a terminal, file, or socket. You can skip libc entirely and make that syscall yourself:
+`printf` lives in libc. It formats your string into a userspace buffer, then hands the bytes to the kernel with the [`write(2)`](https://man7.org/linux/man-pages/man2/write.2.html) **system call** - the only way a normal program can touch a terminal, file, or socket. You can skip libc entirely and make that syscall yourself:
 
 ```c:run write syscall directly
-#include <unistd.h>   /* write() — a thin wrapper over the write(2) syscall */
+#include <unistd.h>   /* write() - a thin wrapper over the write(2) syscall */
 
 int main(void) {
     const char msg[] = "hello, world\n";
@@ -56,7 +56,7 @@ Same output, one layer lower. `1` is the file descriptor for [standard output](h
 
 ## Newlines and buffering are yours to manage
 
-`printf` never adds a `\n` for you — every line break is one you typed. Adjacent calls with no newline just concatenate:
+`printf` never adds a `\n` for you - every line break is one you typed. Adjacent calls with no newline just concatenate:
 
 ```c:run no automatic newline
 #include <stdio.h>
@@ -73,11 +73,11 @@ int main(void) {
 hello, world
 ```
 
-stdio is also **buffered**: bytes accumulate in a userspace buffer and flush on a newline (when attached to a terminal), when the buffer fills, or at exit. That's why one big `write` is cheaper than a syscall per character — fewer kernel crossings.
+stdio is also **buffered**: bytes accumulate in a userspace buffer and flush on a newline (when attached to a terminal), when the buffer fills, or at exit. That's why one big `write` is cheaper than a syscall per character - fewer kernel crossings.
 
 ## Go deeper
-- [`write(2)` man page](https://man7.org/linux/man-pages/man2/write.2.html) — the syscall under `printf`
-- [cppreference: `printf`](https://en.cppreference.com/w/c/io/fprintf) — full format-string spec
-- [crt0 / program startup](https://en.wikipedia.org/wiki/Crt0) — what runs before `main`
-- [Compiler Explorer (godbolt.org)](https://godbolt.org/) — paste this program and watch it become assembly
+- [`write(2)` man page](https://man7.org/linux/man-pages/man2/write.2.html) - the syscall under `printf`
+- [cppreference: `printf`](https://en.cppreference.com/w/c/io/fprintf) - full format-string spec
+- [crt0 / program startup](https://en.wikipedia.org/wiki/Crt0) - what runs before `main`
+- [Compiler Explorer (godbolt.org)](https://godbolt.org/) - paste this program and watch it become assembly
 

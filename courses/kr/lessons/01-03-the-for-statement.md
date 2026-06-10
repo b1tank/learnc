@@ -8,7 +8,7 @@ next: ex-1-5
 status: done
 ---
 
-`for` is not a new kind of loop — it's *syntactic sugar* over `while` that puts the three pieces of every counting loop in one place: **initialize, test, update**. The compiler lowers both to the same thing: a label, a comparison, and a [conditional jump](https://en.wikipedia.org/wiki/Branch_(computer_science)). Understanding that equivalence is the first step toward reading the assembly your loops become.
+`for` is not a new kind of loop - it's *syntactic sugar* over `while` that puts the three pieces of every counting loop in one place: **initialize, test, update**. The compiler lowers both to the same thing: a label, a comparison, and a [conditional jump](https://en.wikipedia.org/wiki/Branch_(computer_science)). Understanding that equivalence is the first step toward reading the assembly your loops become.
 
 ```c:run temperature table with for
 #include <stdio.h>
@@ -41,7 +41,7 @@ int main(void) {
 
 ## `for` and `while` are the same loop
 
-These two compile to essentially identical machine code — an entry test, the body, the update, and a jump back:
+These two compile to essentially identical machine code - an entry test, the body, the update, and a jump back:
 
 ```text
 for (init; test; update)      init;
@@ -89,11 +89,11 @@ A loop is a backward [branch](https://en.wikipedia.org/wiki/Branch_(computer_sci
 .done:
 ```
 
-No iterator object, no bounds checking — just registers and jumps. That's why C loops are fast and also why an off‑by‑one walks straight off the end of an array. Paste any loop into [Compiler Explorer](https://godbolt.org/) to see the real instructions.
+No iterator object, no bounds checking - just registers and jumps. That's why C loops are fast and also why an off‑by‑one walks straight off the end of an array. Paste any loop into [Compiler Explorer](https://godbolt.org/) to see the real instructions.
 
 ## Scope of the loop variable
 
-Declaring the counter *in* the `for` (`for (int i = ...)`) scopes it to the loop — it doesn't leak afterward. That's a C99 feature; pre‑ANSI K&R declared it outside. Keeping it inside is the modern default and prevents accidental reuse.
+Declaring the counter *in* the `for` (`for (int i = ...)`) scopes it to the loop - it doesn't leak afterward. That's a C99 feature; pre‑ANSI K&R declared it outside. Keeping it inside is the modern default and prevents accidental reuse.
 
 ```c:run loop-local scope
 #include <stdio.h>
@@ -112,6 +112,6 @@ sum 1..5 = 15
 ```
 
 ## Go deeper
-- [Control flow & branches](https://en.wikipedia.org/wiki/Control_flow) — loops, jumps, structured programming
-- [`for` statement reference](https://en.cppreference.com/w/c/language/for) — exact semantics of each clause
-- [Loop optimization](https://en.wikipedia.org/wiki/Loop_optimization) — unrolling, strength reduction, what the compiler does
+- [Control flow & branches](https://en.wikipedia.org/wiki/Control_flow) - loops, jumps, structured programming
+- [`for` statement reference](https://en.cppreference.com/w/c/language/for) - exact semantics of each clause
+- [Loop optimization](https://en.wikipedia.org/wiki/Loop_optimization) - unrolling, strength reduction, what the compiler does

@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=VPs_QtlLNcs
 ---
 
-> **Source video.** [Let's Learn C — lesson 16](https://www.youtube.com/watch?v=VPs_QtlLNcs) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 16](https://www.youtube.com/watch?v=VPs_QtlLNcs) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
@@ -31,24 +31,24 @@ typedef struct {
 } mystring_t;
 ```
 
-`data[]` is not a separate allocation — it's a *flexible array member* that lives in the same `malloc` block, right after the header. One call returns a pointer that owns both the metadata and the bytes.
+`data[]` is not a separate allocation - it's a *flexible array member* that lives in the same `malloc` block, right after the header. One call returns a pointer that owns both the metadata and the bytes.
 
 ### Why a refcount at all `[03:12 → 04:34]`
 
-Plain `malloc`/`free` forces a single owner. Refcounting lets several places hold the same string honestly: each owner calls `incref` when it takes a reference and `decref` when it lets go. The constructor returns the object with `refcount == 1`, never zero — otherwise the first `decref` would free an object the caller has just stored.
+Plain `malloc`/`free` forces a single owner. Refcounting lets several places hold the same string honestly: each owner calls `incref` when it takes a reference and `decref` when it lets go. The constructor returns the object with `refcount == 1`, never zero - otherwise the first `decref` would free an object the caller has just stored.
 
 ### The two-function API `[10:06 → 12:45]`
 
 The whole protocol is two lines:
 
-- `str_incref` — `++refcount`. Call it whenever you make a *new* alias.
-- `str_decref` — `--refcount`, and if it hits zero, `free`.
+- `str_incref` - `++refcount`. Call it whenever you make a *new* alias.
+- `str_decref` - `--refcount`, and if it hits zero, `free`.
 
 That's it. The language has no GC; this *is* the GC, written by hand.
 
 ### Free-on-zero, cloning, and bug catchers `[08:28 → 09:21, 22:34]`
 
-Double-`decref` underflows the counter, so a defensive version checks `refcount == 0` on entry and aborts; the video also adds a `magic` field (e.g. `0xDEADBEEF`) zeroed at free time so use-after-free becomes an abort instead of silent corruption. The payoff: the same string in two linked lists takes one allocation, not two — a counter goes `2 → 1 → 0` as references drop, much safer than scattering `strdup`/`free` pairs.
+Double-`decref` underflows the counter, so a defensive version checks `refcount == 0` on entry and aborts; the video also adds a `magic` field (e.g. `0xDEADBEEF`) zeroed at free time so use-after-free becomes an abort instead of silent corruption. The payoff: the same string in two linked lists takes one allocation, not two - a counter goes `2 → 1 → 0` as references drop, much safer than scattering `strdup`/`free` pairs.
 
 ### Catching use-after-free with a magic number `[17:07 → 21:46]`
 
@@ -120,24 +120,24 @@ after first decref: refcount=1
 freed: "hello"
 ```
 
-The "freed" line fires *once* — the first `decref` is silent because another owner still holds the buffer.
+The "freed" line fires *once* - the first `decref` is silent because another owner still holds the buffer.
 
 ## Modern note
 
-In a single-threaded program `refcount++` and `--refcount` are fine. The moment two threads can touch the same object the counter is a data race — switch to C11 atomics (`_Atomic size_t refcount;` plus `atomic_fetch_add` / `atomic_fetch_sub`). Use `memory_order_acq_rel` on the decrement so the last releaser sees all earlier writes from other owners before it frees the block.
+In a single-threaded program `refcount++` and `--refcount` are fine. The moment two threads can touch the same object the counter is a data race - switch to C11 atomics (`_Atomic size_t refcount;` plus `atomic_fetch_add` / `atomic_fetch_sub`). Use `memory_order_acq_rel` on the decrement so the last releaser sees all earlier writes from other owners before it frees the block.
 
 ## Try it
 
-1. Call `str_decref(b)` a third time on the freed object — observe the use-after-free; add a `magic` field to catch it.
+1. Call `str_decref(b)` a third time on the freed object - observe the use-after-free; add a `magic` field to catch it.
 2. Wrap two `mystring_t *` aliases in a tiny linked list; drop one node, then the other, and confirm the buffer is freed exactly once.
 
 ## Cross-reference to K&R
 
-[K&R § 6.4 — Pointers to Structures](../../kr/lessons/06-04-pointers-to-structures.md) introduces `->` and the pattern this lesson uses: a function takes a `struct *` and mutates a field through it. Salvatore's twist is letting the struct own a variable-length tail (`data[]`) so header and payload share one allocation.
+[K&R § 6.4 - Pointers to Structures](../../kr/lessons/06-04-pointers-to-structures.md) introduces `->` and the pattern this lesson uses: a function takes a `struct *` and mutates a field through it. Salvatore's twist is letting the struct own a variable-length tail (`data[]`) so header and payload share one allocation.
 
 ## Go deeper
 
-- antirez's [SDS](https://github.com/antirez/sds) — the production version of this idea, used inside Redis. Same header-before-bytes layout, several header sizes chosen by length.
-- CPython's [`PyObject`](https://docs.python.org/3/c-api/structures.html#c.PyObject) — every Python value carries an `ob_refcnt`; `Py_INCREF`/`Py_DECREF` are the macros you've just reinvented.
+- antirez's [SDS](https://github.com/antirez/sds) - the production version of this idea, used inside Redis. Same header-before-bytes layout, several header sizes chosen by length.
+- CPython's [`PyObject`](https://docs.python.org/3/c-api/structures.html#c.PyObject) - every Python value carries an `ob_refcnt`; `Py_INCREF`/`Py_DECREF` are the macros you've just reinvented.
 
 *Click **next →** for design choices in the string library and a tour of `hexdump`.*

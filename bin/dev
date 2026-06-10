@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""bin/dev — learnc dev server with hot reload.
+"""bin/dev - learnc dev server with hot reload.
 
 Pure-stdlib HTTP server. Watches the repo for file changes and pushes a
 reload event to every connected browser tab over Server-Sent Events. The
 client-side reload script is injected before </body> on every HTML
-response served by this dev server (so it lives only here — production
+response served by this dev server (so it lives only here - production
 HTML on GitHub Pages stays untouched).
 
 usage:
@@ -124,7 +124,7 @@ class HotReloadHandler(http.server.SimpleHTTPRequestHandler):
     #
     # COOP/COEP: the WASM C runtime (Runno) needs SharedArrayBuffer, which
     # requires cross-origin isolation. In production, coi-serviceworker.js
-    # injects these headers from a service worker — but mobile Safari
+    # injects these headers from a service worker - but mobile Safari
     # refuses to register a service worker over plain HTTP unless the host
     # is localhost. Phones on the LAN hit us by IP, so the SW never runs
     # and SAB is undefined ("Can't find variable: SharedArrayBuffer").

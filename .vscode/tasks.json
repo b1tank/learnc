@@ -1,7 +1,7 @@
 {
   // Run with: Ctrl+Shift+P -> "Tasks: Run Task" -> "learnc: dev"
   // Or hit Ctrl+Shift+B to run the default build task ("learnc: dev").
-  // No Python extension required — these tasks shell out via a normal terminal.
+  // No Python extension required - these tasks shell out via a normal terminal.
   "version": "2.0.0",
   "tasks": [
     {

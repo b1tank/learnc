@@ -1,6 +1,6 @@
 # Contributing to learnc
 
-learnc is a hand-written, runnable companion to K&R's *The C Programming Language* (2nd ed.). Every section and every numbered exercise has a slot on the site — most are stubs waiting for a walkthrough.
+learnc is a hand-written, runnable companion to K&R's *The C Programming Language* (2nd ed.). Every section and every numbered exercise has a slot on the site - most are stubs waiting for a walkthrough.
 
 ## What you can contribute
 
@@ -11,13 +11,13 @@ learnc is a hand-written, runnable companion to K&R's *The C Programming Languag
 
 ## Ground rules
 
-- **Hand-revised against K&R.** AI assistance is fine for drafts, brainstorming, or unblocking — but every line that ships must be read against K&R and rewritten in your own voice. The promise is "verified by a human," not "untouched by a tool."
+- **Hand-revised against K&R.** AI assistance is fine for drafts, brainstorming, or unblocking - but every line that ships must be read against K&R and rewritten in your own voice. The promise is "verified by a human," not "untouched by a tool."
 - **No reproducing K&R text.** Paraphrase. The book is still copyrighted.
 - **No frameworks, no build step.** Vanilla HTML, CSS, JavaScript. If you need a library, justify it in the PR.
 - **Mobile-readable.** Lessons must read well on a phone, even when editing C on a phone is awkward.
 - **Keep it dense.** A lesson is one screen of prose plus the runner. Substance, not filler.
 
-## Adding a lesson — step by step
+## Adding a lesson - step by step
 
 There's a tiny helper to skip the boilerplate. From the repo root:
 
@@ -72,8 +72,8 @@ See [`lessons/_template.md`](lessons/_template.md) for the skeleton and [`lesson
 
 Two fenced code blocks are special:
 
-- ` ```c:starter ` — loaded into the editor when the lesson opens
-- ` ```output ` — when present, the runner compares actual stdout to this expected text and shows a ✓/✗ badge
+- ` ```c:starter ` - loaded into the editor when the lesson opens
+- ` ```output ` - when present, the runner compares actual stdout to this expected text and shows a ✓/✗ badge
 
 Everything else is plain markdown rendered by [marked](https://marked.js.org/).
 

@@ -1,4 +1,4 @@
-// learnc — app.js
+// learnc - app.js
 // Lesson index renderer (used by index.html only). Loaded as a module, so
 // `script type="module"` already implies strict mode and module scope.
 
@@ -45,7 +45,7 @@ function lessonURL(id) {
 
 function renderIndex(manifest, root) {
   root.innerHTML = "";
-  // Hide stubs by default — the K&R index has hundreds of done items and a
+  // Hide stubs by default - the K&R index has hundreds of done items and a
   // long tail of stubs; the eye glazes over. Courses that *start* mostly-stub
   // (antirez, etc.) opt out by setting `window.__hideStubs = false` before
   // app.js loads, so the chapter outline stays visible from day one.
@@ -72,7 +72,7 @@ function renderIndex(manifest, root) {
   manifest.chapters.forEach(function (ch) {
     // Group exercises by parent section id. Exercises with no `parent`
     // (legacy entries) fall into the orphan bucket and are rendered at
-    // the chapter tail — same place they used to live before the manifest
+    // the chapter tail - same place they used to live before the manifest
     // gained the `parent` field, so the page degrades gracefully.
     var children = {};
     var orphans = [];
@@ -128,7 +128,7 @@ function init() {
   // exactly once per visit, so the 304 round-trip cost is negligible;
   // staleness, by contrast, is user-visible (the badge counts get stuck
   // for up to 10 min behind GitHub Pages' default `max-age=600`).
-  // Lesson pages still use plain fetch — there the manifest only feeds
+  // Lesson pages still use plain fetch - there the manifest only feeds
   // the chapter-title breadcrumb, which is not freshness-sensitive.
   fetch(MANIFEST_URL, { cache: "no-cache" })
     .then(function (r) {
@@ -141,7 +141,7 @@ function init() {
     })
     .catch(function (err) {
       root.innerHTML = '<p class="terminal-error">Could not load lesson manifest: '
-        + String(err.message) + ' — <a href="">retry</a></p>';
+        + String(err.message) + ' - <a href="">retry</a></p>';
     });
 }
 
@@ -162,7 +162,7 @@ function cacheTitleMap(manifest) {
       });
     });
     localStorage.setItem(TITLE_CACHE_KEY, JSON.stringify(titles));
-  } catch (e) { /* private mode — paint hint is best-effort */ }
+  } catch (e) { /* private mode - paint hint is best-effort */ }
 }
 
 if (document.readyState === "loading") {

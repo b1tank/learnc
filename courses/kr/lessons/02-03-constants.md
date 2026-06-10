@@ -34,16 +34,16 @@ int main(void) {
 123456789 40000 1500
 ```
 
-The octal trap: a stray leading zero changes meaning. `010` is **8**, not 10 — a real bug when people pad numbers with zeros. Hex is the everyday tool for bit patterns because each digit maps to exactly 4 bits.
+The octal trap: a stray leading zero changes meaning. `010` is **8**, not 10 - a real bug when people pad numbers with zeros. Hex is the everyday tool for bit patterns because each digit maps to exactly 4 bits.
 
 ## Character constants are integers
 
-`'A'` is not a "character object" — it's the `int` value 65. That's why `'0'` through `'9'` being contiguous lets you do `digit - '0'`, and why `'\n'`, `'\t'`, `'\0'` (escape sequences) are just compact ways to write specific byte values. A string constant `"hi"` is different: it's an array of those bytes plus a terminating `'\0'`, stored in read-only memory and represented at use by the address of its first byte.
+`'A'` is not a "character object" - it's the `int` value 65. That's why `'0'` through `'9'` being contiguous lets you do `digit - '0'`, and why `'\n'`, `'\t'`, `'\0'` (escape sequences) are just compact ways to write specific byte values. A string constant `"hi"` is different: it's an array of those bytes plus a terminating `'\0'`, stored in read-only memory and represented at use by the address of its first byte.
 
-The `#define` and `enum` mechanisms create *named* constants — covered in [Symbolic Constants](lesson.html?id=01-04-symbolic-constants) and the preprocessor section — so magic numbers get meaningful names.
+The `#define` and `enum` mechanisms create *named* constants - covered in [Symbolic Constants](lesson.html?id=01-04-symbolic-constants) and the preprocessor section - so magic numbers get meaningful names.
 
 ## Go deeper
-- [Integer constants](https://en.cppreference.com/w/c/language/integer_constant) — bases, suffixes, and resulting types
-- [Floating constants](https://en.cppreference.com/w/c/language/floating_constant) — decimal vs exponent forms
-- [Escape sequences](https://en.cppreference.com/w/c/language/escape) — `\n`, `\t`, `\0`, `\xHH`, and friends
-- [String literals](https://en.cppreference.com/w/c/language/string_literal) — storage, terminator, and immutability
+- [Integer constants](https://en.cppreference.com/w/c/language/integer_constant) - bases, suffixes, and resulting types
+- [Floating constants](https://en.cppreference.com/w/c/language/floating_constant) - decimal vs exponent forms
+- [Escape sequences](https://en.cppreference.com/w/c/language/escape) - `\n`, `\t`, `\0`, `\xHH`, and friends
+- [String literals](https://en.cppreference.com/w/c/language/string_literal) - storage, terminator, and immutability

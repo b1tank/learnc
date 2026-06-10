@@ -8,7 +8,7 @@ next: ex-2-10
 status: done
 ---
 
-The ternary conditional operator `?:` is C's only three-operand operator and the one way to make a *choice inside an expression*. `cond ? a : b` evaluates `cond`; if true it yields `a`, otherwise `b` — and like `&&`/`||`, it evaluates only the branch it chooses. It compiles to the same conditional move or branch an `if/else` would, but because it's an expression it can sit anywhere a value is needed: inside a `printf` argument, an initializer, or a `return`.
+The ternary conditional operator `?:` is C's only three-operand operator and the one way to make a *choice inside an expression*. `cond ? a : b` evaluates `cond`; if true it yields `a`, otherwise `b` - and like `&&`/`||`, it evaluates only the branch it chooses. It compiles to the same conditional move or branch an `if/else` would, but because it's an expression it can sit anywhere a value is needed: inside a `printf` argument, an initializer, or a `return`.
 
 ## A value-producing if/else
 
@@ -36,13 +36,13 @@ int main(void) {
 max = 12
 ```
 
-The win is avoiding a temporary and a four-line `if/else` just to pick between two values. `max = (a > b) ? a : b;` says exactly what it means in one line, and `printf("%d item%s\n", n, n == 1 ? "" : "s")` fixes plural grammar inline — a pattern impossible with statement-level `if`.
+The win is avoiding a temporary and a four-line `if/else` just to pick between two values. `max = (a > b) ? a : b;` says exactly what it means in one line, and `printf("%d item%s\n", n, n == 1 ? "" : "s")` fixes plural grammar inline - a pattern impossible with statement-level `if`.
 
 ## Type, precedence, and restraint
 
-The two arms are converted to a common type by the usual arithmetic conversions, so `x ? 1 : 2.0` has type `double` even when the `1` branch is taken. `?:` has very low precedence (just above assignment), so you'll often parenthesize the condition for readability and *must* parenthesize when nesting: `a ? b : c ? d : e` is legal (it groups right) but hard to read — reach for a `switch` or `if/else` chain once you have more than two outcomes. Used for a single binary choice, `?:` is clear; abused as a nested decision tree, it becomes write-only code.
+The two arms are converted to a common type by the usual arithmetic conversions, so `x ? 1 : 2.0` has type `double` even when the `1` branch is taken. `?:` has very low precedence (just above assignment), so you'll often parenthesize the condition for readability and *must* parenthesize when nesting: `a ? b : c ? d : e` is legal (it groups right) but hard to read - reach for a `switch` or `if/else` chain once you have more than two outcomes. Used for a single binary choice, `?:` is clear; abused as a nested decision tree, it becomes write-only code.
 
 ## Go deeper
-- [Conditional operator (C)](https://en.cppreference.com/w/c/language/operator_other#Conditional_operator) — semantics and result type
-- [Operator precedence](https://en.cppreference.com/w/c/language/operator_precedence) — where `?:` sits
-- [Conditional move](https://en.wikipedia.org/wiki/Conditional_move) — the branchless instruction it can compile to
+- [Conditional operator (C)](https://en.cppreference.com/w/c/language/operator_other#Conditional_operator) - semantics and result type
+- [Operator precedence](https://en.cppreference.com/w/c/language/operator_precedence) - where `?:` sits
+- [Conditional move](https://en.wikipedia.org/wiki/Conditional_move) - the branchless instruction it can compile to

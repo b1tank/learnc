@@ -11,17 +11,17 @@ source:
   url: https://www.youtube.com/watch?v=SWWHqgSwQFw
 ---
 
-> **Source video.** [Let's Learn C — lesson 5](https://www.youtube.com/watch?v=SWWHqgSwQFw) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 5](https://www.youtube.com/watch?v=SWWHqgSwQFw) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
-In C, characters *are* small integers — `'A'` is literally `65`, and a `char` is just a one-byte `int`. A "string" is nothing more than an array of `char` whose end is marked by a single zero byte (`'\0'`, the **NUL terminator**). `printf`'s `%s` is built on top of `%c` and that convention.
+In C, characters *are* small integers - `'A'` is literally `65`, and a `char` is just a one-byte `int`. A "string" is nothing more than an array of `char` whose end is marked by a single zero byte (`'\0'`, the **NUL terminator**). `printf`'s `%s` is built on top of `%c` and that convention.
 
 ## Walkthrough
 
 ### `'A'` is 65 `[03:00 → 04:35]`
 
-Single quotes in C don't make strings — they produce a single integer whose value is the character's position in ASCII. `'A'` and `65` are interchangeable as `printf` arguments to `%c`, and `printf("%c", 65 + 1)` prints `B`. This is unlike Python, where `'a'` and `"a"` mean the same thing.
+Single quotes in C don't make strings - they produce a single integer whose value is the character's position in ASCII. `'A'` and `65` are interchangeable as `printf` arguments to `%c`, and `printf("%c", 65 + 1)` prints `B`. This is unlike Python, where `'a'` and `"a"` mean the same thing.
 
 ### Arrays and curly-brace initialisation `[09:19 → 11:21]`
 
@@ -40,7 +40,7 @@ There is no string *type* in C and no length header. A string is an array of `ch
 
 ### String literals are sugar for that array `[18:24 → 21:11]`
 
-`char str[6] = "hello"` is exactly equivalent to writing the five letters and a `0` by hand — the literal silently appends the NUL byte, which is why `sizeof("hello") == 6`. Drop the size and let the compiler count: `char str[] = "hello"`. The array is still mutable, so `str[3] = 'X'` turns it into `helXo`, and `str[3]++` walks the letter one step up the ASCII table.
+`char str[6] = "hello"` is exactly equivalent to writing the five letters and a `0` by hand - the literal silently appends the NUL byte, which is why `sizeof("hello") == 6`. Drop the size and let the compiler count: `char str[] = "hello"`. The array is still mutable, so `str[3] = 'X'` turns it into `helXo`, and `str[3]++` walks the letter one step up the ASCII table.
 
 ### `%s` is just a loop over `%c` `[16:34 → 17:29]`
 
@@ -65,7 +65,7 @@ int main(void) {
 hello
 ```
 
-The same `while` would work over `{10, 20, 0}` if you swapped `%c` for `%d` — the loop itself knows nothing special about characters. The NUL terminator is a *convention*, enforced only by whoever reads the array.
+The same `while` would work over `{10, 20, 0}` if you swapped `%c` for `%d` - the loop itself knows nothing special about characters. The NUL terminator is a *convention*, enforced only by whoever reads the array.
 
 ### ASCII codes, the other direction `[08:04 → 09:19]`
 
@@ -86,7 +86,7 @@ ABCD
 
 ## Modern note
 
-`char` is signed on most platforms (range `-128..127`), so reach for `unsigned char` when you actually want a raw byte. ASCII covers only `0..127`; anything above that is locale- or encoding-dependent, and these days almost certainly UTF-8 — a multi-byte encoding the language itself doesn't understand, so `strlen` counts bytes, not characters.
+`char` is signed on most platforms (range `-128..127`), so reach for `unsigned char` when you actually want a raw byte. ASCII covers only `0..127`; anything above that is locale- or encoding-dependent, and these days almost certainly UTF-8 - a multi-byte encoding the language itself doesn't understand, so `strlen` counts bytes, not characters.
 
 ## Try it
 
@@ -96,11 +96,11 @@ ABCD
 
 ## Cross-reference to K&R
 
-[K&R § 1.9 — Character Arrays](../../kr/lessons/01-09-character-arrays.md) covers exactly this terrain: strings as `char` arrays, the NUL terminator, and `printf` with `%s`. [K&R § 2.3 — Constants](../../kr/lessons/02-03-constants.md) treats character constants like `'A'` more formally.
+[K&R § 1.9 - Character Arrays](../../kr/lessons/01-09-character-arrays.md) covers exactly this terrain: strings as `char` arrays, the NUL terminator, and `printf` with `%s`. [K&R § 2.3 - Constants](../../kr/lessons/02-03-constants.md) treats character constants like `'A'` more formally.
 
 ## Go deeper
 
-- `man ascii` — the table this whole lesson rests on.
-- `man 3 printf` — every conversion specifier, including the `%c` / `%s` / `%d` family used here.
-- [cppreference: string literals](https://en.cppreference.com/w/c/language/string_literal) — exact rules for the `"..."` sugar, including the implicit NUL.
-- *The C Programming Language*, 2nd ed., §1.9 — Kernighan & Ritchie's own treatment of character arrays.
+- `man ascii` - the table this whole lesson rests on.
+- `man 3 printf` - every conversion specifier, including the `%c` / `%s` / `%d` family used here.
+- [cppreference: string literals](https://en.cppreference.com/w/c/language/string_literal) - exact rules for the `"..."` sugar, including the implicit NUL.
+- *The C Programming Language*, 2nd ed., §1.9 - Kernighan & Ritchie's own treatment of character arrays.

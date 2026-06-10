@@ -11,11 +11,11 @@ source:
   url: https://www.youtube.com/watch?v=mw4gUqsGPZw
 ---
 
-> **Source video.** [Let's Learn C — lesson 3](https://www.youtube.com/watch?v=mw4gUqsGPZw) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 3](https://www.youtube.com/watch?v=mw4gUqsGPZw) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
-A C function takes parameters and may return a value. `x = x + 1` is an **expression** (it produces a value); add a `;` and it becomes a **statement**. The shorthand `x++` does the same increment. Arguments are passed **by value** — the function works on a copy, so the caller's variable is unchanged unless the caller assigns the return value back.
+A C function takes parameters and may return a value. `x = x + 1` is an **expression** (it produces a value); add a `;` and it becomes a **statement**. The shorthand `x++` does the same increment. Arguments are passed **by value** - the function works on a copy, so the caller's variable is unchanged unless the caller assigns the return value back.
 
 ## Walkthrough
 
@@ -30,11 +30,11 @@ int inc(int x) {
 }
 ```
 
-Inside `inc`, `x` is a brand-new local variable seeded with the caller's value. Calling `inc(a)` does **not** modify `a` — it modifies the copy. The increment only "sticks" if the caller writes the result back: `a = inc(a)`.
+Inside `inc`, `x` is a brand-new local variable seeded with the caller's value. Calling `inc(a)` does **not** modify `a` - it modifies the copy. The increment only "sticks" if the caller writes the result back: `a = inc(a)`.
 
 ### Locals reset; globals and `static` persist `[03:59 → 07:36]`
 
-Before adding a parameter, Salvatore writes a no-argument `inc()` whose `x` is a plain local. Because that `x` is created fresh on every call, calling `inc()` four times prints `2` four times — the increment never accumulates. Move `x` *outside* every function and it becomes a **global**: a single cell that lives for the whole run, so the same four calls now print `1 2 3 4`. A `static` local sits in between — a global's lifetime, but visible only inside its function.
+Before adding a parameter, Salvatore writes a no-argument `inc()` whose `x` is a plain local. Because that `x` is created fresh on every call, calling `inc()` four times prints `2` four times - the increment never accumulates. Move `x` *outside* every function and it becomes a **global**: a single cell that lives for the whole run, so the same four calls now print `1 2 3 4`. A `static` local sits in between - a global's lifetime, but visible only inside its function.
 
 ```c:run global vs static persistence
 #include <stdio.h>
@@ -66,15 +66,15 @@ int main(void) {
 1 2 3 4 
 ```
 
-Try to `printf("%d", s)` from `main` and it won't compile: `s` is global in *lifetime* but local in *visibility* — only `inc_static` can see the name.
+Try to `printf("%d", s)` from `main` and it won't compile: `s` is global in *lifetime* but local in *visibility* - only `inc_static` can see the name.
 
 ### Expressions vs. statements `[00:00 → 02:02]`
 
-`x + 1` on its own is an *expression*: a recipe that yields a value. The assignment `x = x + 1` is itself an expression (its value is the value stored), and the trailing `;` is what turns it into a *statement* — the unit the compiler executes in order. Don't confuse the assignment `=` with the equality test `==`; they are different operators.
+`x + 1` on its own is an *expression*: a recipe that yields a value. The assignment `x = x + 1` is itself an expression (its value is the value stored), and the trailing `;` is what turns it into a *statement* - the unit the compiler executes in order. Don't confuse the assignment `=` with the equality test `==`; they are different operators.
 
 ### Pass-by-value, always `[10:53 → 11:34]`
 
-C never silently passes a reference — not even for structs. If you need the callee to mutate the caller's data, you pass a pointer (covered in the next lesson). For now: a function changing its parameter changes only its own copy.
+C never silently passes a reference - not even for structs. If you need the callee to mutate the caller's data, you pass a pointer (covered in the next lesson). For now: a function changing its parameter changes only its own copy.
 
 ### `++` as shorthand `[23:16 → 23:52]`
 
@@ -108,7 +108,7 @@ after a = inc(a): a = 11
 after a = inc(a): a = 12
 ```
 
-The first call's return value is discarded — `a` keeps its 10. Only the assignments `a = inc(a)` change `a`.
+The first call's return value is discarded - `a` keeps its 10. Only the assignments `a = inc(a)` change `a`.
 
 ### Prefix vs. postfix `++`
 
@@ -141,7 +141,7 @@ Strip the printing away and look at what `gcc -O2 -masm=intel` makes of bare `x+
 post:                          ; int post(int x) { return x++; }
         endbr64
         mov     eax, edi       ; return the OLD value of x
-        ret                    ; (the increment is dead — never observed)
+        ret                    ; (the increment is dead - never observed)
 pre:                           ; int pre(int x) { return ++x; }
         endbr64
         lea     eax, [rdi+1]   ; return x + 1, in one instruction
@@ -159,17 +159,17 @@ both:                          ; { x++; ++x; return x; }
 ## Try it
 
 1. Drop the `return x;` from `inc` and change its return type to `void`. What does `a = inc(a)` now do? (Spoiler: it won't compile.)
-2. Replace `x = x + 1;` inside `inc` with `x++;`. Same behaviour — confirm it.
+2. Replace `x = x + 1;` inside `inc` with `x++;`. Same behaviour - confirm it.
 3. Predict what `int n = 5; int m = n++ + ++n;` leaves in `m` and `n`. Then run it. (And note: combining multiple side effects on the same variable in one expression is *bad style* even when defined.)
 
 ## Cross-reference to K&R
 
-This lesson lines up with [K&R § 1.8 — Arguments — Call by Value](../../kr/lessons/01-08-arguments-call-by-value.md); the `++` shorthand itself is covered in [K&R § 2.8 — Increment and Decrement Operators](../../kr/lessons/02-08-increment-and-decrement-operators.md).
+This lesson lines up with [K&R § 1.8 - Arguments - Call by Value](../../kr/lessons/01-08-arguments-call-by-value.md); the `++` shorthand itself is covered in [K&R § 2.8 - Increment and Decrement Operators](../../kr/lessons/02-08-increment-and-decrement-operators.md).
 
 ## Go deeper
 
-- cppreference — [Function declarations](https://en.cppreference.com/w/c/language/function_declaration) and [function call expressions](https://en.cppreference.com/w/c/language/operator_other#Function_call).
-- cppreference — [Increment/decrement operators](https://en.cppreference.com/w/c/language/operator_incdec).
-- cppreference — [Expressions vs. statements](https://en.cppreference.com/w/c/language/expressions).
+- cppreference - [Function declarations](https://en.cppreference.com/w/c/language/function_declaration) and [function call expressions](https://en.cppreference.com/w/c/language/operator_other#Function_call).
+- cppreference - [Increment/decrement operators](https://en.cppreference.com/w/c/language/operator_incdec).
+- cppreference - [Expressions vs. statements](https://en.cppreference.com/w/c/language/expressions).
 
 *Click **next →** to dig into C's integer types.*

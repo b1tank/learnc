@@ -11,17 +11,17 @@ source:
   url: https://www.youtube.com/watch?v=TM4jgODgdFY
 ---
 
-> **Source video.** [Let's Learn C — lesson 21](https://www.youtube.com/watch?v=TM4jgODgdFY) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 21](https://www.youtube.com/watch?v=TM4jgODgdFY) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
-A `union` overlays several fields at the **same address**, so the storage is reused — perfect for tagged unions and for inspecting an object's raw bytes. A **bitfield** packs several small integers into a single word, useful for flags and on-wire headers. Both pay the price of being sensitive to alignment, endianness, and a handful of "implementation-defined" choices.
+A `union` overlays several fields at the **same address**, so the storage is reused - perfect for tagged unions and for inspecting an object's raw bytes. A **bitfield** packs several small integers into a single word, useful for flags and on-wire headers. Both pay the price of being sensitive to alignment, endianness, and a handful of "implementation-defined" choices.
 
 ## Walkthrough
 
 ### `union`: shared storage `[08:03 → 16:18]`
 
-In a `struct` every field has its own offset; in a `union` every field starts at offset 0, so writing one overwrites the others. That is exactly what you want when an object is *one of* several types at a time — a classic **tagged union**: a discriminator plus a `union` of payload variants. The size becomes the **largest** variant, not the sum. Redis' vector-set evaluator uses this for `ExprToken` (a number *or* a string descriptor *or* an opcode depending on `token_type`) — millions of instances, real savings.
+In a `struct` every field has its own offset; in a `union` every field starts at offset 0, so writing one overwrites the others. That is exactly what you want when an object is *one of* several types at a time - a classic **tagged union**: a discriminator plus a `union` of payload variants. The size becomes the **largest** variant, not the sum. Redis' vector-set evaluator uses this for `ExprToken` (a number *or* a string descriptor *or* an opcode depending on `token_type`) - millions of instances, real savings.
 
 ### Reading an int's bytes through a union `[09:33 → 11:20]`
 
@@ -61,7 +61,7 @@ int main(void) {
 
 ### Caveats: portability and overflow `[19:11 → 24:13]`
 
-C barely specifies how bitfields are packed across endianness and ABIs — fine for in-memory state, dangerous for serialised data (for real wire formats, prefer `unsigned char[]` plus shifts and masks). Assigning 17 to a 4-bit *unsigned* field stores `17 mod 16 = 1`; the same on a *signed* bitfield is **undefined behaviour**, so keep small fields `unsigned`.
+C barely specifies how bitfields are packed across endianness and ABIs - fine for in-memory state, dangerous for serialised data (for real wire formats, prefer `unsigned char[]` plus shifts and masks). Assigning 17 to a 4-bit *unsigned* field stores `17 mod 16 = 1`; the same on a *signed* bitfield is **undefined behaviour**, so keep small fields `unsigned`.
 
 ### A minimal tagged union
 
@@ -131,7 +131,7 @@ after level=17: level=1
 
 ## Modern note
 
-C99 added **designated initialisers** (`.tag = 0, .u.i = 42`); C11 added **anonymous unions**, letting you drop the intermediate `u` and write `v.i` directly. For a single flag, `_Bool` / `<stdbool.h>` is cleaner than a 1-bit bitfield — but bitfields still win when you pack several together.
+C99 added **designated initialisers** (`.tag = 0, .u.i = 42`); C11 added **anonymous unions**, letting you drop the intermediate `u` and write `v.i` directly. For a single flag, `_Bool` / `<stdbool.h>` is cleaner than a 1-bit bitfield - but bitfields still win when you pack several together.
 
 ## Try it
 
@@ -141,14 +141,14 @@ C99 added **designated initialisers** (`.tag = 0, .u.i = 42`); C11 added **anony
 
 ## Cross-reference to K&R
 
-- [K&R § 6.8 — Unions](../../kr/lessons/06-08-unions.md)
-- [K&R § 6.9 — Bit-fields](../../kr/lessons/06-09-bit-fields.md)
+- [K&R § 6.8 - Unions](../../kr/lessons/06-08-unions.md)
+- [K&R § 6.9 - Bit-fields](../../kr/lessons/06-09-bit-fields.md)
 
 K&R presents both features as modern C still uses them; Salvatore adds the *why* with real Redis examples (`ExprToken`, `redisObject`) and the portability caveats.
 
 ## Go deeper
 
-- [`man 7 ip`](https://man7.org/linux/man-pages/man7/ip.7.html) — the IPv4 header, the canonical bitfield wire-format example.
-- Redis' `redisObject` in [`server.h`](https://github.com/redis/redis/blob/unstable/src/server.h) — production-grade `type`/`encoding`/`refcount` bitfields.
-- Type punning: prefer `memcpy` between same-sized types over a `union` cast — same codegen, strict-aliasing-safe.
+- [`man 7 ip`](https://man7.org/linux/man-pages/man7/ip.7.html) - the IPv4 header, the canonical bitfield wire-format example.
+- Redis' `redisObject` in [`server.h`](https://github.com/redis/redis/blob/unstable/src/server.h) - production-grade `type`/`encoding`/`refcount` bitfields.
+- Type punning: prefer `memcpy` between same-sized types over a `union` cast - same codegen, strict-aliasing-safe.
 - [Eric Raymond, *The Lost Art of C Structure Packing*](http://www.catb.org/esr/structure-packing/).

@@ -8,11 +8,11 @@ next: 04-06-static-variables
 status: done
 ---
 
-A real program is split across many `.c` files compiled separately, then linked. For one file to call a function (or use a variable) defined in another, the caller's file needs the **declaration** — the prototype — at compile time. A **header file** (`.h`) is just a shared text file of declarations that multiple `.c` files `#include`. The preprocessor literally pastes the header's text in place, so every file sees the same prototypes and the compiler can type-check every call. The header is the *interface*; the `.c` file is the *implementation*.
+A real program is split across many `.c` files compiled separately, then linked. For one file to call a function (or use a variable) defined in another, the caller's file needs the **declaration** - the prototype - at compile time. A **header file** (`.h`) is just a shared text file of declarations that multiple `.c` files `#include`. The preprocessor literally pastes the header's text in place, so every file sees the same prototypes and the compiler can type-check every call. The header is the *interface*; the `.c` file is the *implementation*.
 
 ## Interface vs implementation
 
-In a single runnable we can't have two files, but here's the split a header enforces — declarations up top (what a `.h` holds), definitions below (what the matching `.c` holds):
+In a single runnable we can't have two files, but here's the split a header enforces - declarations up top (what a `.h` holds), definitions below (what the matching `.c` holds):
 
 ```c:run interface (declarations) then implementation
 /* These prototypes are what "mathx.h" would contain, #included everywhere: */
@@ -34,7 +34,7 @@ int main(void) {
 add=5 mul=6
 ```
 
-In a multi-file project, `main.c` would `#include "mathx.h"` to get the prototypes and call `add`/`mul`, while `mathx.c` would `#include "mathx.h"` *and* define the bodies. Including the header in the implementation file too means the compiler checks the definitions against their own declarations — catching a signature you changed in one place but not the other.
+In a multi-file project, `main.c` would `#include "mathx.h"` to get the prototypes and call `add`/`mul`, while `mathx.c` would `#include "mathx.h"` *and* define the bodies. Including the header in the implementation file too means the compiler checks the definitions against their own declarations - catching a signature you changed in one place but not the other.
 
 ## Include guards and the `<>` vs `""` rule
 
@@ -48,10 +48,10 @@ int mul(int, int);
 #endif                 /* second inclusion: MATHX_H is set, body skipped */
 ```
 
-(Most compilers also accept the simpler `#pragma once`.) The two `#include` spellings differ in *where* the preprocessor searches: `#include <stdio.h>` (angle brackets) looks in the system/standard include paths — use it for library headers; `#include "mathx.h"` (quotes) looks in your project directory first — use it for your own headers. A header should contain declarations, macros, and type definitions — **not** function bodies or variable definitions — so that including it in many files doesn't create duplicate definitions for the linker to reject.
+(Most compilers also accept the simpler `#pragma once`.) The two `#include` spellings differ in *where* the preprocessor searches: `#include <stdio.h>` (angle brackets) looks in the system/standard include paths - use it for library headers; `#include "mathx.h"` (quotes) looks in your project directory first - use it for your own headers. A header should contain declarations, macros, and type definitions - **not** function bodies or variable definitions - so that including it in many files doesn't create duplicate definitions for the linker to reject.
 
 ## Go deeper
-- [Header files (C)](https://en.cppreference.com/w/c/preprocessor/include) — `#include` mechanics
-- [Include guard](https://en.wikipedia.org/wiki/Include_guard) — preventing double inclusion
-- [`#pragma once`](https://en.wikipedia.org/wiki/Pragma_once) — the one-line alternative
-- [Separate compilation & linking](https://en.wikipedia.org/wiki/Translation_unit_(programming)) — why the interface/implementation split exists
+- [Header files (C)](https://en.cppreference.com/w/c/preprocessor/include) - `#include` mechanics
+- [Include guard](https://en.wikipedia.org/wiki/Include_guard) - preventing double inclusion
+- [`#pragma once`](https://en.wikipedia.org/wiki/Pragma_once) - the one-line alternative
+- [Separate compilation & linking](https://en.wikipedia.org/wiki/Translation_unit_(programming)) - why the interface/implementation split exists

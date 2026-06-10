@@ -1,18 +1,18 @@
 {
-  "_note": "Single source of truth for prose that would otherwise live in many HTML files. bin/stamp injects each value between matching <!-- INJECT:key.path --> ... <!-- /INJECT --> markers. Edit ONLY here; never edit the injected block in HTML directly (your edit will be overwritten on the next bin/stamp run). Values are inserted verbatim — they are HTML fragments, not plain text.",
+  "_note": "Single source of truth for prose that would otherwise live in many HTML files. bin/stamp injects each value between matching <!-- INJECT:key.path --> ... <!-- /INJECT --> markers. Edit ONLY here; never edit the injected block in HTML directly (your edit will be overwritten on the next bin/stamp run). Values are inserted verbatim - they are HTML fragments, not plain text.",
   "site": {
     "name": "learnc",
     "github_url": "https://github.com/b1tank/learnc",
-    "index_title": "learnc — interactive C in your browser",
+    "index_title": "learnc - interactive C in your browser",
     "index_meta_description": "<meta name=\"description\" content=\"Two parallel learn-C courses, both runnable in your browser: a hand-revised K&amp;R 2e companion and an English transcript-based companion to Salvatore Sanfilippo's Let's Learn C video series. No signup. No tracking.\">",
-    "index_intro": "<p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading — every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>"
+    "index_intro": "<p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading - every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>"
   },
   "courses": {
     "kr": {
       "page_title": "<title>K&amp;R 2e &middot; learnc</title>",
       "page_meta_description": "<meta name=\"description\" content=\"A hand-revised, runnable companion to The C Programming Language (Kernighan &amp; Ritchie, 2e). Every example runs in your browser. No signup. No tracking. Prose verified against K&amp;R.\">",
       "page_intro": "<p>An opinionated learning notebook to read through <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2e), and each section is written in my own words in a lean way with runnable starter code and an in-browser C compiler.</p>",
-      "index_card": "<a class=\"course-card\" href=\"kr.html\">\n    <h2>K&amp;R 2e companion &rarr;</h2>\n    <p>A hand-revised walkthrough of <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2nd edition, 1988) — every section paraphrased, every example runnable, every K&amp;R exercise solved.</p>\n    <p class=\"meta\"><span class=\"lang\">EN</span> · 8 chapters · ~140 lessons + exercises · status: complete</p>\n  </a>"
+      "index_card": "<a class=\"course-card\" href=\"kr.html\">\n    <h2>K&amp;R 2e companion &rarr;</h2>\n    <p>A hand-revised walkthrough of <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2nd edition, 1988) - every section paraphrased, every example runnable, every K&amp;R exercise solved.</p>\n    <p class=\"meta\"><span class=\"lang\">EN</span> · 8 chapters · ~140 lessons + exercises · status: complete</p>\n  </a>"
     },
     "antirez": {
       "page_title": "<title>antirez · Let's Learn C · learnc</title>",

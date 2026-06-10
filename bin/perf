@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""bin/perf — run Lighthouse against learnc and print a one-screen summary.
+"""bin/perf - run Lighthouse against learnc and print a one-screen summary.
 
 What it does:
 
 1. Shells out to `npx lighthouse` (mobile profile, simulated 4G + 4x CPU
-   slowdown — the same setup PageSpeed Insights uses).
+   slowdown - the same setup PageSpeed Insights uses).
 2. Writes the full JSON + HTML reports under `.perf/` for digging in later.
 3. Prints the headline metrics (score, FCP, LCP, TBT, CLS, Speed Index,
    transfer size) plus the things you actually need to read to fix a
@@ -88,7 +88,7 @@ def run_lighthouse(url: str, label: str, *, lh: str, form_factor: str, full: boo
 
 
 def fmt_ms(v: float | None) -> str:
-	if v is None: return "  —  "
+	if v is None: return "  -  "
 	return f"{round(v):>5} ms"
 
 
@@ -131,9 +131,9 @@ def summarise(label: str, report: Path) -> None:
 	if opps:
 		print("  opportunities")
 		for ms, aid, title in opps[:5]:
-			print(f"    {round(ms):>5} ms  {aid} — {title}")
+			print(f"    {round(ms):>5} ms  {aid} - {title}")
 
-	# Render-blocking resources — usually the first thing to fix.
+	# Render-blocking resources - usually the first thing to fix.
 	rb = ((a.get("render-blocking-resources") or {}).get("details") or {}).get("items") or []
 	if rb:
 		print("  render-blocking")
@@ -168,9 +168,9 @@ def main() -> int:
 
 	# Sanity: we need npx + chrome.
 	if shutil.which("npx") is None:
-		raise SystemExit("npx not found — install Node.js (https://nodejs.org)")
+		raise SystemExit("npx not found - install Node.js (https://nodejs.org)")
 	if not any(shutil.which(b) for b in ("google-chrome", "chromium", "chromium-browser")):
-		raise SystemExit("no Chrome/Chromium on PATH — Lighthouse needs a headless browser")
+		raise SystemExit("no Chrome/Chromium on PATH - Lighthouse needs a headless browser")
 
 	form_factor = "desktop" if args.desktop else "mobile"
 	base = DEFAULT_LOCAL if args.local else DEFAULT_PROD

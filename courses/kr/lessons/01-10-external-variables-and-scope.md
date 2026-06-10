@@ -8,11 +8,11 @@ next: ex-1-20
 status: done
 ---
 
-So far every variable has been **automatic** — born when its function/block is entered, destroyed on exit, living on the [stack](https://en.wikipedia.org/wiki/Call_stack). An **external** (global) variable is different: it's defined outside any function, exists for the whole program run, and is reachable by name from any function that follows it. Where it lives is decided at link time, not run time — it sits in a fixed [data segment](https://en.wikipedia.org/wiki/Data_segment) of the executable, not on the stack.
+So far every variable has been **automatic** - born when its function/block is entered, destroyed on exit, living on the [stack](https://en.wikipedia.org/wiki/Call_stack). An **external** (global) variable is different: it's defined outside any function, exists for the whole program run, and is reachable by name from any function that follows it. Where it lives is decided at link time, not run time - it sits in a fixed [data segment](https://en.wikipedia.org/wiki/Data_segment) of the executable, not on the stack.
 
 ## Globals live in `.data` / `.bss`, and start zeroed
 
-An initialized global goes in the `.data` segment; an uninitialized one goes in `.bss` and the loader guarantees it starts at **zero** — unlike a stack variable, which holds garbage. Any function can read and write it without it being passed as an argument:
+An initialized global goes in the `.data` segment; an uninitialized one goes in `.bss` and the loader guarantees it starts at **zero** - unlike a stack variable, which holds garbage. Any function can read and write it without it being passed as an argument:
 
 ```c:run an external variable shared across functions
 #include <stdio.h>
@@ -39,7 +39,7 @@ Globals are convenient but dangerous: any function can change them, so a bug any
 
 ## `static`: storage of a global, scope of a local
 
-The keyword `static` inside a function gives a variable **static storage duration** (it lives in `.data`, persisting across calls) while keeping its **name visible only inside that function**. It's initialized exactly once. This is how a function keeps private memory between calls — the basis of counters, caches, and lazy initialization:
+The keyword `static` inside a function gives a variable **static storage duration** (it lives in `.data`, persisting across calls) while keeping its **name visible only inside that function**. It's initialized exactly once. This is how a function keeps private memory between calls - the basis of counters, caches, and lazy initialization:
 
 ```c:run static keeps state between calls
 #include <stdio.h>
@@ -62,12 +62,12 @@ int main(void) {
 1 2 3
 ```
 
-(The calls are written on separate lines deliberately: the order in which C evaluates several function calls inside one `printf` is *unspecified*, so `printf("%d %d %d", next_id(), next_id(), next_id())` could print `3 2 1` on one compiler and `1 2 3` on another — a classic portability trap.)
+(The calls are written on separate lines deliberately: the order in which C evaluates several function calls inside one `printf` is *unspecified*, so `printf("%d %d %d", next_id(), next_id(), next_id())` could print `3 2 1` on one compiler and `1 2 3` on another - a classic portability trap.)
 
-Scope answers "what names are visible here?"; storage duration answers "how long does the object live?" — they're independent axes, and `static` is the keyword that splits them apart.
+Scope answers "what names are visible here?"; storage duration answers "how long does the object live?" - they're independent axes, and `static` is the keyword that splits them apart.
 
 ## Go deeper
-- [Storage duration & linkage](https://en.cppreference.com/w/c/language/storage_duration) — automatic, static, and the `static`/`extern` keywords
-- [Scope (C)](https://en.cppreference.com/w/c/language/scope) — block vs file scope
-- [Data segment / `.bss`](https://en.wikipedia.org/wiki/.bss) — where globals are stored
-- [Unsequenced & undefined behavior](https://en.cppreference.com/w/c/language/eval_order) — why argument evaluation order bites
+- [Storage duration & linkage](https://en.cppreference.com/w/c/language/storage_duration) - automatic, static, and the `static`/`extern` keywords
+- [Scope (C)](https://en.cppreference.com/w/c/language/scope) - block vs file scope
+- [Data segment / `.bss`](https://en.wikipedia.org/wiki/.bss) - where globals are stored
+- [Unsequenced & undefined behavior](https://en.cppreference.com/w/c/language/eval_order) - why argument evaluation order bites

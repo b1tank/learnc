@@ -8,7 +8,7 @@ next: 01-05-character-input-and-output
 status: done
 ---
 
-Magic numbers buried in code are a maintenance trap. C's oldest fix is `#define`, a [preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) directive. The crucial mental model: the preprocessor runs *before* the compiler and does pure **text substitution**. By the time the compiler sees your code, every `LOWER` has already been replaced by `0` — the name doesn't exist in the compiled program at all.
+Magic numbers buried in code are a maintenance trap. C's oldest fix is `#define`, a [preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) directive. The crucial mental model: the preprocessor runs *before* the compiler and does pure **text substitution**. By the time the compiler sees your code, every `LOWER` has already been replaced by `0` - the name doesn't exist in the compiled program at all.
 
 ```c:run named constants in the table
 #include <stdio.h>
@@ -45,7 +45,7 @@ int main(void) {
 
 Note: no semicolon, no type. `#define UPPER 300` is a textual rule, not a statement. The substituted text runs to the end of the line.
 
-## Text substitution is literal — and dangerous
+## Text substitution is literal - and dangerous
 
 Because the preprocessor doesn't understand C, function-like macros expand their arguments verbatim, with no regard for operator precedence. The textbook trap:
 
@@ -67,7 +67,7 @@ BAD(1+2)  = 5
 GOOD(1+2) = 9
 ```
 
-`BAD(1+2)` becomes the text `1+2*1+2`, which by precedence is `1 + (2*1) + 2 = 5`. Always parenthesize macro parameters *and* the whole body. Macros also evaluate arguments more than once — `GOOD(i++)` would increment `i` twice.
+`BAD(1+2)` becomes the text `1+2*1+2`, which by precedence is `1 + (2*1) + 2 = 5`. Always parenthesize macro parameters *and* the whole body. Macros also evaluate arguments more than once - `GOOD(i++)` would increment `i` twice.
 
 ## Three ways to name a constant
 
@@ -77,7 +77,7 @@ GOOD(1+2) = 9
 | `const int n = 300;` | yes (`int`) | yes (block/file) | yes | typed constants you may take the address of |
 | `enum { N = 300 };` | yes (int constant) | yes | yes | sets of related integer constants |
 
-For a single integer the modern instinct is `const` or `enum` — they're typed and respect scope. `#define` still wins where you need a value *before* the compiler proper runs (array sizes in older C, `#if` conditionals).
+For a single integer the modern instinct is `const` or `enum` - they're typed and respect scope. `#define` still wins where you need a value *before* the compiler proper runs (array sizes in older C, `#if` conditionals).
 
 ```c:run const and enum
 #include <stdio.h>
@@ -101,6 +101,6 @@ row 2, offset 32
 You can watch the substitution yourself: `cc -E file.c` stops after the preprocessor and prints the expanded source.
 
 ## Go deeper
-- [C preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) — directives, macros, conditional compilation
-- [`#define` reference](https://en.cppreference.com/w/c/preprocessor/replace) — object-like vs function-like macros
-- [`const` qualifier](https://en.cppreference.com/w/c/language/const) — typed read-only objects
+- [C preprocessor](https://en.wikipedia.org/wiki/C_preprocessor) - directives, macros, conditional compilation
+- [`#define` reference](https://en.cppreference.com/w/c/preprocessor/replace) - object-like vs function-like macros
+- [`const` qualifier](https://en.cppreference.com/w/c/language/const) - typed read-only objects

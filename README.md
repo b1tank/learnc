@@ -8,7 +8,7 @@
 
 ## What this is
 
-A learning artifact. I am reading K&R cover-to-cover and writing a short rewrite of each section in my own words, with a runnable code editor next to the prose. The whole book — every section, every numbered exercise — is enumerated on the site. The ones I have not reached yet are stubs.
+A learning artifact. I am reading K&R cover-to-cover and writing a short rewrite of each section in my own words, with a runnable code editor next to the prose. The whole book - every section, every numbered exercise - is enumerated on the site. The ones I have not reached yet are stubs.
 
 ## What this isn't
 
@@ -19,7 +19,7 @@ A learning artifact. I am reading K&R cover-to-cover and writing a short rewrite
 
 ## Why K&R in 2026
 
-K&R is short, dense, and historically grounded. Its progression — `hello, world` → `for` → character I/O → arrays → pointers — is still one of the clearest paths into the language. What is dated is the *style*: pre-ANSI function declarations, `gets`, no `bool`, weak prototypes. learnc keeps K&R's structure and adds a **Modern note** wherever current C practice diverges.
+K&R is short, dense, and historically grounded. Its progression - `hello, world` → `for` → character I/O → arrays → pointers - is still one of the clearest paths into the language. What is dated is the *style*: pre-ANSI function declarations, `gets`, no `bool`, weak prototypes. learnc keeps K&R's structure and adds a **Modern note** wherever current C practice diverges.
 
 ## How it works
 
@@ -69,7 +69,7 @@ bin/dev                  # hot-reload dev server (recommended)
 ```
 
 `bin/dev` watches every `.html`, `.css`, `.js`, and `lessons/*.md` file and
-auto-reloads the browser when any of them change. Pure Python stdlib — no npm,
+auto-reloads the browser when any of them change. Pure Python stdlib - no npm,
 no watcher daemon. Pick the first free port from 8000.
 
 In VS Code, hit **F5** and pick **"learnc: dev server (hot reload)"**, or run
@@ -100,8 +100,8 @@ There are 97 numbered exercises and 77 sections across 8 chapters. Most are stub
 
 ## Inspiration
 
-This project is inspired by [a talk by antirez](https://www.youtube.com/watch?v=LermwGD7msg) (Salvatore Sanfilippo — author of Redis; see [invece.org](http://invece.org/)). The visual style borrows from his site and from [bellard.org](https://bellard.org/) — dense, monospace, no-frills web pages where substance shows through directly.
+This project is inspired by [a talk by antirez](https://www.youtube.com/watch?v=LermwGD7msg) (Salvatore Sanfilippo - author of Redis; see [invece.org](http://invece.org/)). The visual style borrows from his site and from [bellard.org](https://bellard.org/) - dense, monospace, no-frills web pages where substance shows through directly.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The lesson prose is original work; K&R's *The C Programming Language* itself remains copyrighted by its authors and Pearson.
+MIT - see [LICENSE](LICENSE). The lesson prose is original work; K&R's *The C Programming Language* itself remains copyrighted by its authors and Pearson.

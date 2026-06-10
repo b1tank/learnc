@@ -23,7 +23,7 @@
       var dark = pref === "dark" || (pref !== "light" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
       if (dark) document.documentElement.dataset.theme = "dark";
-    } catch (e) { /* private mode — fall through */ }
+    } catch (e) { /* private mode - fall through */ }
   })();
 </script>
 <!-- /INJECT -->
@@ -36,7 +36,7 @@
 
   Override coepCredentialless to always return false: the library defaults
   to credentialless on Safari, but `COEP: credentialless` only shipped in
-  iOS 17.4 — older iPhones see an unknown value, fall back to no COEP, and
+  iOS 17.4 - older iPhones see an unknown value, fall back to no COEP, and
   the page never becomes crossOriginIsolated. require-corp has worked since
   iOS 15.2 and is satisfied by our CDNs.
 
@@ -51,7 +51,7 @@
   This is a hand-picked subset of style.css covering only what the landing
   page paints above the fold: theme tokens, body, links, the header row,
   the footer row, and the dark-theme overrides for those. Once style.css
-  lands (loaded non-blocking below) it overrides nothing here — the rules
+  lands (loaded non-blocking below) it overrides nothing here - the rules
   are byte-for-byte identical, so order doesn't matter.
 
   Why bother? Without this block the browser blocks first paint on
@@ -61,7 +61,7 @@
   manifest has been fetched and the lesson list has been built.
 
   Keep this block tiny. If you add a selector here, you probably want it
-  in style.css too — duplication is fine as long as the inline copy
+  in style.css too - duplication is fine as long as the inline copy
   stays a subset.
 -->
 <style>
@@ -96,7 +96,7 @@ a:hover{background:var(--hl)}
   Load style.css without blocking first paint. The `preload` makes the
   browser start fetching at high priority; the `onload` swaps it to a
   normal stylesheet so the rules actually apply once the bytes arrive.
-  <noscript> covers users with JS disabled — they get the old
+  <noscript> covers users with JS disabled - they get the old
   render-blocking behaviour, which is still correct (just slower).
 -->
 <link rel="preload" href="style.css?v=1ce65dc1" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -110,7 +110,7 @@ a:hover{background:var(--hl)}
 <!-- modulepreload: app.js statically imports theme.js + shortcuts.js, so
      fetching them at the same time as app.js (instead of after) eliminates
      one waterfall layer. The browser is the only thing that has to do real
-     work here — same bytes, just earlier discovery. -->
+     work here - same bytes, just earlier discovery. -->
 <link rel="modulepreload" href="theme.js?v=1ce65dc1">
 <link rel="modulepreload" href="shortcuts.js?v=1ce65dc1">
 <link rel="prefetch" href="lesson.html">

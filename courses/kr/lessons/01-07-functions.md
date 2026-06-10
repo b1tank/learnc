@@ -10,7 +10,7 @@ status: done
 
 You already know what a function is. In C only a few things differ from the high-level languages you came from, and each one bites if you ignore it:
 
-- **Declaration vs definition.** A *prototype* declares the signature; the *definition* supplies the body. Calls are checked against whatever declaration is in scope — and if there is none, older C silently invents one.
+- **Declaration vs definition.** A *prototype* declares the signature; the *definition* supplies the body. Calls are checked against whatever declaration is in scope - and if there is none, older C silently invents one.
 - **Pass by value, always.** Every argument is *copied*. The only way a function changes the caller's data is through a pointer (next lesson).
 - **One return value, by value.** No tuples, no multiple returns. A non-`void` function that falls off the end without returning is undefined behaviour.
 
@@ -54,11 +54,11 @@ int power(int base, int n) {
 The signature can appear twice: once as a *prototype* (no body, ends in `;`), once as the *definition* (with body). The prototype is what lets `main` call `power` before `power` is defined, and it is what makes the call type-checked.
 
 ```c
-int power(int base, int n);          /* declaration — a promise */
-int power(int base, int n) { ... }   /* definition — the body   */
+int power(int base, int n);          /* declaration - a promise */
+int power(int base, int n) { ... }   /* definition - the body   */
 ```
 
-Delete the prototype, call a function before it is defined, and pre-ANSI C would assume it returns `int` and accept any arguments. Modern compilers reject this (`-Werror=implicit-function-declaration`) — run it and read the diagnostic:
+Delete the prototype, call a function before it is defined, and pre-ANSI C would assume it returns `int` and accept any arguments. Modern compilers reject this (`-Werror=implicit-function-declaration`) - run it and read the diagnostic:
 
 ```c:run missing prototype → error
 #include <stdio.h>
@@ -83,7 +83,7 @@ void try_reset(int x) { x = 0; }   /* x is a private copy */
 int main(void) {
     int a = 5;
     try_reset(a);
-    printf("%d\n", a);   /* still 5 — the copy was thrown away */
+    printf("%d\n", a);   /* still 5 - the copy was thrown away */
     return 0;
 }
 ```
@@ -97,7 +97,7 @@ int main(void) {
 `return expr;` ends the function and hands `expr` back; its type must match (or convert to) the declared return type. Two rules with sharp edges:
 
 - A non-`void` function that runs off the end and whose result is then used is undefined behaviour. Turn on `-Wreturn-type`.
-- `int f(void)` means *no parameters*. `int f()` means *unspecified parameters* (a pre-ANSI relic), not "no parameters". Always write `void` when you mean none — calling `answer(1)` below is a compile error precisely because of the `void`.
+- `int f(void)` means *no parameters*. `int f()` means *unspecified parameters* (a pre-ANSI relic), not "no parameters". Always write `void` when you mean none - calling `answer(1)` below is a compile error precisely because of the `void`.
 
 ```c:run void means no args
 #include <stdio.h>
@@ -112,7 +112,7 @@ int main(void) {
 
 ## `static`: internal linkage
 
-By default a top-level function has *external* linkage — its name is visible to the linker and to every other `.c` file. Mark it `static` to give it *internal* linkage: private to this translation unit. That lets short helper names live in many files without colliding, and gives the optimiser a closed world to inline into.
+By default a top-level function has *external* linkage - its name is visible to the linker and to every other `.c` file. Mark it `static` to give it *internal* linkage: private to this translation unit. That lets short helper names live in many files without colliding, and gives the optimiser a closed world to inline into.
 
 ```c:run static helper
 #include <stdio.h>
@@ -131,7 +131,7 @@ int main(void) {
 
 ## `const` parameters
 
-`const` on a parameter is a promise not to reassign it inside the body. On a scalar it is only documentation — the copy is yours to mutate harmlessly — but on a *pointer* it is load-bearing: `const char *s` means "I read this string, I do not write it", and the compiler enforces it.
+`const` on a parameter is a promise not to reassign it inside the body. On a scalar it is only documentation - the copy is yours to mutate harmlessly - but on a *pointer* it is load-bearing: `const char *s` means "I read this string, I do not write it", and the compiler enforces it.
 
 ```c:run const parameter
 #include <stdio.h>
@@ -167,9 +167,9 @@ It still compiles in many toolchains for backward compatibility, but it does no 
 
 ## Variations
 
-Each block below is a complete, runnable program — edit and re-run any of them.
+Each block below is a complete, runnable program - edit and re-run any of them.
 
-Modular exponentiation, `(base^n) mod m` — the kernel of RSA. Reducing every step keeps the intermediate product small:
+Modular exponentiation, `(base^n) mod m` - the kernel of RSA. Reducing every step keeps the intermediate product small:
 
 ```c:run modular exponentiation
 #include <stdio.h>
@@ -216,7 +216,7 @@ int main(void) {
 8 1 0
 ```
 
-The recursive definition — `power(b, 0) = 1`, `power(b, n) = b * power(b, n-1)` — is a one-liner and a teaser for §4.10:
+The recursive definition - `power(b, 0) = 1`, `power(b, n) = b * power(b, n-1)` - is a one-liner and a teaser for §4.10:
 
 ```c:run recursive power
 #include <stdio.h>
@@ -241,7 +241,7 @@ int main(void) {
 2^5 = 32
 ```
 
-Functions compose like any expression — the result of one is an argument to the next:
+Functions compose like any expression - the result of one is an argument to the next:
 
 ```c:run compose with square
 #include <stdio.h>
@@ -260,5 +260,5 @@ int main(void) {
 64
 ```
 
-*Click **next →** to see exactly what C does — and doesn't do — with the arguments you pass.*
+*Click **next →** to see exactly what C does - and doesn't do - with the arguments you pass.*
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>learnc — interactive C in your browser</title>
+<title>learnc - interactive C in your browser</title>
 <!-- INJECT:site.index_meta_description -->
 <meta name="description" content="Two parallel learn-C courses, both runnable in your browser: a hand-revised K&amp;R 2e companion and an English transcript-based companion to Salvatore Sanfilippo's Let's Learn C video series. No signup. No tracking.">
 <!-- /INJECT -->
@@ -18,7 +18,7 @@
       var dark = pref === "dark" || (pref !== "light" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
       if (dark) document.documentElement.dataset.theme = "dark";
-    } catch (e) { /* private mode — fall through */ }
+    } catch (e) { /* private mode - fall through */ }
   })();
 </script>
 <!-- /INJECT -->
@@ -31,7 +31,7 @@
 
   Override coepCredentialless to always return false: the library defaults
   to credentialless on Safari, but `COEP: credentialless` only shipped in
-  iOS 17.4 — older iPhones see an unknown value, fall back to no COEP, and
+  iOS 17.4 - older iPhones see an unknown value, fall back to no COEP, and
   the page never becomes crossOriginIsolated. require-corp has worked since
   iOS 15.2 and is satisfied by our CDNs.
 
@@ -100,7 +100,7 @@
 
 <section class="intro">
   <!-- INJECT:site.index_intro -->
-<p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading — every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>
+<p>Two parallel learn-C courses, both runnable in your browser. Pick one and start reading - every code sample on every page is editable and compiles in-browser via WebAssembly. No signup. No tracking.</p>
 <!-- /INJECT -->
 </section>
 
@@ -108,7 +108,7 @@
   <!-- INJECT:courses.kr.index_card -->
 <a class="course-card" href="kr.html">
     <h2>K&amp;R 2e companion &rarr;</h2>
-    <p>A hand-revised walkthrough of <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2nd edition, 1988) — every section paraphrased, every example runnable, every K&amp;R exercise solved.</p>
+    <p>A hand-revised walkthrough of <em>The C Programming Language</em> (Kernighan &amp; Ritchie, 2nd edition, 1988) - every section paraphrased, every example runnable, every K&amp;R exercise solved.</p>
     <p class="meta"><span class="lang">EN</span> · 8 chapters · ~140 lessons + exercises · status: complete</p>
   </a>
 <!-- /INJECT -->

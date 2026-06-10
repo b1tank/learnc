@@ -6,7 +6,7 @@
 
   Override coepCredentialless to always return false: the library defaults
   to credentialless on Safari, but `COEP: credentialless` only shipped in
-  iOS 17.4 — older iPhones see an unknown value, fall back to no COEP, and
+  iOS 17.4 - older iPhones see an unknown value, fall back to no COEP, and
   the page never becomes crossOriginIsolated. require-corp has worked since
   iOS 15.2 and is satisfied by our CDNs.
 

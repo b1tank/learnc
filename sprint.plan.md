@@ -1,11 +1,11 @@
-# Sprint Plan — Ground-Up Lesson Overhaul
+# Sprint Plan - Ground-Up Lesson Overhaul
 
 Goal: turn every lesson from "surface K&R for a high-level dev" into a **ground-up**
 deep dive (headers → libc → syscalls → kernel → stack/heap/memory layout →
 assembly/ABI) in the spirit of *Programming from the Ground Up*. Keep each lesson
 **digestible**: tight prose, every example a runnable `c:run` block (reset/share/run
 buttons + pass/fail badge), and good external hyperlinks (Wikipedia, cppreference,
-man7, Godbolt) for readers who want more — without offloading the core idea.
+man7, Godbolt) for readers who want more - without offloading the core idea.
 
 ## Conventions for every rewritten lesson
 - Keep frontmatter (id/chapter/label/title/prev/next/status) **unchanged**.
@@ -25,16 +25,16 @@ man7, Godbolt) for readers who want more — without offloading the core idea.
 
 ## Hiccups & Notes
 - gcc 11 `-std=c11 -w` does NOT error on implicit declaration (runs, returns 27),
-  but the in-browser WASM clang DOES reject it — so "compile error" demo blocks
+  but the in-browser WASM clang DOES reject it - so "compile error" demo blocks
   must NOT carry an output fence (no badge). Verifier flags them `[error-demo OK]`.
 - Verifier normalization = strip trailing whitespace of whole stdout (matches lesson.js).
 
 ---
 
-# Phase 3 — antirez course first-pass walkthroughs
+# Phase 3 - antirez course first-pass walkthroughs
 
 Goal: produce **lean first-pass draft notes** for all 35 antirez transcripts
-(02-37 minus 20 — random variables, no transcript). These are scaffolds the
+(02-37 minus 20 - random variables, no transcript). These are scaffolds the
 author will revise after watching each video; do NOT over-author.
 
 ## Conventions per lesson
@@ -46,13 +46,13 @@ author will revise after watching each video; do NOT over-author.
 - Length target: ~50-120 lines. Do not bloat. The user revises later.
 - For multi-part series (Toy Forth, ZX Spectrum) and other "code review of
   large existing project" videos, write the walkthrough as prose with short
-  *non-runnable* `c` snippets only — full project code lives outside this site.
+  *non-runnable* `c` snippets only - full project code lives outside this site.
 - Every `c:run` block that has an `output` fence MUST pass `playground/verify.py`.
 - Update `manifest.json` status `stub` → `draft` for each authored lesson.
 - One atomic commit per lesson: `docs(antirez/NN-slug): first-pass draft`.
 
 ## Tasks (playlist order)
-- [x] 02 Dismantling Hello, world — stdio, headers, functions (Z84vlG1RRtg)
+- [x] 02 Dismantling Hello, world - stdio, headers, functions (Z84vlG1RRtg)
 - [x] 03 Lifetime of local variables                    (r6mU_IHXEps)
 - [x] 04 Functions, expressions, and the increment operator (mw4gUqsGPZw)
 - [x] 05 Integer types in depth                         (YNsXyasn4R4)
@@ -78,11 +78,11 @@ author will revise after watching each video; do NOT over-author.
 - [x] 26 Toy Forth (part 1)                             (vYODKK8TQGE)
 - [x] 27 Toy Forth (part 2)                             (-QxrmHo-V7Y)
 - [x] 28 Toy Forth (part 3)                             (-1ZhCgaIPOk)
-- [x] 29 Toy Forth — exec() (part 4)                    (oMj3N6jYIUU)
-- [x] 30 Toy Forth — function registration (part 5)     (C4AHEK3fSjg)
+- [x] 29 Toy Forth - exec() (part 4)                    (oMj3N6jYIUU)
+- [x] 30 Toy Forth - function registration (part 5)     (C4AHEK3fSjg)
 - [x] 31 Reference counting deep dive                   (QdZc1JV_oCw)
 - [x] 32 Variadic functions                             (cvWbCx0lLjs)
-- [x] 33 Toy Forth — first program                      (nHzlRqPnlrE)
+- [x] 33 Toy Forth - first program                      (nHzlRqPnlrE)
 - [x] 34 ZX Spectrum image (part 1)                     (D1U3uCe-kok)
 - [x] 35 ZX Spectrum image (part 2)                     (fZmdsh0gQig)
 - [x] 36 ZX Spectrum appendix                           (xaEr-XSlWfo)
@@ -90,7 +90,7 @@ author will revise after watching each video; do NOT over-author.
 - [x] Phase-3 build check + push
 
 ## Hiccups & Notes (phase 3)
-- Lesson 20 stays `status: video-only` — Salvatore disabled transcripts on
+- Lesson 20 stays `status: video-only` - Salvatore disabled transcripts on
   that one.
 - **Slots 02, 04, 05, 06 were re-mapped** after batch 1: my initial manifest
   titles were guesses; the actual videos cover (02) dismantling Hello World,

@@ -11,17 +11,17 @@ source:
   url: https://www.youtube.com/watch?v=OIseV5lcx8w
 ---
 
-> **Source video.** [Let's Learn C — lesson 22](https://www.youtube.com/watch?v=OIseV5lcx8w) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 22](https://www.youtube.com/watch?v=OIseV5lcx8w) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
-Functions live in memory too, so their names are addresses you can store and pass around. The type of a pointer to a function returning `R` and taking `(args)` is written `R (*name)(args)` — wrap the name in parens, prepend a `*`. The payoff is that one piece of code can act on *behaviour* the caller plugs in: `qsort`'s comparator, callback registrations, dispatch tables, plugin systems.
+Functions live in memory too, so their names are addresses you can store and pass around. The type of a pointer to a function returning `R` and taking `(args)` is written `R (*name)(args)` - wrap the name in parens, prepend a `*`. The payoff is that one piece of code can act on *behaviour* the caller plugs in: `qsort`'s comparator, callback registrations, dispatch tables, plugin systems.
 
 ## Walkthrough
 
 ### Functions have addresses `[01:25 → 02:24]`
 
-The name of a function, like the name of an array, decays to a pointer. `printf("%p\n", main)` prints the address of `main` itself — different on every run thanks to ASLR, but stable for the duration of one process. Calling `main()` from `main()` is a legal expression; without optimisation it grows the stack one frame at a time until you crash with a segfault, which is exactly the picture of "the stack runs out of pages".
+The name of a function, like the name of an array, decays to a pointer. `printf("%p\n", main)` prints the address of `main` itself - different on every run thanks to ASLR, but stable for the duration of one process. Calling `main()` from `main()` is a legal expression; without optimisation it grows the stack one frame at a time until you crash with a segfault, which is exactly the picture of "the stack runs out of pages".
 
 ### Declaring a function pointer `[04:53 → 07:00]`
 
@@ -30,18 +30,18 @@ Take the prototype `void hello(void)`, wrap the name in parens, and prepend a `*
 ```
 void (*x)(void);   // x is a pointer to a function returning void, taking void
 x = hello;         // assign
-x();               // call — same syntax as a real function
+x();               // call - same syntax as a real function
 ```
 
 Two functions with the *same prototype* are interchangeable through one pointer. Point `x` at `hello`, call it; point `x` at `bau`, call it again. The pointer type only constrains the signature, not the identity.
 
 ### Functions that take functions `[08:48 → 12:15]`
 
-Once function pointers are first-class values, you can pass them as parameters and return them from other functions. That gives C its first real taste of higher-order programming — `call_n_times(n, f)` doesn't care what `f` does, only that it has the right signature.
+Once function pointers are first-class values, you can pass them as parameters and return them from other functions. That gives C its first real taste of higher-order programming - `call_n_times(n, f)` doesn't care what `f` does, only that it has the right signature.
 
 ### `qsort` is the canonical example `[12:48 → 19:17]`
 
-`qsort(base, nmemb, size, cmp)` sorts *any* array. It knows nothing about your element type — it just walks `base` in `size`-byte strides. The bridge to your data is the comparator you pass: a function that takes two `const void *` pointers and returns `<0`, `0`, or `>0`. This is how a library written years before your code can still sort your data.
+`qsort(base, nmemb, size, cmp)` sorts *any* array. It knows nothing about your element type - it just walks `base` in `size`-byte strides. The bridge to your data is the comparator you pass: a function that takes two `const void *` pointers and returns `<0`, `0`, or `>0`. This is how a library written years before your code can still sort your data.
 
 Be careful with the classic `*a - *b` trick: it overflows when the two values straddle the integer range. Use explicit comparison (`(x > y) - (x < y)`) instead.
 
@@ -70,7 +70,7 @@ add: 7
 mul: 12
 ```
 
-The declaration `int (*ops[2])(int, int)` reads outwards from `ops`: *array of 2, of pointer to function taking `(int, int)` returning `int`*. The inner parens are mandatory — without them, `int *ops[2](int,int)` would be parsed as a function returning a pointer.
+The declaration `int (*ops[2])(int, int)` reads outwards from `ops`: *array of 2, of pointer to function taking `(int, int)` returning `int`*. The inner parens are mandatory - without them, `int *ops[2](int,int)` would be parsed as a function returning a pointer.
 
 ## `qsort` with a custom comparator
 
@@ -96,7 +96,7 @@ int main(void) {
 1 2 3 5 8 9
 ```
 
-`qsort` doesn't know an `int` from an alligator. The `void *` arguments hide the element type; you cast back inside the comparator. The `(x > y) - (x < y)` form returns `-1`, `0`, or `1` without ever subtracting — no overflow risk even with `INT_MIN`/`INT_MAX`.
+`qsort` doesn't know an `int` from an alligator. The `void *` arguments hide the element type; you cast back inside the comparator. The `(x > y) - (x < y)` form returns `-1`, `0`, or `1` without ever subtracting - no overflow risk even with `INT_MIN`/`INT_MAX`.
 
 ## Modern note
 
@@ -123,7 +123,7 @@ call_indirect:                 ; calls through `op f`, a function-pointer arg
         mov     rax, rdi       ; save the function pointer
         mov     edi, esi       ; shift args left: drop f, promote a, b
         mov     esi, edx
-        jmp     rax            ; indirect tail-call — predictor must GUESS
+        jmp     rax            ; indirect tail-call - predictor must GUESS
 ```
 
 Direct calls have one literal target the CPU's branch predictor pre-fetches perfectly. Indirect calls go through a register; a wrong guess flushes the pipeline (≈20+ cycles wasted). This is the same primitive Spectre v2 abuses and that retpolines + Intel CET's `endbr64` are designed to harden. The cost of "polymorphism in C" is exactly one mispredicted branch per dispatch.
@@ -133,18 +133,18 @@ Direct calls have one literal target the CPU's branch predictor pre-fetches perf
 ## Try it
 
 1. Add a third entry `int sub(int, int)` to `ops[]` and a matching `"sub"` to `names[]`. Predict the new output before you run.
-2. Change the comparator to sort *descending* — swap the arguments to the comparison, or negate the result.
+2. Change the comparator to sort *descending* - swap the arguments to the comparison, or negate the result.
 3. Replace `int (*ops[2])(int, int)` with a `typedef`'d version (`typedef int (*binop_t)(int, int);`) and confirm the program is unchanged.
 
 ## Cross-reference to K&R
 
-[K&R § 5.11 — Pointers to Functions](../../kr/lessons/05-11-pointers-to-functions.md) builds the same machinery to sort lines of text, with an option to compare numerically — essentially a hand-rolled `qsort` with a pluggable comparator. K&R also walks through reading the declaration `char (*(*x())[])()` aloud, which is the prose version of the typedef advice above.
+[K&R § 5.11 - Pointers to Functions](../../kr/lessons/05-11-pointers-to-functions.md) builds the same machinery to sort lines of text, with an option to compare numerically - essentially a hand-rolled `qsort` with a pluggable comparator. K&R also walks through reading the declaration `char (*(*x())[])()` aloud, which is the prose version of the typedef advice above.
 
 ## Go deeper
 
-- cppreference, [Pointer declarators — pointers to functions](https://en.cppreference.com/w/c/language/pointer#Pointers_to_functions): the formal grammar and conversion rules.
+- cppreference, [Pointer declarators - pointers to functions](https://en.cppreference.com/w/c/language/pointer#Pointers_to_functions): the formal grammar and conversion rules.
 - [The C Declaration Maze (cdecl.org)](https://cdecl.org/): paste any C declaration and get an English translation. Indispensable for function-pointer-of-arrays-of-pointer-to-function declarations.
 - `man 3 qsort`, `man 3 bsearch`: two standard-library functions whose entire API surface is one function pointer.
-- Linux kernel `struct file_operations` (`include/linux/fs.h`): a real-world dispatch table where every field is a function pointer — the same idea, at production scale.
+- Linux kernel `struct file_operations` (`include/linux/fs.h`): a real-world dispatch table where every field is a function pointer - the same idea, at production scale.
 
 *Click **next →** for the first instalment of the toy-Forth interpreter, where function pointers earn their keep.*

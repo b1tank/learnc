@@ -2,7 +2,7 @@
 id: 30-toy-forth-function-registration
 chapter: 9
 label: "9.6"
-title: Toy Forth — registering functions (part 5)
+title: Toy Forth - registering functions (part 5)
 prev: 29-toy-forth-exec-internals
 next: 31-reference-counting-deep-dive
 status: draft
@@ -11,7 +11,7 @@ source:
   url: https://www.youtube.com/watch?v=C4AHEK3fSjg
 ---
 
-> **Source video.** [Let's Learn C — lesson 27](https://www.youtube.com/watch?v=C4AHEK3fSjg) by Salvatore Sanfilippo (antirez).
+> **Source video.** [Let's Learn C - lesson 27](https://www.youtube.com/watch?v=C4AHEK3fSjg) by Salvatore Sanfilippo (antirez).
 
 ## TL;DR
 
@@ -21,30 +21,30 @@ The interpreter needs a **dictionary** mapping word names to their implementatio
 
 ### Names are string objects, not raw `char *` `[07:30 → 09:33]`
 
-The temptation is `getFunctionByName(ctx, const char *)`. Salvatore backs out of it: every other identifier in the interpreter is already a `TFObject` of type string, and the lookup will eventually be called with names parsed from program text. So even when C code registers a built-in, it wraps the literal: `TFObject *oname = createStringObject(name, strlen(name))` — register, then `release(oname)`. The reference count carries the name across the boundary.
+The temptation is `getFunctionByName(ctx, const char *)`. Salvatore backs out of it: every other identifier in the interpreter is already a `TFObject` of type string, and the lookup will eventually be called with names parsed from program text. So even when C code registers a built-in, it wraps the literal: `TFObject *oname = createStringObject(name, strlen(name))` - register, then `release(oname)`. The reference count carries the name across the boundary.
 
 ### `compareStringObject`: ternary + `memcmp` + length tiebreak `[12:35 → 18:31]`
 
 Lookup needs string equality on raw bytes (no Unicode, no locale). The function returns `-1 / 0 / +1`:
 
-1. `size_t minLen = a->str.len < b->str.len ? a->str.len : b->str.len;` — the ternary picks the shorter length so `memcmp` stays in bounds.
+1. `size_t minLen = a->str.len < b->str.len ? a->str.len : b->str.len;` - the ternary picks the shorter length so `memcmp` stays in bounds.
 2. `memcmp(a->str.ptr, b->str.ptr, minLen)` compares the common prefix.
 3. If the prefix is equal, the longer string wins; if it isn't, the sign of the `memcmp` result wins, normalised to `±1`.
 
-Salvatore notes this is a textbook case where pasting the function into Claude/ChatGPT to ask *"is this correct?"* is the right move — not because he can't read it, but because reviewing your own logic line by line is exhausting and the LLM is cheap.
+Salvatore notes this is a textbook case where pasting the function into Claude/ChatGPT to ask *"is this correct?"* is the right move - not because he can't read it, but because reviewing your own logic line by line is exhausting and the LLM is cheap.
 
 ### `registerFunction`: append or overwrite `[22:03 → 28:55]`
 
 Two paths:
 
-- **Already there.** `getFunctionByName` returned non-NULL. If the existing entry was a user word, `release(fe->userFunc)` and set it to NULL — otherwise leak. Then install the new callback.
+- **Already there.** `getFunctionByName` returned non-NULL. If the existing entry was a user word, `release(fe->userFunc)` and set it to NULL - otherwise leak. Then install the new callback.
 - **Not there.** `xrealloc` the table by one pointer, `xmalloc` a fresh `TFFuncEntry`, slot it at `funcTable[funcCount++]`, `retain(name)`, and zero both `callback` and `userFunc`. The caller fills in whichever of the two it owns.
 
 The `retain` on `name` is the subtlety: the caller will `release` its temporary `oname` right after `registerFunction` returns. Without the retain the refcount drops to zero and the entry's name pointer dangles. With it, the entry holds the last reference.
 
 ### When the compiler falls back to `int` `[31:48 → 33:47]`
 
-The callback type names `TFContext` before that struct is fully visible, so the first compile fails — and the giveaway is that C, not knowing the type, *defaults it to `int`*, which then clashes with the real pointer type:
+The callback type names `TFContext` before that struct is fully visible, so the first compile fails - and the giveaway is that C, not knowing the type, *defaults it to `int`*, which then clashes with the real pointer type:
 
 ```output
 toyforth.c: warning: type defaults to 'int' ...
@@ -61,9 +61,9 @@ With that one line above the callback type, the cascade of "defaults to int" err
 
 ### Built-ins dispatch by the first byte of the name `[37:35 → 43:08]`
 
-`basicMathFunction` is the C callback registered four times — for `+`, `-`, `*`, `/`. It calls `checkStackMinLen(ctx, 2)`, then a *typed* peek/pop: `stackPop(ctx, TFObjectTypeInt)` returns NULL on a type mismatch and sets the runtime error in the context. The operation itself is a `switch (name->str.ptr[0])` — the same callback handles all four operators because the name *is* the operator.
+`basicMathFunction` is the C callback registered four times - for `+`, `-`, `*`, `/`. It calls `checkStackMinLen(ctx, 2)`, then a *typed* peek/pop: `stackPop(ctx, TFObjectTypeInt)` returns NULL on a type mismatch and sets the runtime error in the context. The operation itself is a `switch (name->str.ptr[0])` - the same callback handles all four operators because the name *is* the operator.
 
-The same scaffolding will host user-defined words next episode: `registerUserFunction(ctx, name, body_list)` reuses `registerFunction` and fills in `userFunc` instead of `callback`. `callSymbol` will branch on which field is non-NULL — C call vs. recursive `exec`.
+The same scaffolding will host user-defined words next episode: `registerUserFunction(ctx, name, body_list)` reuses `registerFunction` and fills in `userFunc` instead of `callback`. `callSymbol` will branch on which field is non-NULL - C call vs. recursive `exec`.
 
 ## A minimal dictionary in C
 
@@ -112,16 +112,16 @@ Real Toy Forth swaps three things in: `strcmp` becomes `compareStringObject` (le
 
 ## Try it
 
-1. Add a second word `double_it` (`push(pop() * 2)`) and execute `3 double_it square` by hand — predict the top of stack before running.
+1. Add a second word `double_it` (`push(pop() * 2)`) and execute `3 double_it square` by hand - predict the top of stack before running.
 2. Make `define` *override* when the name already exists, instead of shadowing it via list order. (Walk the list first; if found, replace `fn`.)
 3. Change `entry::name` to hold a heap-allocated copy (`strdup(name)`) and add a corresponding `free` in a teardown function. This mirrors the `retain` / `release` dance in the real interpreter.
 
 ## Cross-reference to K&R
 
-[K&R § 6.6 — Table Lookup](../../kr/lessons/06-06-table-lookup.md) builds essentially this dictionary — a hash table of name → definition with `install` and `lookup` — for the macro processor in chapter 6. The reference-counted string objects here are a thin layer on top of the same idea; the underlying lookup-or-install pattern is identical.
+[K&R § 6.6 - Table Lookup](../../kr/lessons/06-06-table-lookup.md) builds essentially this dictionary - a hash table of name → definition with `install` and `lookup` - for the macro processor in chapter 6. The reference-counted string objects here are a thin layer on top of the same idea; the underlying lookup-or-install pattern is identical.
 
 ## Go deeper
 
-- Forth itself stores the dictionary as a *linked list of words*, each with a `link` field pointing to the previously-defined word. Newer definitions shadow older ones automatically — exactly what the `square`-then-redefine variant in *Try it* simulates.
+- Forth itself stores the dictionary as a *linked list of words*, each with a `link` field pointing to the previously-defined word. Newer definitions shadow older ones automatically - exactly what the `square`-then-redefine variant in *Try it* simulates.
 - The "name is a first-class object you can `retain`" pattern is how Objective-C selectors, Python interned strings, and Lua's `TString` all work. Once strings are cheap to compare and own, dispatch tables stop feeling like C.
 - `dlsym(3)` is the OS-level cousin: a runtime lookup of a symbol name to a function pointer, against the process's loaded libraries instead of an interpreter table.

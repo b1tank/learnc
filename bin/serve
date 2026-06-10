@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/serve — run the learnc site locally for editing.
+# bin/serve - run the learnc site locally for editing.
 # Usage: bin/serve [PORT]
 set -euo pipefail
 cd "$(dirname "$0")/.."

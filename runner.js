@@ -1,4 +1,4 @@
-// learnc — runner.js
+// learnc - runner.js
 // C compile + run in the browser, using Runno's clang+wasi-libc WASM blobs.
 //
 // Why we don't use @runno/runtime's headlessRunCode:
@@ -25,7 +25,7 @@
 const WASI_URL = "https://esm.sh/@runno/wasi@0.10.0";
 const RUNTIME_URL = "https://esm.sh/@runno/runtime@0.10.0";
 
-// Clang assets are baked into Runno at this base URL — see commands.ts in
+// Clang assets are baked into Runno at this base URL - see commands.ts in
 // the upstream package (the const dt = "https://runno.dev/langs" line in
 // the bundle).
 const LANG_BASE = "https://runno.dev/langs";
@@ -138,7 +138,7 @@ export async function run(code, stdin) {
     progress("compiling…");
 
     // Seed the WASIFS with the user's source at /program. Clang reads it as
-    // a string-mode file — same shape headlessRunCode uses internally.
+    // a string-mode file - same shape headlessRunCode uses internally.
     let fs = {
       "/program": {
         path: "program",
@@ -185,7 +185,7 @@ export async function run(code, stdin) {
 
     progress("running…");
     // wasm-ld left the linked program at /program.wasm. WASIWorkerHost
-    // expects a URL it can fetch, so wrap the file's bytes in a Blob URL —
+    // expects a URL it can fetch, so wrap the file's bytes in a Blob URL -
     // same trick Runno's getBinaryPathFromCommand uses for fsPath commands.
     const programFile = fs["/program.wasm"];
     if (!programFile || programFile.mode !== "binary") {

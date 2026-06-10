@@ -1,4 +1,4 @@
-// learnc — editor.js
+// learnc - editor.js
 // CodeMirror 6. We use BARE specifiers ("codemirror", "@codemirror/state", ...)
 // which resolve through the <script type="importmap"> in lesson.html. That map
 // pins every submodule to a single URL so they share the same @codemirror/state

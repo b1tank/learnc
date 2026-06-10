@@ -60,7 +60,7 @@ while IFS=$'\t' read -r n vid title; do
     [[ $keep -eq 1 ]] || continue
   fi
 
-  echo "==== [$n/37] $vid — $title"
+  echo "==== [$n/37] $vid - $title"
 
   for lang in "${LANG_LIST[@]}"; do
     out_path="$OUT_BASE/$lang/${n}-${vid}.md"

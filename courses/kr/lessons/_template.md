@@ -8,7 +8,7 @@ next: null
 status: draft
 ---
 
-Two or three short paragraphs of prose explaining the concept in your own words. Refer to K&R section numbers but do not reproduce K&R's text. Use everyday language. Mention the *why* before the *how*. Keep it dense — readers want substance, not filler.
+Two or three short paragraphs of prose explaining the concept in your own words. Refer to K&R section numbers but do not reproduce K&R's text. Use everyday language. Mention the *why* before the *how*. Keep it dense - readers want substance, not filler.
 
 ```c:starter
 #include <stdio.h>
@@ -21,7 +21,7 @@ int main(void) {
 ```
 
 ```output
-optional — if you define this block, the runner shows a ✓/✗ badge comparing
+optional - if you define this block, the runner shows a ✓/✗ badge comparing
 actual stdout to this expected text. Leave it out for open-ended exercises.
 ```
 
@@ -40,7 +40,7 @@ absence of `<stdbool.h>`, etc.). One short paragraph is enough.
 ## Try it
 
 1. A small experiment that makes the concept stick.
-2. A variation that is likely to break — and what the error means.
+2. A variation that is likely to break - and what the error means.
 3. An open-ended challenge for the reader to extend the example.
 
 End with a one-line lead-in to the next lesson, like:

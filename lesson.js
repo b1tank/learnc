@@ -1,4 +1,4 @@
-// learnc — lesson.js
+// learnc - lesson.js
 // Renders an individual lesson: fetches the .md file, parses frontmatter,
 // extracts starter/expected code, wires up the editor + Run button.
 
@@ -10,7 +10,7 @@ import { mountHelp as mountShortcuts } from "./shortcuts.js";
 var params = new URLSearchParams(location.search);
 var lessonId = params.get("id");
 // Guard: lesson ids are flat slugs (letters/digits/hyphens). Anything else
-// is either a typo or a probe — refuse to feed it into fetch URLs, github
+// is either a typo or a probe - refuse to feed it into fetch URLs, github
 // links, or storage keys. Path-traversal style ids would otherwise resolve
 // against the static site root.
 if (lessonId !== null && !/^[A-Za-z0-9_-]+$/.test(lessonId)) {
@@ -109,8 +109,8 @@ function parseFrontmatter(text) {
 }
 
 // Pull out the legacy single bottom-runner starter (```c:starter```) and its
-// expected output (```output```). Only the FIRST output fence is consumed —
-// and only when a starter exists — so that lessons built on the newer inline
+// expected output (```output```). Only the FIRST output fence is consumed -
+// and only when a starter exists - so that lessons built on the newer inline
 // `c:run` blocks (which use their own ```output``` fences) keep theirs intact.
 function extractFences(markdown) {
   var starterMatch = markdown.match(/```c:starter\r?\n([\s\S]*?)```/);
@@ -328,7 +328,7 @@ function addCopyButtons(root) {
   for (var i = 0; i < pres.length; i++) {
     var pre = pres[i];
     if (pre.parentNode && pre.parentNode.classList && pre.parentNode.classList.contains("codeblock")) {
-      continue; // idempotent — don't double-wrap on re-render
+      continue; // idempotent - don't double-wrap on re-render
     }
     var wrap = document.createElement("div");
     wrap.className = "codeblock";
@@ -413,7 +413,7 @@ function ensureCrossOriginIsolated(termEl) {
       "SharedArrayBuffer:   " + (typeof SharedArrayBuffer !== "undefined") + "\n" +
       "isSecureContext:     " + self.isSecureContext + "\n\n" +
       "if you're on a phone over the LAN, open the site at " +
-      "https://b1tank.github.io/learnc/ instead — the COOP/COEP " +
+      "https://b1tank.github.io/learnc/ instead - the COOP/COEP " +
       "service worker only registers over HTTPS.\n" +
       "if you're on localhost, try a hard refresh."
     ) +
@@ -466,7 +466,7 @@ function buildRunnable(block) {
   root.appendChild(editorHost);
 
   // Optional stdin panel: shows exactly what bytes are piped to the program so
-  // the learner can see the input that produced the output. Read-only — the
+  // the learner can see the input that produced the output. Read-only - the
   // point is reproducibility, not an interactive console.
   if (block.stdin != null) {
     var stdinWrap = el("div", { class: "runner-stdin" }, []);
@@ -587,7 +587,7 @@ function setupRunner(starter, expected) {
   var sharedCode = readUrlCode();
   var localCode = localStorage.getItem(lessonStorageKey());
   var initial = sharedCode || localCode || starter || "";
-  // Debounce the localStorage writes — every keystroke fires onChange, and
+  // Debounce the localStorage writes - every keystroke fires onChange, and
   // for a long program that's many small writes/sec. 200ms is plenty fast
   // for survive-a-reload semantics without thrashing.
   var saveTimer = null;
@@ -688,7 +688,7 @@ async function loadLesson() {
   var crumbsHome = document.querySelector("#crumbs a");
   if (crumbsHome) crumbsHome.setAttribute("href", indexHref);
 
-  // Kick off the manifest fetch in parallel with the lesson fetch — both are
+  // Kick off the manifest fetch in parallel with the lesson fetch - both are
   // needed to populate the breadcrumb without a visible flash.
   var manifestPromise = getManifest().catch(function () { return null; });
 

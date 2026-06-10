@@ -30,13 +30,13 @@ post n++ yields 5, then n=6
 pre  ++n yields 7, then n=7
 ```
 
-When the result value is ignored — a statement like `i++;` on its own line, or the third clause of a `for` loop — prefix and postfix are identical, and any decent compiler emits the same instruction. The distinction matters only when you *use* the value, as in `arr[i++] = x;` (store, then advance) versus `arr[++i] = x;` (advance, then store).
+When the result value is ignored - a statement like `i++;` on its own line, or the third clause of a `for` loop - prefix and postfix are identical, and any decent compiler emits the same instruction. The distinction matters only when you *use* the value, as in `arr[i++] = x;` (store, then advance) versus `arr[++i] = x;` (advance, then store).
 
 ## The undefined-behavior trap
 
 Because `++`/`--` have a side effect, using the same variable twice in one expression without a sequence point between is **undefined behavior**: `a[i] = i++;` or `n = n++ + 1;` may do anything, and different compilers genuinely differ. The rule of thumb: modify a variable at most once per expression, and don't also read it elsewhere in that expression for an unrelated purpose. The operators are a convenience, not a license to cram multiple mutations into one line.
 
 ## Go deeper
-- [Increment/decrement operators (C)](https://en.cppreference.com/w/c/language/operator_incdec) — prefix/postfix semantics
-- [Sequence points & UB](https://en.cppreference.com/w/c/language/eval_order) — why `i = i++` is undefined
-- [PDP-11 auto-increment](https://en.wikipedia.org/wiki/PDP-11_architecture) — the hardware roots of `++`
+- [Increment/decrement operators (C)](https://en.cppreference.com/w/c/language/operator_incdec) - prefix/postfix semantics
+- [Sequence points & UB](https://en.cppreference.com/w/c/language/eval_order) - why `i = i++` is undefined
+- [PDP-11 auto-increment](https://en.wikipedia.org/wiki/PDP-11_architecture) - the hardware roots of `++`

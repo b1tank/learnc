@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bin/stamp — version-stamp the static site for cache-busting.
+"""bin/stamp - version-stamp the static site for cache-busting.
 
 What it does, in one pass:
 
@@ -9,17 +9,17 @@ What it does, in one pass:
    SW URL forces Safari (and everyone else) to fetch a fresh worker, which
    re-installs and re-claims clients on the next navigation. This fixes the
    iOS bfcache trap where Safari serves the page from cache without ever
-   consulting the SW — by the time the user sees the page, the SW is
+   consulting the SW - by the time the user sees the page, the SW is
    already mid-install and the next reload is fully isolated.
-3. Same treatment for style.css — both <link rel="stylesheet"> and the
+3. Same treatment for style.css - both <link rel="stylesheet"> and the
    <link rel="preload" as="style"> form used on index.html. GitHub Pages
    caps Cache-Control max-age at ~10 min and we can't set 'immutable', so
    filename hashing is no win over a `?v=<sha>` query string here; the
    query just flips the cached URL on every commit, forcing instant
    revalidation. Vendor files (vendor/marked-12.0.0.min.js) already
    encode the version in the filename, so they're left alone.
-4. Same `?v=<sha>` treatment for the project's own ES modules — app.js,
-   lesson.js, theme.js, shortcuts.js, runner.js — in both their <script
+4. Same `?v=<sha>` treatment for the project's own ES modules - app.js,
+   lesson.js, theme.js, shortcuts.js, runner.js - in both their <script
    type="module" src="…"> entry-point form and their <link
    rel="modulepreload" href="…"> hints. Without this, a stale local JS
    bundle survives across deploys until GitHub Pages' max-age expires,
@@ -58,22 +58,22 @@ PARTIALS_DIR = "partials"
 # Sibling ES modules to version-stamp. Anything in this list gets `?v=<sha>`
 # appended to <script type="module" src="…"> and <link rel="modulepreload"
 # href="…"> references. Vendor bundles (vendor/marked-…) are deliberately
-# excluded — they already encode the version in the filename.
+# excluded - they already encode the version in the filename.
 JS_MODULES = ("app.js", "lesson.js", "theme.js", "shortcuts.js", "runner.js")
 
 STAMP_START = "<!-- BUILD-STAMP-START -->"
 STAMP_END = "<!-- BUILD-STAMP-END -->"
 
-# Generic copy-injection markers — see _data.json for rationale.
+# Generic copy-injection markers - see _data.json for rationale.
 # Two flavours, sharing the same INJECT/[/INJECT] envelope so the regex is one:
 #
-#   1. Prose from _data.json — for short HTML fragments. Key is a dotted
+#   1. Prose from _data.json - for short HTML fragments. Key is a dotted
 #      path into the JSON tree:
 #         <!-- INJECT:courses.antirez.page_intro -->
 #         <p>…</p>
 #         <!-- /INJECT -->
 #
-#   2. Partials from disk — for multi-line chrome (header chunks, footer,
+#   2. Partials from disk - for multi-line chrome (header chunks, footer,
 #      SVG icons). Avoids JSON-escaping a screenful of HTML. Key starts
 #      with `partial:` and names a file under partials/<name>.html:
 #         <!-- INJECT:partial:theme-boot -->
@@ -83,7 +83,7 @@ STAMP_END = "<!-- BUILD-STAMP-END -->"
 # Unknown keys / missing files raise SystemExit. Subsequent stamp passes
 # (cache-busting, build stamp) still see the injected content, so a partial
 # that contains `?v=PLACEHOLDER` will get rewritten with the current SHA
-# after injection — which is exactly what we want.
+# after injection - which is exactly what we want.
 INJECT_RE = re.compile(
     r"<!-- INJECT:([A-Za-z0-9_.:\-]+) -->(.*?)<!-- /INJECT -->",
     re.DOTALL,
@@ -132,7 +132,7 @@ def inject_copy(text: str, data: dict, *, filename: str) -> str:
 
     Inserts the value verbatim between the markers, preceded and followed
     by a newline so the injected content sits on its own line(s) regardless
-    of where the markers were placed. Idempotent — re-running yields no diff.
+    of where the markers were placed. Idempotent - re-running yields no diff.
     Unknown keys/files raise; the build should be loud if state drifts.
     """
     def _sub(m: re.Match) -> str:
@@ -177,7 +177,7 @@ def build_info() -> tuple[str, str, str]:
 
 
 def stamp_html(text: str, sha: str, iso_attr: str, human: str, data: dict, *, filename: str) -> str:
-    # 0. Copy injection from _data.json — runs first so subsequent passes
+    # 0. Copy injection from _data.json - runs first so subsequent passes
     #    (cache-busting, build stamp) see the injected content. The injected
     #    blocks are static prose; they do not contain script/style references
     #    so order doesn't strictly matter, but doing it first keeps the
@@ -191,7 +191,7 @@ def stamp_html(text: str, sha: str, iso_attr: str, human: str, data: dict, *, fi
         text,
     )
 
-    # 2. style.css?v=<sha> — matches both the plain <link rel="stylesheet">
+    # 2. style.css?v=<sha> - matches both the plain <link rel="stylesheet">
     #    form (lesson.html) and the <link rel="preload" as="style"> form
     #    used by index.html's non-blocking CSS pattern. Anchored on
     #    `href="style.css"` so we don't accidentally rewrite anything that
@@ -202,7 +202,7 @@ def stamp_html(text: str, sha: str, iso_attr: str, human: str, data: dict, *, fi
         text,
     )
 
-    # 3. Project ES modules — every entry in JS_MODULES gets `?v=<sha>`
+    # 3. Project ES modules - every entry in JS_MODULES gets `?v=<sha>`
     #    appended in both <script type="module" src="…"> and <link
     #    rel="modulepreload" href="…"> contexts. The same regex handles
     #    both because we anchor on the quote + filename + optional ?v=… +
@@ -215,7 +215,7 @@ def stamp_html(text: str, sha: str, iso_attr: str, human: str, data: dict, *, fi
             text,
         )
 
-    # 4. footer build stamp between markers — inline <span> so the whole
+    # 4. footer build stamp between markers - inline <span> so the whole
     #    footer fits on one row alongside the credits line. <time> carries
     #    the machine-readable ISO timestamp; visible text shows the human
     #    form including minute-precision UTC time.

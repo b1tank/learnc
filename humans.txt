@@ -18,7 +18,7 @@ License:     MIT
 Frameworks:  none
 Trackers:    none
 Cookies:     none
-Servers:     none — pure static, runs in your browser
+Servers:     none - pure static, runs in your browser
 
 /* PROMISE */
 

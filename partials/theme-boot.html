@@ -8,6 +8,6 @@
       var dark = pref === "dark" || (pref !== "light" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
       if (dark) document.documentElement.dataset.theme = "dark";
-    } catch (e) { /* private mode — fall through */ }
+    } catch (e) { /* private mode - fall through */ }
   })();
 </script>

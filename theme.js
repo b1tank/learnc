@@ -1,4 +1,4 @@
-// learnc — theme.js
+// learnc - theme.js
 // Three-state theme switch: auto / light / dark.
 //
 // "auto" follows the OS via prefers-color-scheme.
@@ -7,7 +7,7 @@
 // The HEAD of every page runs a tiny inline boot script that sets
 // document.documentElement.dataset.theme to "dark" before paint when needed
 // (avoiding a flash of the wrong theme). That same attribute is what CSS
-// keys off — see :root[data-theme="dark"] in style.css.
+// keys off - see :root[data-theme="dark"] in style.css.
 //
 // This module is loaded from app.js (landing) and lesson.js (lesson) AFTER
 // DOM ready. It mounts the toggle button and keeps the editor + the
@@ -37,7 +37,7 @@ function applyState(state) {
 	try {
 		if (state === "auto") localStorage.removeItem(STORAGE_KEY);
 		else localStorage.setItem(STORAGE_KEY, state);
-	} catch (e) { /* private mode — best effort */ }
+	} catch (e) { /* private mode - best effort */ }
 
 	var html = document.documentElement;
 	var dark = state === "dark" || (state === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -59,7 +59,7 @@ export function mountToggle(container) {
 	function render(state) {
 		btn.textContent = LABELS[state];
 		btn.setAttribute("aria-label", "theme: " + state + " (click to cycle)");
-		btn.title = "theme: " + state + " — click to cycle (auto → light → dark)";
+		btn.title = "theme: " + state + " - click to cycle (auto → light → dark)";
 	}
 
 	btn.addEventListener("click", function () {

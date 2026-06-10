@@ -15,7 +15,7 @@
       var dark = pref === "dark" || (pref !== "light" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
       if (dark) document.documentElement.dataset.theme = "dark";
-    } catch (e) { /* private mode — fall through */ }
+    } catch (e) { /* private mode - fall through */ }
   })();
 </script>
 <!-- /INJECT -->
@@ -28,7 +28,7 @@
 
   Override coepCredentialless to always return false: the library defaults
   to credentialless on Safari, but `COEP: credentialless` only shipped in
-  iOS 17.4 — older iPhones see an unknown value, fall back to no COEP, and
+  iOS 17.4 - older iPhones see an unknown value, fall back to no COEP, and
   the page never becomes crossOriginIsolated. require-corp has worked since
   iOS 15.2 and is satisfied by our CDNs.
 
@@ -44,7 +44,7 @@
 <link rel="preconnect" href="https://esm.sh" crossorigin>
 <!-- modulepreload: lesson.js statically imports these sibling modules, so
      pre-fetching them in parallel with lesson.js shaves one waterfall layer.
-     editor.js is intentionally NOT preloaded here — it depends on the
+     editor.js is intentionally NOT preloaded here - it depends on the
      importmap below for its bare specifiers (codemirror, @codemirror/*),
      and modulepreloading a module before its importmap is in scope makes
      the browser try to resolve those specifiers as URLs and fail. We rely
@@ -58,7 +58,7 @@
      the title and prose container are in the DOM by the time module scripts
      start. Modules are implicitly deferred and run after this script, which
      means `window.marked` is ready when lesson.js evaluates.
-     Self-hosted under vendor/ — saves a TLS handshake to jsdelivr and lets
+     Self-hosted under vendor/ - saves a TLS handshake to jsdelivr and lets
      us version-pin via the filename instead of a CDN URL. -->
 <script defer src="vendor/marked-12.0.0.min.js"></script>
 <!--
@@ -119,7 +119,7 @@
 <p class="crumbs" id="crumbs"><a href="index.html">lessons</a><span id="lesson-chapter-crumb"></span><span id="lesson-label" class="muted"></span></p>
 <h1 id="lesson-title" class="lesson-title-empty">&nbsp;</h1>
 <script>
-  // Inline boot script — runs synchronously during HTML parse so the
+  // Inline boot script - runs synchronously during HTML parse so the
   // browser learns about the lesson's URL slug as early as possible.
   // Two jobs, both pure best-effort:
   //
@@ -134,7 +134,7 @@
   //      in localStorage when it loads the manifest; reading it here
   //      lets the real title appear at first paint, instead of after
   //      lesson.js parses the manifest a few hundred ms later.
-  //      Idempotent — lesson.js overwrites with the same string once it
+  //      Idempotent - lesson.js overwrites with the same string once it
   //      runs.
   //
   // Misses (no ?id, first-ever visit, private mode) just fall through;
@@ -150,7 +150,7 @@
     // pushed into a <link href> attribute.
     if (!/^[A-Za-z0-9_-]+$/.test(id)) return;
 
-    // Course routing — defaults to "kr" so pre-multi-course URLs (just
+    // Course routing - defaults to "kr" so pre-multi-course URLs (just
     // ?id=...) still resolve. Every course's lessons live under
     // courses/<slug>/lessons/<id>.md.
     var courseMatch = qs.match(/[?&]course=([^&]+)/);
@@ -175,7 +175,7 @@
     // window.__lessonMdPromise instead of issuing its own fetch.
     try {
       window.__lessonMdPromise = fetch(mdPath);
-    } catch (e) { /* old browsers — lesson.js falls back to its own fetch */ }
+    } catch (e) { /* old browsers - lesson.js falls back to its own fetch */ }
 
     // 2. Paint title from cache. Title map is namespaced by course so two
     // courses with colliding slugs cannot show the wrong title.
@@ -190,7 +190,7 @@
         h1.classList.remove("lesson-title-empty");
       }
       document.title = t + " \u00b7 learnc";
-    } catch (e) { /* private mode / parse error — fall through */ }
+    } catch (e) { /* private mode / parse error - fall through */ }
   })();
 </script>
 
