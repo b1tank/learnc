@@ -17,13 +17,11 @@ source:
 
 The interpreter needs a **dictionary** mapping word names to their implementations. We grow `context->funcTable` with `TFFuncEntry { name, callback, userFunc }`, where `name` is itself a string object so we can compare and refcount it uniformly. `registerFunction` either appends a fresh entry or overwrites an existing one; user-defined words go on the same table, just with `callback == NULL` and a body list in `userFunc`.
 
-## Walkthrough
-
-### Names are string objects, not raw `char *` `[07:30 → 09:33]`
+## Names are string objects, not raw `char *` `[07:30 → 09:33]`
 
 The temptation is `getFunctionByName(ctx, const char *)`. Salvatore backs out of it: every other identifier in the interpreter is already a `TFObject` of type string, and the lookup will eventually be called with names parsed from program text. So even when C code registers a built-in, it wraps the literal: `TFObject *oname = createStringObject(name, strlen(name))` - register, then `release(oname)`. The reference count carries the name across the boundary.
 
-### `compareStringObject`: ternary + `memcmp` + length tiebreak `[12:35 → 18:31]`
+## `compareStringObject`: ternary + `memcmp` + length tiebreak `[12:35 → 18:31]`
 
 Lookup needs string equality on raw bytes (no Unicode, no locale). The function returns `-1 / 0 / +1`:
 
@@ -33,7 +31,7 @@ Lookup needs string equality on raw bytes (no Unicode, no locale). The function 
 
 Salvatore notes this is a textbook case where pasting the function into Claude/ChatGPT to ask *"is this correct?"* is the right move - not because he can't read it, but because reviewing your own logic line by line is exhausting and the LLM is cheap.
 
-### `registerFunction`: append or overwrite `[22:03 → 28:55]`
+## `registerFunction`: append or overwrite `[22:03 → 28:55]`
 
 Two paths:
 
@@ -42,7 +40,7 @@ Two paths:
 
 The `retain` on `name` is the subtlety: the caller will `release` its temporary `oname` right after `registerFunction` returns. Without the retain the refcount drops to zero and the entry's name pointer dangles. With it, the entry holds the last reference.
 
-### When the compiler falls back to `int` `[31:48 → 33:47]`
+## When the compiler falls back to `int` `[31:48 → 33:47]`
 
 The callback type names `TFContext` before that struct is fully visible, so the first compile fails - and the giveaway is that C, not knowing the type, *defaults it to `int`*, which then clashes with the real pointer type:
 
@@ -59,7 +57,7 @@ struct TFContext;   /* forward declaration: a pointer to it is just an address *
 
 With that one line above the callback type, the cascade of "defaults to int" errors disappears.
 
-### Built-ins dispatch by the first byte of the name `[37:35 → 43:08]`
+## Built-ins dispatch by the first byte of the name `[37:35 → 43:08]`
 
 `basicMathFunction` is the C callback registered four times - for `+`, `-`, `*`, `/`. It calls `checkStackMinLen(ctx, 2)`, then a *typed* peek/pop: `stackPop(ctx, TFObjectTypeInt)` returns NULL on a type mismatch and sets the runtime error in the context. The operation itself is a `switch (name->str.ptr[0])` - the same callback handles all four operators because the name *is* the operator.
 
@@ -109,19 +107,3 @@ int main(void) {
 ```
 
 Real Toy Forth swaps three things in: `strcmp` becomes `compareStringObject` (length-prefixed strings, no NUL assumption), the list becomes a reallocated array with a `funcCount`, and each entry carries *both* a C callback and a user-function body so user-defined words live in the same table.
-
-## Try it
-
-1. Add a second word `double_it` (`push(pop() * 2)`) and execute `3 double_it square` by hand - predict the top of stack before running.
-2. Make `define` *override* when the name already exists, instead of shadowing it via list order. (Walk the list first; if found, replace `fn`.)
-3. Change `entry::name` to hold a heap-allocated copy (`strdup(name)`) and add a corresponding `free` in a teardown function. This mirrors the `retain` / `release` dance in the real interpreter.
-
-## Cross-reference to K&R
-
-[K&R § 6.6 - Table Lookup](../../kr/lessons/06-06-table-lookup.md) builds essentially this dictionary - a hash table of name → definition with `install` and `lookup` - for the macro processor in chapter 6. The reference-counted string objects here are a thin layer on top of the same idea; the underlying lookup-or-install pattern is identical.
-
-## Go deeper
-
-- Forth itself stores the dictionary as a *linked list of words*, each with a `link` field pointing to the previously-defined word. Newer definitions shadow older ones automatically - exactly what the `square`-then-redefine variant in *Try it* simulates.
-- The "name is a first-class object you can `retain`" pattern is how Objective-C selectors, Python interned strings, and Lua's `TString` all work. Once strings are cheap to compare and own, dispatch tables stop feeling like C.
-- `dlsym(3)` is the OS-level cousin: a runtime lookup of a symbol name to a function pointer, against the process's loaded libraries instead of an interpreter table.
