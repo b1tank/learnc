@@ -17,56 +17,19 @@ source:
 
 Allocate `sizeof(header) + payload`, then hand out a pointer to the **payload** instead of to the start of the allocation. The header sits just *before* the pointer you returned; to read it, step backward. The caller sees a plain `char *` that works with every C string function, while you still get O(1) length, refcounts, or whatever else you want to stash up front.
 
-## Walkthrough
-
-### Why hide the header at all `[01:34 → 02:14]`
+## Why hide the header at all `[01:34 → 02:14]`
 
 A prefixed-length string is great until you hand it to `strchr`, `printf("%s", ...)`, or any other libc function that expects a normal C string. If your "string" is really `[length][bytes...\0]` and you return a pointer to `[length]`, every libc call needs a conversion. The fix is to lie about where the string starts.
 
-### Return the inside pointer `[04:23 → 05:27]`
+## Return the inside pointer `[04:23 → 05:27]`
 
-After `malloc(sizeof(uint32_t) + n + 1)`, write the length into the first 4 bytes, copy the payload after it, drop a `\0` at the end - and return `base + 4`. To the caller it's an ordinary null-terminated `char *`. Trade-off: `free` must get the *original* pointer, so your `PS_free` becomes `free(s - 4)`. One `malloc`, one matching `free`, at the exact address `malloc` returned.
+After `malloc(sizeof(uint32_t) + n + 1)`, write the length into the first 4 bytes, copy the payload after it, drop a `\0` at the end - and return `base + 4`. To the caller it's an ordinary null-terminated `char *`. Trade-off: `free` must get the *original* pointer, so your `PS_free` becomes `free(s - 4)`. With `malloc`, you must `free` the exact address `malloc` returned - not some address inside the allocation. One `malloc`, one matching `free`, at the same address.
 
-### Look backward to read the header `[05:27 → 06:38]`
+## Look backward to read the header `[05:27 → 06:38]`
 
-Given the payload pointer `s`, the length lives at `((uint32_t *)s)[-1]`. That's the whole trick: negative indexing through a cast peeks at the bytes immediately before the pointer. `PS_len` is now O(1) - no scanning to a `\0`, unlike `strlen`. The same slot can hold more than a length; the next lesson grows it into `[len][refcount]` and then into a real `struct`.
+Given the payload pointer `s`, the length lives at `((uint32_t *)s)[-1]`. That's the whole trick: negative indexing through a cast peeks at the bytes immediately before the pointer. `PS_len` is now O(1) - no scanning to a `\0`, unlike `strlen`, whose cost grows with the length of the string. The same slot can hold more than a length; the next lesson grows it into `[len][refcount]` and then into a real `struct`.
 
-### Alignment caveat
-
-`malloc` returns memory aligned for every standard type, so a 4- or 8-byte header in front of `char` bytes is fine. If you ever invert the layout (small header in front of a wider type), make sure the header size is a multiple of the payload's alignment - otherwise reads through the payload pointer are undefined behaviour. `_Alignof` and padding the header up to `alignof(max_align_t)` is the safe move.
-
-### Why bother
-
-Two payoffs fall out immediately. (1) Modern allocators can catch a double-free because they recognise the address you passed back - so a *second* `PS_free(s)` aborts loudly instead of corrupting the heap `[09:33 → 10:24]`. (2) Once you have a hidden header, you can fit more than length into it. A second `uint32_t` becomes a reference count, and now multiple aliases can share one buffer with automatic cleanup when the last one drops `[12:00 → 13:43]`. That's the next lesson.
-
-### Watch it bite back `[09:33 → 12:00]`
-
-Two failure modes you can trigger on purpose. Free the same pointer twice and a modern allocator recognises the address and aborts instead of corrupting the heap:
-
-```c
-PS_free(s);
-PS_free(s);   /* second time on the same pointer */
-```
-
-```output
-malloc: *** error for object 0x...: pointer being freed was not allocated
-```
-
-It is not guaranteed - some allocators stay silent - so never *rely* on it. The other trap is a surviving alias. Keep a second pointer to the buffer, free through the first, then read through the second:
-
-```c
-char *global_string = my_string;  /* second reference to the same bytes */
-PS_free(my_string);               /* buffer goes back to the allocator */
-PS_print(global_string);          /* but global_string still points at it */
-```
-
-```output
-;
-```
-
-The freed bytes now belong to the allocator, so the print is garbage - a stray `;` here, anything at all on your machine. This dangling-reference problem is exactly what the reference count in the next lesson fixes.
-
-## A buffer with a hidden length
+Here is the technique end to end. The header is one `size_t` holding the length; the payload follows, with a `\0` so libc is happy:
 
 ```c:run hidden-length
 #include <stdio.h>
@@ -103,23 +66,45 @@ payload : hidden metadata
 length  : 15
 ```
 
-The cast `((size_t *)p)[-1]` reads the four-or-eight bytes immediately *before* `p`. Those bytes are part of the same allocation, so it's well-defined - provided you remember `buf_free` must subtract the same offset before calling `free`.
+The cast `((size_t *)p)[-1]` reads the eight bytes immediately *before* `p`. Those bytes are part of the same allocation, so it's well-defined - provided you remember `buf_free` must subtract the same offset before calling `free`.
 
-## Try it
+## Why bother `[09:33 → 13:43]`
 
-1. Replace `size_t` with `uint32_t` (from `<stdint.h>`) and update `len_of` accordingly. The header shrinks from 8 bytes to 4 on a 64-bit system - at the cost of capping strings at 4 GB.
-2. Add `len_of(s) -= 1; s[len_of(s)] = '\0';` to "pop" the last character. Print `s` and the new length.
-3. Call `buf_free(s)` twice. On a modern libc, what happens the second time? (Don't rely on it - just observe.)
+Two payoffs fall out immediately. First, modern allocators can catch a double-free because they recognise the address you passed back - so a *second* `free` on the original pointer aborts loudly instead of corrupting the heap. It is not guaranteed - some allocators stay silent - so never *rely* on it. Second, once you have a hidden header you can fit more than a length into it. A second `uint32_t` becomes a reference count, and now multiple aliases can share one buffer with automatic cleanup when the last one drops. That refcount is what the next lesson builds, and it fixes the dangling-alias trap: keep a second pointer to a buffer, free through the first, and reading through the second now touches memory the allocator has already taken back - garbage, or a crash.
 
-## Cross-reference to K&R
+## The header glibc already hides for you
 
-[K&R § 8.7 - Example: A Storage Allocator](../../kr/lessons/08-07-example-a-storage-allocator.md) builds the same idea from the other side: their allocator keeps a per-block header that holds the block's size, and the user pointer points to the byte *after* that header. K&R's allocator is itself an instance of this trick.
+Your hidden length is exactly the trick the allocator itself uses. On glibc each allocation is a *chunk*, and the chunk's size is stored in the `size_t` word **right before** the pointer `malloc` hands you - the same `((size_t *)p)[-1]` slot you just used by hand. The low 3 bits of that word are status flags (the lowest, `PREV_INUSE`, is almost always set), so mask them off to read the rounded-up size:
 
-## Go deeper
+```c:run glibc-chunk-header
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <malloc.h>
 
-- antirez's [`sds.h`](https://github.com/antirez/sds) - the production version of exactly this technique, with multiple header sizes chosen by string length.
-- Lua's `TString` and Tcl's reference-counted objects - different shapes, same idea: a fat header sits before the bytes the rest of the code sees.
-- Jemalloc / tcmalloc internals - modern allocators keep their own per-allocation metadata in the same spirit, which is why they can detect some double-frees.
-- `man 3 malloc_usable_size` - peek at how much the allocator actually gave you; the answer often exceeds what you asked for, and it lives in a hidden header just like ours.
+int main(void) {
+    char *p = malloc(20);
 
-*Click **next →** to meet `struct`, which makes this layout something the compiler manages for you.*
+    size_t word  = ((size_t *)p)[-1];   /* glibc chunk size + flag bits */
+    size_t chunk = word & ~(size_t)7;   /* clear the 3 flag bits */
+
+    printf("you asked for : %d bytes\n", 20);
+    printf("size word      : %zu\n", word);
+    printf("chunk size     : %zu bytes\n", chunk);
+    printf("usable for you : %zu bytes\n", malloc_usable_size(p));
+    printf("payload %% 16    : %lu\n", (unsigned long)((uintptr_t)p % 16));
+
+    free(p);
+    return 0;
+}
+```
+
+```output
+you asked for : 20 bytes
+size word      : 33
+chunk size     : 32 bytes
+usable for you : 24 bytes
+payload % 16    : 0
+```
+
+Ask for 20 bytes and glibc rounds the whole chunk up to 32: 20 bytes of payload, 8 bytes for the size word, then up to the 16-byte alignment boundary. The size word reads `33` because `32 | PREV_INUSE` is `33`. `malloc_usable_size` reports `24` - the slack between your request and the chunk boundary is yours to use, though relying on it is poor form. And the payload is 16-byte aligned (`payload % 16 == 0`), which is why a 4- or 8-byte header in front of `char` data is always safe: `malloc` already returns memory aligned for every standard type. If you ever invert the layout - a small header in front of a wider payload - pad the header up to the payload's alignment (`_Alignof`) or reads through the payload pointer become undefined behaviour. This is the same bookkeeping K&R's allocator keeps explicitly, and the same reason `free` needs the exact original pointer: it steps back to this header to find the chunk's size.
