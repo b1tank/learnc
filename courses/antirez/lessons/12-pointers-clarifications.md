@@ -27,6 +27,18 @@ If you take a `char` array and aim a `short *` at the same address (with a cast,
 
 This is just place-value arithmetic in base 256. On a little-endian machine (x86, ARM in normal mode, WebAssembly) the byte at the lower address is the least significant. So `{0x01, 0x01}` as a `short` is `1 + 1·256 = 257`; `{0x02, 0x02}` is `2 + 2·256 = 514`. Nothing C-specific is happening — it's how every base works.
 
+Salvatore confirms the values straight from a Python prompt, reading each byte pair as one hexadecimal number:
+
+```
+python3 -c "print(0x0101, 0x0202)"
+```
+
+```output
+257 514
+```
+
+Reading the two bytes as `0x0101` and `0x0202` gives back exactly the `257` and `514` the C program printed.
+
 ### `'0'` is not `'\0'` `[11:53 → 13:36]`
 
 A loop like `while (*p) p++;` stops when the byte equals zero. The ASCII character `'0'` has value **48**, not 0, so a string `"hello00"` does *not* stop early — those `'0'`s are perfectly ordinary non-zero bytes. To get a real terminator inside a literal you write `\0` (an escape, value 0). It looks similar on the screen; the integer values are completely different.
@@ -51,6 +63,25 @@ equal?       no
 ### Prefixed-length strings `[14:14 → 17:27]`
 
 Once you accept that `\0` is just a convention, you can pick another one. Reserve the first byte of the buffer for the length, then read exactly that many bytes — no terminator needed. The cost is the obvious one: a single length byte caps you at 255 characters, two bytes at 65 535, and so on. (Pascal did this. Redis does a fancier version of it for its strings.)
+
+```c:run prefixed-length
+#include <stdio.h>
+
+int main(void) {
+    /* First byte = length; the following bytes are the characters. */
+    char s[] = { 5, 'h', 'e', 'l', 'l', 'o', '!', '?' };
+    int len = s[0];
+    for (int j = 1; j <= len; j++) putchar(s[j]);
+    putchar('\n');
+    return 0;
+}
+```
+
+```output
+hello
+```
+
+The trailing `'!','?'` are never read: the length byte, not a terminator, decides where the string ends.
 
 ### Swap pointers, don't copy buffers `[19:37 → 21:08]`
 

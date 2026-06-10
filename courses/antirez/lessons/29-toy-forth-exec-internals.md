@@ -23,9 +23,45 @@ The executor is a loop. A compiled program is a sequence of *words*; `exec` walk
 
 `void exec(tfctx *ctx, tfobj *prg)` opens with `assert(prg->type == TFOBJ_TYPE_LIST)`. Programs *are* lists in this language, so a non-list argument is a bug, not a runtime error. Then a `for` loop visits each element — a *word* in Forth's vocabulary.
 
+### Seeing `assert` fire `[06:32 → 07:50]`
+
+To show what the guard does when it's violated, Salvatore drops a deliberately false assertion into `main`:
+
+```c
+assert(1 == 2);
+```
+
+Compiling and running aborts immediately, naming the failed condition, the function, and the source line:
+
+```
+./a.out program.tf
+```
+
+```output
+Assertion failed: (1 == 2), function main, file toyforth.c, line 220.
+Abort trap: 6
+```
+
+A false `assert` calls `abort()` and never returns, so a violated invariant stops the program right there instead of letting it corrupt state downstream.
+
 ### Dispatch per word `[07:50 → 15:08]`
 
 Inside the loop, `switch(word->type)` has exactly two interesting branches: `TFOBJ_TYPE_SYMBOL` calls into the executor's lookup machinery; `default` pushes the literal onto `ctx->stack`. Numbers, booleans, strings — all the same code path. Only symbols cause work.
+
+### Literals pile up; symbols do nothing — yet `[16:07 → 17:41]`
+
+With the `TFOBJ_TYPE_SYMBOL` branch still empty, only `default` does anything. Adding a temporary `printObject(ctx->stack)` after `exec` and running a real program shows the two numbers landing on the stack while every symbol is silently ignored:
+
+```
+./a.out program.tf
+```
+
+```output
+Stack content at end:
+[5 10]
+```
+
+`5` and `10` were pushed; `plus`, `dup`, `*`, and `print` are symbols, and until the function table is wired up they evaluate to nothing. The very next step gives that empty branch its job: `callSymbol`.
 
 ### Pushing keeps things alive `[24:53 → 25:48]`
 

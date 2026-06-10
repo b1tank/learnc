@@ -38,6 +38,24 @@ printf("%d\n", i);       // 8 — the outer one
 
 The two `i`s sit at different stack addresses, and the compiler is even free to reuse the same slot for two *sibling* inner blocks, since the outside code is forbidden from peeking in anyway. `[14:24 → 15:42]`
 
+You can watch the two `i`s take separate storage by printing their addresses with `%p` (the pointer specifier) and `&` (address-of), plus their size with `%zu` (the `size_t` specifier `sizeof` returns): `[09:06 → 13:06]`
+
+```c
+int i = 8;
+printf("outer i = %d at %p, sizeof %zu\n", i, (void*)&i, sizeof(i));
+{
+    int i = 5;
+    printf("inner i = %d at %p, sizeof %zu\n", i, (void*)&i, sizeof(i));
+}
+```
+
+```output
+outer i = 8 at 0x16f7d728, sizeof 4
+inner i = 5 at 0x16f7d72c, sizeof 4
+```
+
+Each `int` is 4 bytes, and the addresses land exactly 4 bytes apart — `...28` and `...2c`. (Taking `&i` forces the compiler to give each variable a real stack slot rather than keeping it in a register; the exact addresses vary from run to run.)
+
 ### `goto` and labels `[16:22 → 19:17]`
 
 A label is an identifier followed by a colon. `goto label;` jumps to it unconditionally. Labels must start with a letter — you cannot literally write `goto 10`, but `goto L10` is fine, which lets you fake BASIC if the mood strikes. The honest use of `goto` is to build a loop by hand:

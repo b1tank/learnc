@@ -68,6 +68,20 @@ set_cell(new_grid, x, y, next);
 
 To animate, the main loop prepends the VT100 clear-screen escape `"\x1b[2J\x1b[H"`, prints the grid, computes the next state, and `sleep(1)`s. Drop a glider at `(10,10)` and watch it slide across the terminal — and, thanks to `cell_to_offset`, wrap around the far edge instead of dying there. `[51:03 → 52:16]`
 
+### Where the clear-screen escape comes from `[38:16 → 38:53]`
+
+That `"\x1b[2J\x1b[H"` isn't memorised — Salvatore recovers it by piping the `clear` command through `xxd` to read the raw bytes it emits:
+
+```
+clear | xxd
+```
+
+```output
+00000000: 1b5b 481b 5b32 4a1b 5b33 4a              .[H.[2J.[3J
+```
+
+`1b` is the ESC byte (`\x1b`); `[H` homes the cursor, `[2J` clears the screen, and `[3J` clears the scrollback. Copy the two you need into a `printf` and the terminal becomes a tiny canvas.
+
 ### A runnable slice
 
 The full simulator is too big to embed, but the neighbour count *is* its heart. Below, a 3×3 board with the centre `(1,1)` surrounded by four live cells:

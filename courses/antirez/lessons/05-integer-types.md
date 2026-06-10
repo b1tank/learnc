@@ -39,6 +39,28 @@ In practice, on every mainstream 32/64-bit system: `char` is 1 byte, `short` is 
 
 `int main(void) { … }` is just the general form `return_type name(param_list) { body }`. The `void` in the parens means "no parameters"; an empty `()` would mean "I'm not telling you", which is a different (legacy) thing. A *call* is the same name followed by `(args)` — `printf("…")` is one such call; `clear()` would be another if you wrote a `void clear(void)` of your own.
 
+### Finding an escape sequence with `hexdump` `[18:06 → 20:56]`
+
+To make that `clear()` actually clear the screen, Salvatore needs the terminal's *clear* escape sequence — but doesn't remember it. Instead of looking it up, he pipes the output of the `clear` command straight into `hexdump -C` and reads the raw bytes off:
+
+```
+clear | hexdump -C
+```
+
+```output
+00000000  1b 5b 33 4a 1b 5b 48 1b  5b 32 4a              |.[3J.[H.[2J|
+```
+
+The `1b` bytes are **ESC** (decimal 27); each `1b 5b ...` is an `ESC [` control sequence the terminal acts on instead of printing. So `clear()` is just a `printf` of those bytes:
+
+```c
+void clear(void) {
+    printf("\033[2J");   /* \033 is octal 27 = 0x1B = ESC; \x1B is the same byte */
+}
+```
+
+`\033` writes the escape byte in octal and `\x1B` writes the identical byte in hex — two spellings of one value. The same `hexdump -C` trick works on any output, including your compiled `a.out`: hex on the left, printable characters on the right.
+
 ## Inspect your own platform
 
 ```c:run sizes and ranges

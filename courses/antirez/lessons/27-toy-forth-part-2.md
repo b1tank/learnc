@@ -23,6 +23,28 @@ Part 2 turns the bare object/parser scaffolding from part 1 into something that 
 
 `fopen` it, then the classic three-step: `fseek(fp, 0, SEEK_END)`, `ftell(fp)` for the size, `fseek(fp, 0, SEEK_SET)` to rewind, then `fread` into an `xmalloc(size + 1)` buffer and write a `'\0'` at `buf[size]`. The extra byte is non-negotiable: the parser will treat the text as a C string and walk it with `p[0] == 0` as the stop condition. Forgetting the rewind means `fread` returns zero bytes from the now-positioned-at-EOF handle — a fun bug to discover the first time.
 
+### Confirming the size: 14 bytes `[12:03 → 12:33]`
+
+A quick sanity check before parsing anything — print the size `ftell` reported. The sample program is `5 dup * print` plus a trailing newline:
+
+```
+cat program.toy
+```
+
+```output
+5 dup * print
+```
+
+```
+./a.out program.toy
+```
+
+```output
+source file size 14
+```
+
+Thirteen visible characters plus the newline — exactly the 14 bytes `fseek`/`ftell` measured.
+
 ### Amortised growth with `realloc` `[05:14 → 09:02]`
 
 `realloc(NULL, n)` is just `malloc(n)`, so `listPush` doesn't need a special "first allocation" branch. The toy reallocates on every push for simplicity, but Salvatore is careful to explain the real fix: track `alloc_len` separately and double it (`4 → 8 → 16 → …`) so the amortised cost per push stays O(1) while you keep the headline win of an array — O(1) random access. A linked list gives you O(1) push but `arr[i]` becomes O(n), and a `for` over every element silently turns quadratic. That trade-off is why Python's `list`, Go's slice, and C++'s `vector` are all geometrically-grown arrays under the hood.
@@ -38,6 +60,21 @@ The top level is just `while (p[0]) { parseSpaces(p); if (p[0] == 0) break; … 
 ### `parseNumber` without `strtol` `[40:17 → 46:12]`
 
 Save `start = p`, optionally consume a leading `'-'`, then `while (isdigit(p[0])) p++;`. The length is `end - start` (pointer subtraction inside the same allocation is well-defined). Reject anything over `MAX_NUM_LEN`, `memcpy` into a stack buffer, null-terminate, hand to `atoi`, wrap in `createIntObject`. `atoi` is famously lousy at error reporting — `strtol` with an `endptr` is the production answer — but for a toy that's already validated the characters, it's fine.
+
+### Watching the list take shape `[50:08 → 54:07]`
+
+With a throwaway `exec` that just walks the list and prints each element (`[`, then every number, then `]`), the whole pipeline — file → string → token list — becomes visible. Feed it `5 10 20`:
+
+```
+./a.out program.tf
+```
+
+```output
+[
+5 10 20 ]
+```
+
+The first attempt printed garbage because the loop dereferenced the wrong pointer; once it reads `o->i` for the current element, the three integers come back out in order — proof that the source text is now a real `tfobj` list in memory.
 
 ## A one-pass whitespace tokeniser
 

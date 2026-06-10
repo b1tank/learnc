@@ -79,6 +79,29 @@ int main(void) {
 
 Read the line left to right: offset 0, then the six bytes of `"Hello!"` (`H`=0x48, `e`=0x65, `l`=0x6c, `l`=0x6c, `o`=0x6f, `!`=0x21), then the literal `\n` (0x0a), then the implicit `\0` that C appends to every string literal. In the ASCII column the newline and the null both render as `.` because `isprint` rejects them.
 
+### Dumping a struct: padding, junk, and the offset trick `[09:02 → 10:08, 22:30 → 31:03]`
+
+Point `hexdump` at a struct and the design choices become visible. With `struct { long len; char str[]; }` and `len = 10`, the first eight bytes read `0a 00 00 00 00 00 00 00` — the `0a` comes first because x86 is little-endian. Fill the unused tail with `memset(&s, 0xff, sizeof s)` before initialising and the bytes you never wrote show up as `ff`, a quick way to *see* uninitialised memory:
+
+```output
+00000000  0a 00 00 00 00 00 00 00  |........|
+00000008  31 32 33 ff ff ff ff ff  |123.....|
+```
+
+And the flexible array member really is just an offset. Print the struct's own address next to `s.str`:
+
+```c
+printf("%p\n", (void *)&s);
+printf("%p\n", (void *)s.str);
+```
+
+```output
+0x7ffd...18
+0x7ffd...20
+```
+
+`s.str` is exactly eight bytes past `&s` — the size of `len`. There is no pointer stored anywhere; `str` is a symbolic name for "the bytes right after the header," which is why one `malloc(sizeof s + n)` covers both.
+
 ## Modern note
 
 `hexdump()` is one of those utilities every C programmer ends up rewriting. The unix command line has had `hexdump -C` (the "canonical" format this code mimics) for decades, and `xxd -i` will turn any file into a C array literal you can `#include` — handy for embedding fonts, shaders, or test fixtures. Layout aside, the function above is almost identical to `od -An -tx1z`.

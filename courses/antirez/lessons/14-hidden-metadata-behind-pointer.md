@@ -39,6 +39,33 @@ Given the payload pointer `s`, the length lives at `((uint32_t *)s)[-1]`. That's
 
 Two payoffs fall out immediately. (1) Modern allocators can catch a double-free because they recognise the address you passed back — so a *second* `PS_free(s)` aborts loudly instead of corrupting the heap `[09:33 → 10:24]`. (2) Once you have a hidden header, you can fit more than length into it. A second `uint32_t` becomes a reference count, and now multiple aliases can share one buffer with automatic cleanup when the last one drops `[12:00 → 13:43]`. That's the next lesson.
 
+### Watch it bite back `[09:33 → 12:00]`
+
+Two failure modes you can trigger on purpose. Free the same pointer twice and a modern allocator recognises the address and aborts instead of corrupting the heap:
+
+```c
+PS_free(s);
+PS_free(s);   /* second time on the same pointer */
+```
+
+```output
+malloc: *** error for object 0x...: pointer being freed was not allocated
+```
+
+It is not guaranteed — some allocators stay silent — so never *rely* on it. The other trap is a surviving alias. Keep a second pointer to the buffer, free through the first, then read through the second:
+
+```c
+char *global_string = my_string;  /* second reference to the same bytes */
+PS_free(my_string);               /* buffer goes back to the allocator */
+PS_print(global_string);          /* but global_string still points at it */
+```
+
+```output
+;
+```
+
+The freed bytes now belong to the allocator, so the print is garbage — a stray `;` here, anything at all on your machine. This dangling-reference problem is exactly what the reference count in the next lesson fixes.
+
 ## A buffer with a hidden length
 
 ```c:run hidden-length

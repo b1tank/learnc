@@ -23,6 +23,25 @@ The pieces from parts 1–5 finally compose into a working pipeline: parse a `.t
 
 At 428 lines, `toyforth.c` is past the "single file, recompile from memory" stage. A two-target `Makefile` (`all: toyforth`, plus `clean`) drops `cc … -O2 -Wall …` into one keystroke and uses mtime so `make` is a no-op when nothing changed. `git init` + a `.gitignore` for the binary lets `git reset --hard` undo a broken experiment in one command. Tiny rituals, big effect on iteration speed.
 
+### Watching `make` skip the rebuild `[08:27 → 09:32]`
+
+The mtime rule is easy to see in action. Run `make` a second time and it does nothing; `touch` the source to push its timestamp forward and the next `make` recompiles:
+
+```
+make
+make
+touch toyforth.c
+make
+```
+
+```output
+cc toyforth.c -O2 -Wall ... -o toyforth
+make: 'toyforth' is up to date.
+cc toyforth.c -O2 -Wall ... -o toyforth
+```
+
+`make` compares the binary's mtime against `toyforth.c`; only when the source is newer does the recipe fire. With the Git repo in place, `git reset --hard` then discards a broken experiment and drops you back on the last commit in one command.
+
 ### One return convention: `TF_OK` / `TF_ERR` `[12:24 → 18:04]`
 
 Mixed `0`-means-success and `1`-means-success across functions is a bug factory. Two `#define`s — `TF_OK 0`, `TF_ERR 1` — let every interpreter routine return the same enum-shaped int. The C callback prototype is changed to take `char *name` instead of a `TFObject*` for the name: the dispatcher already knows the symbol, there's no reason to wrap it.

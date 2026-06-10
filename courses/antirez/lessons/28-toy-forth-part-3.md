@@ -23,6 +23,20 @@ Part 3 finishes the front end: a recursive `print_object` that walks nested list
 
 The old `exec` was just a switch that printed integers. Rename it `print_object`, add a case for `TF_OBJECT_LIST`, and instead of duplicating the per-type formatting inside that case, **call `print_object` again** on each element. A nested list prints itself the same way the outer one does — that's all you need for arbitrarily deep nesting. Salvatore drops the trailing newline inside the list branch so a list-of-lists comes out on one line.
 
+### The missing newline and zsh's `%` `[04:29 → 05:03]`
+
+Recompiling after the rename prints the list exactly as before. But because the function emits no trailing newline, `zsh` flags it: it shows a reverse-video `%` at the end of the line to mark output that didn't end in `\n`.
+
+```
+./a.out program.tf
+```
+
+```output
+[5 10 20 ]%
+```
+
+The fix is to print a single `\n` at the top-level call site — dropping the newline *inside* the list branch (for nesting) but adding it back once around the whole object.
+
 ### Recursion isn't an academic toy `[19:36 → 20:06]`
 
 The aside is worth quoting: in C, recursion is often the *simplest* implementation, not the clever one. A tagged-union tree (integers, symbols, lists of either) wants a recursive printer; trying to do it iteratively means hand-rolling a stack.
@@ -38,6 +52,20 @@ The allowed extras are kept in a tiny string: `static const char *sym_chars = "+
 ### Centralise the allocation `[14:48 → 16:19]`
 
 `create_string_object(s, len)` used to assume the caller had already `xmalloc`'d the buffer. The cleanup moves the `xmalloc(len + 1)`, the `memcpy(p, s, len)`, and the trailing `p[len] = 0` *inside* the constructor. Now the lexer just hands over the source pointer plus the length it measured with `p - start` (pointer math again), and the constructor owns the copy. One fewer concern at every call site.
+
+### Symbols print with a leading quote `[18:53 → 19:36]`
+
+To confirm that words like `plus` and `print` really parse as symbols (not strings), Salvatore temporarily prefixes a `'` when printing a symbol. A program that mixes numbers and bare words now shows which is which:
+
+```
+./a.out program.tf
+```
+
+```output
+[5 5 'plus 'print ]
+```
+
+The leading `'` marks each token as `TFOBJ_TYPE_SYMBOL`; a string literal would have printed inside double quotes instead. The prefix is just a debugging aid and gets removed afterward — but it proves the recursive `print_object` is generic over every object type.
 
 ## A tiny tokeniser using the same trick
 

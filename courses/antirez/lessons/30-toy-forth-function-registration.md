@@ -42,6 +42,23 @@ Two paths:
 
 The `retain` on `name` is the subtlety: the caller will `release` its temporary `oname` right after `registerFunction` returns. Without the retain the refcount drops to zero and the entry's name pointer dangles. With it, the entry holds the last reference.
 
+### When the compiler falls back to `int` `[31:48 → 33:47]`
+
+The callback type names `TFContext` before that struct is fully visible, so the first compile fails — and the giveaway is that C, not knowing the type, *defaults it to `int`*, which then clashes with the real pointer type:
+
+```output
+toyforth.c: warning: type defaults to 'int' ...
+toyforth.c: error: ... incompatible function pointer types ...
+```
+
+The fix is a forward declaration. A pointer to a struct is just an 8-byte address, so the compiler needs only a promise that the name *is* a struct, not its fields:
+
+```c
+struct TFContext;   /* forward declaration: a pointer to it is just an address */
+```
+
+With that one line above the callback type, the cascade of "defaults to int" errors disappears.
+
 ### Built-ins dispatch by the first byte of the name `[37:35 → 43:08]`
 
 `basicMathFunction` is the C callback registered four times — for `+`, `-`, `*`, `/`. It calls `checkStackMinLen(ctx, 2)`, then a *typed* peek/pop: `stackPop(ctx, TFObjectTypeInt)` returns NULL on a type mismatch and sets the runtime error in the context. The operation itself is a `switch (name->str.ptr[0])` — the same callback handles all four operators because the name *is* the operator.

@@ -63,6 +63,43 @@ cc -o hello helloworld.c
 ./hello
 ```
 
+### Peeking inside the binary `[07:48 → 08:37]`
+
+`a.out` is not text — it's a native executable. Two classic tools let you confirm that. First, `file` reports what kind of file something is by inspecting its leading bytes:
+
+```
+file a.out
+```
+
+```output
+a.out: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=..., for GNU/Linux 3.2.0, not stripped
+```
+
+On Linux the executable format is **ELF**; on macOS it'd be `Mach-O`, on Windows `PE`. The same C source compiles to a different container on each platform — that's the platform-specific header Salvatore mentions.
+
+To see the raw bytes, dump them with `hexdump`. The first bytes are the ELF *magic number*:
+
+```
+hexdump -C a.out | head
+```
+
+```output
+00000000  7f 45 4c 46 02 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|
+00000010  03 00 3e 00 01 00 00 00  60 10 00 00 00 00 00 00  |..>.....`.......|
+00000020  40 00 00 00 00 00 00 00  18 39 00 00 00 00 00 00  |@........9......|
+00000030  00 00 00 00 40 00 38 00  0d 00 40 00 1f 00 1e 00  |....@.8...@.....|
+```
+
+The four bytes `7f 45 4c 46` are `0x7F` followed by the ASCII letters `E`, `L`, `F` — the signature `file` reads to identify an ELF binary. Even though the file is mostly machine code, human-readable strings (like your `"Hello, world"`) are still embedded in it. `strings` pulls them out:
+
+```
+strings a.out | grep Hello
+```
+
+```output
+Hello, world
+```
+
 ### What the optimiser does to you `[10:31 → 14:01]`
 
 This is the most interesting part of the video. Compile *without* optimisation and the generated assembly contains a literal `call printf`. Compile with `-O2` (a fairly aggressive but very common optimisation level) and watch this happen:

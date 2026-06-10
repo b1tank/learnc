@@ -36,6 +36,38 @@ This is the rule that makes pointer arithmetic useful. If `p` is `short *` and `
 
 The same rule explains the `char *` → `short *` cast demo in the video: reinterpreting a byte array as 16-bit shorts, then doing `p++`, jumps two bytes forward — not one.
 
+### Reinterpreting bytes through a `short *` `[14:50 → 19:33]`
+
+Point a `short *` at a `char` array (the cast silences the type warning) and each read now grabs *two* bytes, combined little-endian: byte 0 plus byte 1 × 256. Crucially, `p++` then advances **two** bytes, landing on the next pair — not the next byte:
+
+```c:run short-cast.c
+#include <stdio.h>
+
+int main(void) {
+    char myStr[] = {'A','B','C','D','E','F','\0'};
+    short *p = (short *)myStr;   /* reinterpret the bytes as 16-bit shorts */
+    printf("%d\n", *p);          /* 'A' + 'B'*256 */
+    p++;                         /* +1 here means +2 bytes */
+    printf("%d\n", *p);          /* 'C' + 'D'*256 */
+    return 0;
+}
+```
+
+```output
+16961
+17475
+```
+
+`'A'` is 65 and `'B'` is 66, so the first short is `65 + 66*256 = 16961`; after `p++` the pointer skips past `'A','B'` to `'C','D'` → `67 + 68*256 = 17475`. Salvatore double-checks the arithmetic in a Python REPL:
+
+```
+python3 -c "print(65 + 66*256, 67 + 68*256)"
+```
+
+```output
+16961 17475
+```
+
 ### `a[i]` is exactly `*(a + i)` `[13:11 → 14:50]`
 
 Indexing is not a language primitive in C; it is sugar over pointer arithmetic. `a[i]`, `*(a + i)`, `p[i]`, `*(p + i)` are all the same expression after the compiler is done with them. (And because addition commutes, `i[a]` is legal C. Don't write it.)

@@ -46,6 +46,20 @@ His comment on it is the heart of the episode: *"this code I didn't write, the s
 
 He inserts `10, 5, 20, 100, 33`, compiles with `-Wall -Wextra`, and runs. The fastest way to catch a reconstruction bug is a five-element example you can verify by eye — not a thousand-node stress test. If it sorts five numbers correctly, the shape is probably right; you can layer edge cases on top later.
 
+```
+gcc bst.c -Wall -Wextra -o bst && ./bst
+```
+
+```output
+5
+10
+20
+33
+100
+```
+
+The five values come back in order, so the in-order walk and the insert logic are both right.
+
 ### Use the LLM as a *second pair of eyes*, not a crutch `[15:22 → 19:27]`
 
 After the implementation works, he hands the file to Gemini and asks for a bug list. The point of the exercise was to write it without external help — but once it exists, an LLM is a cheap reviewer. It flags the duplicate-value handling (he knew), the missing `free`s (he knew), and one genuinely useful stylistic note: the `if (root->left)` guard inside `print_sorted` is redundant because the function already null-checks `root` at entry. He accepts the suggestion. The lesson: research before guessing, but verify after building.

@@ -32,6 +32,42 @@ int inc(int x) {
 
 Inside `inc`, `x` is a brand-new local variable seeded with the caller's value. Calling `inc(a)` does **not** modify `a` — it modifies the copy. The increment only "sticks" if the caller writes the result back: `a = inc(a)`.
 
+### Locals reset; globals and `static` persist `[03:59 → 07:36]`
+
+Before adding a parameter, Salvatore writes a no-argument `inc()` whose `x` is a plain local. Because that `x` is created fresh on every call, calling `inc()` four times prints `2` four times — the increment never accumulates. Move `x` *outside* every function and it becomes a **global**: a single cell that lives for the whole run, so the same four calls now print `1 2 3 4`. A `static` local sits in between — a global's lifetime, but visible only inside its function.
+
+```c:run global vs static persistence
+#include <stdio.h>
+
+int g = 0;                 /* global: one cell for the whole program */
+
+void inc_global(void) {
+    g = g + 1;
+    printf("%d ", g);
+}
+
+void inc_static(void) {
+    static int s = 0;      /* global lifetime, local visibility */
+    s = s + 1;
+    printf("%d ", s);
+}
+
+int main(void) {
+    inc_global(); inc_global(); inc_global(); inc_global();
+    printf("\n");
+    inc_static(); inc_static(); inc_static(); inc_static();
+    printf("\n");
+    return 0;
+}
+```
+
+```output
+1 2 3 4 
+1 2 3 4 
+```
+
+Try to `printf("%d", s)` from `main` and it won't compile: `s` is global in *lifetime* but local in *visibility* — only `inc_static` can see the name.
+
 ### Expressions vs. statements `[00:00 → 02:02]`
 
 `x + 1` on its own is an *expression*: a recipe that yields a value. The assignment `x = x + 1` is itself an expression (its value is the value stored), and the trailing `;` is what turns it into a *statement* — the unit the compiler executes in order. Don't confuse the assignment `=` with the equality test `==`; they are different operators.

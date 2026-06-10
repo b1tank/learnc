@@ -40,6 +40,18 @@ The "solution" the algorithm searches over is exactly this 6912-byte buffer. A s
 
 For every pixel pair, treat the two RGB triples as points in 3-D space and take the *squared* distance: `dR² + dG² + dB²`. Squaring kills the sign (no `abs()` needed) and is the usual Euclidean-distance trick. Sum across all 49,152 pixels, divide by the worst possible distance (`441² ≈ 195k` per pixel), and you get a single "% different" number — 0 means identical, 100 means as wrong as physically possible.
 
+Salvatore checks that worst-case distance live in Python — the diagonal of the RGB colour cube, from `(0,0,0)` to `(255,255,255)`:
+
+```
+python3 -c "import math; print(math.sqrt(255*255 + 255*255 + 255*255))"
+```
+
+```output
+441.6729559300637
+```
+
+So the most any two pixels can differ is ~441; that **441** (rounded up to 442 in the code) is the per-pixel normaliser that turns the raw summed distance into the clean 0–100% score.
+
 ### The mutation loop `[34:53 → 41:26]`
 
 Each generation: copy the current best buffer, flip 1–5 random bits in it, render, score. If the new score is lower — or, with probability proportional to a slowly-cooling *temperature*, even if it's slightly worse — accept it as the new best. Salvatore also sneaks in **curriculum learning**: early generations only mutate the bitmap (with fixed black/white attributes), later ones unlock the colours. It's brute force, but on a tiny image it converges in a few minutes.

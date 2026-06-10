@@ -39,6 +39,30 @@ So `int main(void)` says: returns `int`, named `main`, takes no arguments. The e
 
 If the format string and the actual arguments disagree (e.g. you promise two `%d` but supply one), `gcc` will warn even without `-Wall`, and the runtime behaviour is undefined — it might print `0`, garbage, or crash. `[07:16 → 08:11]`
 
+### `main` is special — and required `[08:42 → 09:52]`
+
+`main` is the one function nobody calls explicitly — it's the entry point the OS jumps to for you. That specialness shows up in two concrete ways. First, you can't write statements at the top level; every statement has to live inside some function. Drop a bare `printf` at file scope and the compiler rejects it:
+
+```c
+printf("hello\n");   /* at file scope, not inside any function */
+
+int main(void) { return 0; }
+```
+
+```output
+error: expected declaration specifiers or '...' before string constant
+```
+
+Second, the symbol really has to be named `main`. Rename it to `pippo` and compilation gets all the way through to *linking* before it fails — the C runtime startup code needs a `main` to call:
+
+```
+cc rename.c
+```
+
+```output
+/usr/bin/ld: ... undefined reference to `main'
+```
+
 ### Locals live only while the function runs `[15:08 → 17:30]`
 
 When `sum(10, 20)` is called, space appears for `a`, `b`, and any local `c` you declare inside. The moment `sum` returns, all three are gone — their storage will be reused by the next call. Function arguments are just locals that the caller pre-fills for you. Holding onto their address after the function returns is a bug (we'll meet pointers later). The appendix video to this lesson shows this on actual assembly; the next lesson here picks the same thread up.

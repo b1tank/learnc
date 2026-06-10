@@ -76,6 +76,42 @@ int main(void) {
 
 Notice `sizeof *n` (the size of *what `n` points to*) instead of `sizeof(struct node)` — it stays correct if you ever rename the type. And notice that you have to walk the list a second time to `free` every node: forgetting that step is the canonical C memory leak.
 
+### Reaching the file: `argc`, `argv`, and `fopen` `[02:50 → 11:15]`
+
+The real `tac` reads its filename from the command line. `main` can take two parameters: `argc`, the argument count, and `argv`, an array of `char *` — one string per argument, with `argv[0]` the program name itself.
+
+```c
+#include <stdio.h>
+
+int main(int argc, char **argv) {
+    for (int i = 0; i < argc; i++)
+        printf("%d %s\n", i, argv[i]);
+    return 0;
+}
+```
+
+```
+./a.out foo bar
+```
+
+```output
+0 ./a.out
+1 foo
+2 bar
+```
+
+So `tac` checks `argc == 2`, takes the name from `argv[1]`, and opens it with `fopen(argv[1], "r")`, which hands back a `FILE *` or `NULL` when the file isn't there:
+
+```
+./a.out test.nonexistent
+```
+
+```output
+File does not exist
+```
+
+From there `fgets(buf, sizeof buf, fp)` pulls one line per call until it returns `NULL` at end of file — each line becomes a `struct line` spliced onto the front of the list.
+
 ## Modern note
 
 The Linux kernel uses an **intrusive** variant: instead of giving every list its own node type, you embed a small `struct list_head { struct list_head *next, *prev; }` *inside* your data struct, and a `container_of` macro walks back from the embedded field to the outer object. Same self-referential idea, zero extra allocation per element. See `include/linux/list.h` if you want to see this pattern at industrial scale.

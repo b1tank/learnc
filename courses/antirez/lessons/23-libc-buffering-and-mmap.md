@@ -87,6 +87,35 @@ A few things to internalise:
 - **`MAP_PRIVATE`** gives you a copy-on-write view: writes stay in memory and never reach the file. **`MAP_SHARED`** propagates writes back, but the kernel decides when — call `msync` to force it, or let dirty pages drift out lazily.
 - Pair every `mmap` with `munmap(mem, length)`.
 
+### Reading the mapping as an array `[26:29 → 32:50]`
+
+`open` hands back the first free descriptor — `3`, because 0/1/2 are already stdin/stdout/stderr (and it's `3` on every fresh run, since exiting closes everything). Map the file, then index the returned pointer like an array — the first bytes *are* the file's first bytes:
+
+```c
+int fd = open("stdio3.c", O_RDONLY);
+printf("Open file descriptor: %d\n", fd);
+
+char *s = mmap(NULL, 100, PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+for (int j = 0; j < 10; j++)
+    printf("s[%d] = %c\n", j, s[j]);
+```
+
+```output
+Open file descriptor: 3
+s[0] = #
+s[1] = i
+s[2] = n
+s[3] = c
+s[4] = l
+s[5] = u
+s[6] = d
+s[7] = e
+s[8] =  
+s[9] = <
+```
+
+No `read`, no buffer copy: the file's source (`#include <`...) is just memory behind a pointer. Get the flags wrong (e.g. drop `MAP_SHARED`) and `mmap` returns `MAP_FAILED` — the all-ones address `2^64 - 1` — and the first dereference segfaults.
+
 ### The cost model `[32:50 → 35:43]`
 
 `read` is "copy this many bytes from the file into my buffer, now". `mmap` is "set up a translation; charge me only when I touch a page". The first access to each page triggers a **page fault**: the kernel pulls the page in, the MMU records the translation, your dereference returns. Subsequent accesses are pointer dereferences with no kernel involvement.

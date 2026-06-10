@@ -50,6 +50,27 @@ That's it. The language has no GC; this *is* the GC, written by hand.
 
 Double-`decref` underflows the counter, so a defensive version checks `refcount == 0` on entry and aborts; the video also adds a `magic` field (e.g. `0xDEADBEEF`) zeroed at free time so use-after-free becomes an abort instead of silent corruption. The payoff: the same string in two linked lists takes one allocation, not two — a counter goes `2 → 1 → 0` as references drop, much safer than scattering `strdup`/`free` pairs.
 
+### Catching use-after-free with a magic number `[17:07 → 21:46]`
+
+Checking `refcount == 0` on entry sounds like it would catch a double-free, but it can't be trusted: once `free` hands the block back, the allocator may scribble anything over the header, so the freed `refcount` reads as a *random* value rather than a clean zero. The fix is a known sentinel. Add a `magic` field set to `0xDEADBEEF` at creation, zero it just before `free`, and validate it on every access:
+
+```c
+void ps_validate(struct pls *p) {
+    if (p->magic != 0xDEADBEEF) {
+        printf("INVALID STRING: Aborting\n");
+        exit(1);
+    }
+}
+```
+
+Now touching a freed (or never-valid) string aborts loudly instead of limping along on corrupted bytes:
+
+```output
+INVALID STRING: Aborting
+```
+
+Wrap the field in `#ifdef PLS_DEBUG` so production builds drop the extra 4 bytes once the bugs are shaken out.
+
 ### A minimal mystring_t
 
 ```c:run mystring-refcount

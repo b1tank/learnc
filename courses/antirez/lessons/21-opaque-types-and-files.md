@@ -40,6 +40,37 @@ That same trick is how the standard library hides `FILE`. The header gives you s
 
 `fopen(path, mode)` allocates the hidden struct and opens the underlying OS file descriptor; it returns `NULL` on failure (always check). `fclose(fp)` releases both — skip it and you leak memory *and* a kernel handle. `fread(buf, size, count, fp)` reads `size * count` bytes; the two-argument split is a 1970s wart worth knowing about but not loving.
 
+### Dumping a file's bytes with `fread` `[15:14 → 19:27]`
+
+`fread(buf, 1, sizeof buf, fp)` reads up to 32 bytes and returns how many it actually got — a `size_t`, printed with `%zd`:
+
+```c
+char buf[32];
+size_t nread = fread(buf, 1, sizeof buf, fp);
+printf("%zd\n", nread);   /* -> 32 */
+```
+
+Loop until `fread` returns 0 and hand each chunk to the `hexdump()` helper from the earlier lessons, and the program dumps its own source file:
+
+```c
+char buf[32];
+size_t nread;
+while ((nread = fread(buf, 1, sizeof buf, fp)) != 0)
+    hexdump(buf, nread);
+```
+
+That is essentially what the system `hexdump -C` prints:
+
+```
+hexdump -C stdio1.c | head
+```
+
+```output
+00000000  23 69 6e 63 6c 75 64 65  20 3c 73 74 64 69 6f 2e  |#include <stdio.|
+00000010  68 3e 0a 0a 69 6e 74 20  6d 61 69 6e 28 76 6f 69  |h>..int main(voi|
+...
+```
+
 ### Why the library exists at all `[20:07 → 21:58]`
 
 `man 3 fopen` — section 3 means *C library*, not *system call*. Underneath, libc calls POSIX `open`/`read`/`close` (section 2). The opaque `FILE *` is what lets libc add buffering, error flags, and position tracking on top of a raw integer file descriptor without your code knowing or caring.

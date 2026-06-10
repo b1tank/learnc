@@ -23,6 +23,38 @@ A `union` overlays several fields at the **same address**, so the storage is reu
 
 In a `struct` every field has its own offset; in a `union` every field starts at offset 0, so writing one overwrites the others. That is exactly what you want when an object is *one of* several types at a time — a classic **tagged union**: a discriminator plus a `union` of payload variants. The size becomes the **largest** variant, not the sum. Redis' vector-set evaluator uses this for `ExprToken` (a number *or* a string descriptor *or* an opcode depending on `token_type`) — millions of instances, real savings.
 
+### Reading an int's bytes through a union `[09:33 → 11:20]`
+
+Overlay an `int` and a 4-byte array, write the int, then read the array back to inspect the raw little-endian representation:
+
+```c:run
+#include <stdio.h>
+#include <limits.h>
+
+union { int i; unsigned char a[4]; } f;
+
+static void dump(void) {
+    printf("%d %d %d %d\n", f.a[0], f.a[1], f.a[2], f.a[3]);
+}
+
+int main(void) {
+    f.i = 10;      dump();
+    f.i = INT_MAX; dump();
+    f.i = INT_MIN; dump();
+    f.i = -1;      dump();
+    return 0;
+}
+```
+
+```output
+10 0 0 0
+255 255 255 127
+0 0 0 128
+255 255 255 255
+```
+
+`10` lands entirely in the first byte (least-significant first, so this machine is little-endian); `INT_MAX` is `255 255 255 127` with the top bit clear; `INT_MIN` flips just that bit to `0 0 0 128`; `-1` is all-ones, the two's-complement representation.
+
 ### Bitfields: integers measured in bits `[17:00 → 18:40]`
 
 `unsigned char level : 4;` asks the compiler for a 4-bit field. The base type matters: `int a:4; b:4; c:8;` still costs 4 bytes; the same fields on `unsigned char` fit in 1. Use cases: **memory** (Redis' `redisObject` packs `type`, `encoding`, `lru`, `refcount` together) and **wire formats** (the IPv4 header).

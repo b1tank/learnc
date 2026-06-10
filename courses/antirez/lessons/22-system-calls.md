@@ -48,6 +48,21 @@ A C process is sealed inside its own address space — a Turing machine that onl
 
 When a system call fails it sets the thread-local global `errno` (declared in `<errno.h>`) to a code that names the failure: `ENOENT` (no such file), `EACCES` (permission denied), and so on. `perror("opening file")` from `<stdio.h>` prints your prefix, a colon, and the human-readable translation of `errno` — the cheap, idiomatic way to report I/O errors. `close()` lives in `<unistd.h>` rather than `<fcntl.h>` because closing applies to many things that aren't files (sockets, pipes).
 
+You can watch `errno` get set: print it right after a failed `open`, before you even check the return value, and `perror` then translates the same code into words.
+
+```c
+int fd = open("stdio3.c", O_RDONLY);   /* file does not exist */
+printf("errno is %d\n", errno);        /* errno from <errno.h> */
+if (fd == -1) { perror("Unable to open file"); return 1; }
+```
+
+```output
+errno is 2
+Unable to open file: No such file or directory
+```
+
+The ERRORS section of `man 2 open` lists `ENOENT` — value `2` — for a path that doesn't exist; when the file *is* there, `open` succeeds and `errno` is left at 0.
+
 ### Bypassing libc to write to stdout
 
 The three fixed descriptors are 0, 1, 2 — stdin, stdout, stderr. So you can produce output without `printf` at all:

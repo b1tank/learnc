@@ -35,6 +35,28 @@ The central type is a `struct tfobj` carrying a `type` field and an anonymous `u
 
 `DUP` in source isn't a string literal — it's a **symbol**. Tokens that aren't between quotes and aren't pure numbers are tagged `TFOBJ_TYPE_SYMBOL`, and at execution time the interpreter looks them up in a name→function table (next episode) instead of pushing them. The storage shape happens to be the same as a string (pointer + length), so `createSymbolObject` is one line that calls `createStringObject` and rewrites the type.
 
+### `argv[0]` is the program's own name `[23:22 → 24:46]`
+
+`main` receives `argc`/`argv`, and `argv[0]` is the name the program was *invoked* as — so `argc` is always at least 1. Salvatore detours into a Unix trick this enables: one binary can behave differently depending on the name it was called through. The system directories are full of the symbolic links that make it work:
+
+```
+ls -l /usr/bin/vi
+```
+
+```output
+lrwxr-xr-x  1 root  wheel  3 ... /usr/bin/vi -> vim
+```
+
+`vi` is a symlink to `vim`; when `vim` sees `argv[0]` is `vi` it switches to a more `vi`-compatible behaviour. Toy Forth reads the same `argv` to demand exactly one filename — when `argc != 2` it prints a usage line to `stderr` and returns 1. Run bare it trips the guard; give it a filename and it gets past:
+
+```
+./a.out
+```
+
+```output
+Usage: ./a.out filename
+```
+
 ### Allocation discipline `[28:30 → 32:42]`
 
 Before any logic, Salvatore writes `createObject(int type)`, plus a `createXxxObject` per type. Each starts `refcount = 1` (the returned pointer is the first reference). Every `malloc` goes through an `xmalloc` wrapper that prints `"Out of memory"` and `exit(1)` on `NULL` — it lets the rest of the code stop checking. A useful rule of thumb for non-library programs: panic at the allocation site, keep the call sites readable.
