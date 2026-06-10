@@ -8,7 +8,7 @@ next: 36a-6502-detour
 status: draft
 ---
 
-> **What this is.** A short reference card for the **"Under the hood (asm)"**
+> **What this is.** A short reference card for the assembly deep-dive
 > sections sprinkled across the antirez course. Skim it once, then jump back
 > here whenever a snippet uses a register, instruction, or convention you
 > can't place.
@@ -161,4 +161,4 @@ functions, what the linker does); port the snippets to x86-64 / `syscall` /
   tutorial, runs entirely in the browser.
 
 *Continue to the [6502 detour](36a-6502-detour.md), or jump back to any
-lesson's **Under the hood (asm)** section.*
+lesson's assembly deep-dive section.*
