@@ -17,24 +17,13 @@ source:
 
 A C function takes parameters and may return a value. `x = x + 1` is an **expression** (it produces a value); add a `;` and it becomes a **statement**. The shorthand `x++` does the same increment. Arguments are passed **by value** - the function works on a copy, so the caller's variable is unchanged unless the caller assigns the return value back.
 
-## Walkthrough
+## Expressions and statements `[00:00 → 02:02]`
 
-### A function with a parameter `[08:07 → 09:30]`
+`x + 1` on its own is an **expression**: a recipe that yields a value. The assignment `x = x + 1` is also an expression - its value is the value just stored - and the trailing `;` is what turns it into a **statement**, the unit the compiler executes in order. Read `=` as "copy the value on the right into the variable on the left," and do not confuse it with `==`, the equality test; they are different operators, and swapping one for the other inside an `if` is a classic bug.
 
-Salvatore rewrites the earlier `inc` so it *takes* an `int` and *returns* an `int`:
+## Locals reset; globals and static persist `[03:59 → 07:36]`
 
-```c
-int inc(int x) {
-    x = x + 1;
-    return x;
-}
-```
-
-Inside `inc`, `x` is a brand-new local variable seeded with the caller's value. Calling `inc(a)` does **not** modify `a` - it modifies the copy. The increment only "sticks" if the caller writes the result back: `a = inc(a)`.
-
-### Locals reset; globals and `static` persist `[03:59 → 07:36]`
-
-Before adding a parameter, Salvatore writes a no-argument `inc()` whose `x` is a plain local. Because that `x` is created fresh on every call, calling `inc()` four times prints `2` four times - the increment never accumulates. Move `x` *outside* every function and it becomes a **global**: a single cell that lives for the whole run, so the same four calls now print `1 2 3 4`. A `static` local sits in between - a global's lifetime, but visible only inside its function.
+Salvatore starts with a no-argument `inc()` whose `x` is a plain local. Because that `x` is created fresh on every call, calling `inc()` four times prints `2` four times - the increment never accumulates, since each call builds `x`, adds one, prints, and throws it away. Move `x` *outside* every function and it becomes a **global**: one cell that lives for the whole run, so the same four calls now climb `1 2 3 4`. A `static` local sits in between - a global's lifetime, but a name only its own function can see:
 
 ```c:run global vs static persistence
 #include <stdio.h>
@@ -66,21 +55,24 @@ int main(void) {
 1 2 3 4 
 ```
 
-Try to `printf("%d", s)` from `main` and it won't compile: `s` is global in *lifetime* but local in *visibility* - only `inc_static` can see the name.
+`g` and `s` count identically here, but they differ in *visibility*: try `printf("%d", s)` from `main` and it won't compile - `s` is global in lifetime but local in scope, so only `inc_static` knows the name. (A `static` like this is also why such a function is not thread-safe: two threads incrementing the same hidden cell would race.)
 
-### Expressions vs. statements `[00:00 → 02:02]`
+## A function with a parameter `[08:07 → 09:30]`
 
-`x + 1` on its own is an *expression*: a recipe that yields a value. The assignment `x = x + 1` is itself an expression (its value is the value stored), and the trailing `;` is what turns it into a *statement* - the unit the compiler executes in order. Don't confuse the assignment `=` with the equality test `==`; they are different operators.
+Now `inc` *takes* an `int` and *returns* one:
 
-### Pass-by-value, always `[10:53 → 11:34]`
+```c
+int inc(int x) {
+    x = x + 1;
+    return x;
+}
+```
 
-C never silently passes a reference - not even for structs. If you need the callee to mutate the caller's data, you pass a pointer (covered in the next lesson). For now: a function changing its parameter changes only its own copy.
+Inside `inc`, `x` is a brand-new local seeded with a copy of the caller's value. It is not the caller's variable - just a variable that started life holding the same number.
 
-### `++` as shorthand `[23:16 → 23:52]`
+## Pass-by-value, always `[10:53 → 11:34]`
 
-`x++` and `++x` both mean "increment `x` by one." They differ only in the **value of the expression**: `x++` evaluates to the *old* value of `x`, while `++x` evaluates to the *new* one. The side effect on `x` is the same.
-
-## Run it
+So calling `inc(a)` does **not** modify `a`; it modifies `inc`'s private copy. The change only "sticks" if the caller writes the result back with `a = inc(a)`:
 
 ```c:run inc with and without capturing the result
 #include <stdio.h>
@@ -108,9 +100,24 @@ after a = inc(a): a = 11
 after a = inc(a): a = 12
 ```
 
-The first call's return value is discarded - `a` keeps its 10. Only the assignments `a = inc(a)` change `a`.
+The first call's return value is discarded, so `a` keeps its `10`; only the assignments move it. C is pass-by-value everywhere - even a whole struct is copied into the callee. The only way to let a function reach back and mutate the caller's data is to hand it a **pointer** (next lesson).
 
-### Prefix vs. postfix `++`
+## Pass-by-value at the register level
+
+You can see the copy in the assembly. Compile `inc` alone with `gcc -O2 -masm=intel`:
+
+```asm
+inc:
+        endbr64
+        lea     eax, 1[rdi]   ; eax = x + 1, computed from the incoming copy
+        ret
+```
+
+The System V ABI hands the first `int` argument to `inc` in `edi`, and the return value goes back in `eax`. `inc` reads `edi`, computes `+ 1` into `eax`, and returns - it never has the address of the caller's `a`, only a value that arrived in a register. There is physically nothing on the caller's side for it to mutate. (`lea`, "load effective address", is just a cheap adder here: `1[rdi]` is an addressing expression, but no memory is touched.)
+
+## The ++ shorthand `[23:16 → 23:52]`
+
+`x++` and `++x` both mean "increment `x` by one" - the name C++ is the joke that it is C, incremented. They differ only in the *value the expression produces*: `x++` evaluates to the **old** `x`, `++x` to the **new** one. The side effect on `x` is identical:
 
 ```c:run prefix vs postfix increment
 #include <stdio.h>
@@ -131,45 +138,25 @@ postfix: a = 5, x = 6
 prefix:  b = 6, y = 6
 ```
 
-Both forms increment the variable; they differ only in what the surrounding expression sees.
+Both `x` and `y` end at `6`; the only difference is what the surrounding assignment saw at the moment it ran.
 
-## Under the hood (asm)
+## What the optimiser makes of ++
 
-Strip the printing away and look at what `gcc -O2 -masm=intel` makes of bare `x++` vs `++x` vs `x++; ++x;`:
+Strip the printing away and ask `gcc -O2 -masm=intel` to compile three tiny functions:
 
 ```asm
-post:                          ; int post(int x) { return x++; }
+post:                  ; int post(int x) { return x++; }
         endbr64
-        mov     eax, edi       ; return the OLD value of x
-        ret                    ; (the increment is dead - never observed)
-pre:                           ; int pre(int x) { return ++x; }
-        endbr64
-        lea     eax, [rdi+1]   ; return x + 1, in one instruction
+        mov     eax, edi      ; return the OLD x; the increment is never observed
         ret
-both:                          ; { x++; ++x; return x; }
+pre:                   ; int pre(int x) { return ++x; }
         endbr64
-        lea     eax, [rdi+2]   ; two increments collapsed to x + 2
+        lea     eax, 1[rdi]   ; return x + 1, in one instruction
+        ret
+both:                  ; int both(int x) { x++; ++x; return x; }
+        endbr64
+        lea     eax, 2[rdi]   ; two increments folded into x + 2
         ret
 ```
 
-`lea` ("load effective address") is x86-64's swiss-army arithmetic instruction: it does an `add` without touching memory. At `-O2`, gcc proves the post-increment's side-effect is never observed and drops it; the asm for `post` is literally just a move. The whole "prefix vs postfix" hand-wringing disappears once the optimiser sees the value isn't used.
-
-[Open in **Compiler Explorer** →](https://godbolt.org/) · see the [asm primer](00-asm-primer.md) for register/calling-convention details.
-
-## Try it
-
-1. Drop the `return x;` from `inc` and change its return type to `void`. What does `a = inc(a)` now do? (Spoiler: it won't compile.)
-2. Replace `x = x + 1;` inside `inc` with `x++;`. Same behaviour - confirm it.
-3. Predict what `int n = 5; int m = n++ + ++n;` leaves in `m` and `n`. Then run it. (And note: combining multiple side effects on the same variable in one expression is *bad style* even when defined.)
-
-## Cross-reference to K&R
-
-This lesson lines up with [K&R § 1.8 - Arguments - Call by Value](../../kr/lessons/01-08-arguments-call-by-value.md); the `++` shorthand itself is covered in [K&R § 2.8 - Increment and Decrement Operators](../../kr/lessons/02-08-increment-and-decrement-operators.md).
-
-## Go deeper
-
-- cppreference - [Function declarations](https://en.cppreference.com/w/c/language/function_declaration) and [function call expressions](https://en.cppreference.com/w/c/language/operator_other#Function_call).
-- cppreference - [Increment/decrement operators](https://en.cppreference.com/w/c/language/operator_incdec).
-- cppreference - [Expressions vs. statements](https://en.cppreference.com/w/c/language/expressions).
-
-*Click **next →** to dig into C's integer types.*
+In `post`, the optimiser proves the post-increment's result is never used and drops the increment entirely - the function is just a register move. In `both`, the two separate increments collapse into a single `+ 2`. Once the optimiser can see that an intermediate value is never read, the prefix-vs-postfix distinction evaporates; it only matters when the expression's value is actually observed.
