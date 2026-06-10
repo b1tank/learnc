@@ -17,13 +17,11 @@ source:
 
 A `union` overlays several fields at the **same address**, so the storage is reused - perfect for tagged unions and for inspecting an object's raw bytes. A **bitfield** packs several small integers into a single word, useful for flags and on-wire headers. Both pay the price of being sensitive to alignment, endianness, and a handful of "implementation-defined" choices.
 
-## Walkthrough
+## `union`: shared storage `[08:03 → 16:18]`
 
-### `union`: shared storage `[08:03 → 16:18]`
+In a `struct` every field has its own offset; in a `union` every field starts at offset 0, so writing one overwrites the others. That is exactly what you want when an object is *one of* several types at a time - a classic **tagged union**: a discriminator plus a `union` of payload variants. The size becomes the **largest** variant, not the sum. Redis' vector-set evaluator uses this for `ExprToken` (a number *or* a string descriptor *or* an opcode depending on `token_type`) - millions of instances, real savings. An anonymous `union` (no member name) is a C11 convenience; before that you named it and reached through `f.u.i`.
 
-In a `struct` every field has its own offset; in a `union` every field starts at offset 0, so writing one overwrites the others. That is exactly what you want when an object is *one of* several types at a time - a classic **tagged union**: a discriminator plus a `union` of payload variants. The size becomes the **largest** variant, not the sum. Redis' vector-set evaluator uses this for `ExprToken` (a number *or* a string descriptor *or* an opcode depending on `token_type`) - millions of instances, real savings.
-
-### Reading an int's bytes through a union `[09:33 → 11:20]`
+## Reading an int's bytes through a union `[09:33 → 11:20]`
 
 Overlay an `int` and a 4-byte array, write the int, then read the array back to inspect the raw little-endian representation:
 
@@ -53,17 +51,19 @@ int main(void) {
 255 255 255 255
 ```
 
-`10` lands entirely in the first byte (least-significant first, so this machine is little-endian); `INT_MAX` is `255 255 255 127` with the top bit clear; `INT_MIN` flips just that bit to `0 0 0 128`; `-1` is all-ones, the two's-complement representation.
+`10` lands entirely in the first byte (least-significant first, so this machine is little-endian); `INT_MAX` is `255 255 255 127` with the top bit clear; `INT_MIN` flips just that bit to `0 0 0 128`; `-1` is all-ones, the two's-complement representation. You could get the same view with an `unsigned char *` aimed at `&f.i`; the union is just a tidier way to say "look at these bytes two ways".
 
-### Bitfields: integers measured in bits `[17:00 → 18:40]`
+## Bitfields: integers measured in bits `[17:00 → 18:40]`
 
-`unsigned char level : 4;` asks the compiler for a 4-bit field. The base type matters: `int a:4; b:4; c:8;` still costs 4 bytes; the same fields on `unsigned char` fit in 1. Use cases: **memory** (Redis' `redisObject` packs `type`, `encoding`, `lru`, `refcount` together) and **wire formats** (the IPv4 header).
+`unsigned char level : 4;` asks the compiler for a 4-bit field. The base type matters: `int a:4; b:4; c:8;` still costs 4 bytes; the same fields on `unsigned char` fit in 1. Use cases: **memory** (Redis' `redisObject` packs `type`, `encoding`, `lru`, `refcount` together) and **wire formats** (the IPv4 header, where `ip_hl` is 4 bits, `version` is 4 bits, and so on).
 
-### Caveats: portability and overflow `[19:11 → 24:13]`
+## Caveats: portability and overflow `[19:11 → 24:13]`
 
-C barely specifies how bitfields are packed across endianness and ABIs - fine for in-memory state, dangerous for serialised data (for real wire formats, prefer `unsigned char[]` plus shifts and masks). Assigning 17 to a 4-bit *unsigned* field stores `17 mod 16 = 1`; the same on a *signed* bitfield is **undefined behaviour**, so keep small fields `unsigned`.
+C barely specifies how bitfields are packed across endianness and ABIs - fine for in-memory state, dangerous for serialised data. For a real wire format, prefer `unsigned char[]` plus shifts and masks; it is more work but portable. Assigning 17 to a 4-bit *unsigned* field stores `17 mod 16 = 1`; the same on a *signed* bitfield is **undefined behaviour**, so keep small fields `unsigned`.
 
-### A minimal tagged union
+## A minimal tagged union
+
+A tagged union is the everyday use: one discriminator field plus a `union` of the payloads. Only the active variant is valid at a time, so the whole object is only as big as its largest member plus the tag.
 
 ```c:run
 #include <stdio.h>
@@ -97,7 +97,11 @@ dbl: 3.14
 sizeof value = 16
 ```
 
-### Flags packed in one byte
+The `union` of `int` and `double` is 8 bytes (the `double`) and the `tag` is 4, with alignment rounding the struct up to 16. With only two variants the union barely pays off, but `ExprToken` has several, and there the saving over storing every variant side by side is exactly why it exists.
+
+## Packing flags into one byte
+
+Bitfields shine when several small values share a word. Here four fields - two booleans, a 4-bit level, and 2 bits of padding - fit in a single byte:
 
 ```c:run
 #include <stdio.h>
@@ -119,6 +123,9 @@ int main(void) {
     unsigned over = 17;          /* runtime value: 17 mod 16 = 1 */
     f.level = over;
     printf("after level=17: level=%u\n", f.level);
+
+    struct ints { int a:4; int b:4; int c:8; };
+    printf("sizeof int-bitfields = %zu\n", sizeof(struct ints));
     return 0;
 }
 ```
@@ -127,28 +134,7 @@ int main(void) {
 ready=1 error=0 level=9
 sizeof flags = 1
 after level=17: level=1
+sizeof int-bitfields = 4
 ```
 
-## Modern note
-
-C99 added **designated initialisers** (`.tag = 0, .u.i = 42`); C11 added **anonymous unions**, letting you drop the intermediate `u` and write `v.i` directly. For a single flag, `_Bool` / `<stdbool.h>` is cleaner than a 1-bit bitfield - but bitfields still win when you pack several together.
-
-## Try it
-
-1. Add a `char *s` variant to `struct value` with `tag = 2` and print it. Does `sizeof(struct value)` change? Why?
-2. Change the bitfield base type from `unsigned char` to `unsigned int`. What does `sizeof flags` become, and why?
-3. Drop `_pad : 2`. Same size? (Compilers round up to the base type.)
-
-## Cross-reference to K&R
-
-- [K&R § 6.8 - Unions](../../kr/lessons/06-08-unions.md)
-- [K&R § 6.9 - Bit-fields](../../kr/lessons/06-09-bit-fields.md)
-
-K&R presents both features as modern C still uses them; Salvatore adds the *why* with real Redis examples (`ExprToken`, `redisObject`) and the portability caveats.
-
-## Go deeper
-
-- [`man 7 ip`](https://man7.org/linux/man-pages/man7/ip.7.html) - the IPv4 header, the canonical bitfield wire-format example.
-- Redis' `redisObject` in [`server.h`](https://github.com/redis/redis/blob/unstable/src/server.h) - production-grade `type`/`encoding`/`refcount` bitfields.
-- Type punning: prefer `memcpy` between same-sized types over a `union` cast - same codegen, strict-aliasing-safe.
-- [Eric Raymond, *The Lost Art of C Structure Packing*](http://www.catb.org/esr/structure-packing/).
+Three things to read off the output. The whole struct is `1` byte because the base type is `unsigned char` and the bits add up to 8. Writing `17` into the 4-bit `level` keeps only `17 mod 16 = 1`, silently. And the same logical fields on an `int` base (`int a:4; b:4; c:8;`) jump to `4` bytes - the compiler allocates in units of the declared base type, so the layout is **implementation-defined**. Never assume a particular bit order or offset for serialised data; that is what shifts and masks over a byte array are for.
