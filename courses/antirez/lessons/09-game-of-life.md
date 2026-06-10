@@ -17,9 +17,7 @@ source:
 
 A project lesson: no new syntax, just everything from lessons 1–7 wired together to simulate Conway's Game of Life. The real point is *layered abstraction in C* - the first half of the program teaches the language about your problem (board, cells, neighbours), and only then does the game logic itself become short and obvious.
 
-## Walkthrough
-
-### Flat `char` array as the board `[10:48 → 13:57]`
+## Flat `char` array as the board `[10:48 → 13:57]`
 
 No structs, no 2-D arrays - just a 1-D buffer of `char`, sized by `#define`s, with two more for the live/dead glyphs:
 
@@ -34,7 +32,9 @@ char grid[GRID_CELLS];
 
 The parentheses aren't cosmetic: `#define` is *textual substitution*, so `GRID_CELLS / 2` would silently expand to `GRID_COLS * GRID_ROWS / 2` and only do what you meant by accident. `[35:01 → 35:48]`
 
-### Setter, getter, and 2-D-to-1-D indexing `[14:03 → 17:39]`
+A `char` is the right cell type because the board is only ever two symbols, `'*'` and `'.'`, and a `char` *is* a one-byte integer that happens to print as a glyph.
+
+## Setter, getter, and 2-D-to-1-D indexing `[14:03 → 17:39]`
 
 The array is passed by reference - a pointer to its first byte - so mutations survive after the helper returns. The index formula is the usual `y * COLS + x`:
 
@@ -47,13 +47,25 @@ char get_cell(char *grid, int x, int y) {
 }
 ```
 
-Pointers come in lesson 10; for now, read `char *grid` as "the same `grid` from `main`, not a copy".
+Pointers come in lesson 10; for now, read `char *grid` as "the same `grid` from `main`, not a copy". Because the helper holds the array's address rather than a snapshot, `set_cell(grid, 10, 10, ALIVE)` is still visible back in `main` after the call returns.
 
-### Wrap-around hidden in one helper `[18:40 → 27:01]`
+## Wrap-around hidden in one helper `[18:40 → 27:01]`
 
-A glider that walks off the right edge should reappear on the left. Both setter and getter route the coordinate through a single `cell_to_offset(x, y)`: positive overflow is `x % GRID_COLS`; negative is normalised by flipping sign, taking modulo, then mirroring back. Get that one function right, and every layer above "lives on income" - `count_living_neighbors` never thinks about edges again. `[43:48 → 44:13]`
+A glider that walks off the right edge should reappear on the left. Both setter and getter route the coordinate through a single `cell_to_offset(x, y)`. Positive overflow is one modulo; the negative case is normalised by flipping sign, taking modulo, then mirroring back:
 
-### Two buffers, then five-line rules `[34:45 → 49:20]`
+```c
+int cell_to_offset(int x, int y) {
+    if (x >= GRID_COLS) x = x % GRID_COLS;
+    if (y >= GRID_ROWS) y = y % GRID_ROWS;
+    if (x < 0) { x = -x % GRID_COLS; x = GRID_COLS - x; }
+    if (y < 0) { y = -y % GRID_ROWS; y = GRID_ROWS - y; }
+    return y * GRID_COLS + x;
+}
+```
+
+Salvatore checks the negative branch by hand: for `x = -28`, `-x` is `28`, `28 % 25` is `3`, and `25 - 3` is `22` - the correct wrapped column. Get that one function right, and every layer above "lives on income" - `count_living_neighbors` never thinks about edges again. `[43:48 → 44:13]`
+
+## Two buffers, then five-line rules `[34:45 → 49:20]`
 
 You can't update in place: rewriting cell *(x, y)* would corrupt the neighbours that *(x+1, y)* still needs. So `old_grid` and `new_grid` - read from one, write to the other, swap each tick. Once `count_living_neighbors` exists (just a double `for` from `-1..1` skipping `(0,0)`), the rules read almost like Wikipedia:
 
@@ -68,7 +80,7 @@ set_cell(new_grid, x, y, next);
 
 To animate, the main loop prepends the VT100 clear-screen escape `"\x1b[2J\x1b[H"`, prints the grid, computes the next state, and `sleep(1)`s. Drop a glider at `(10,10)` and watch it slide across the terminal - and, thanks to `cell_to_offset`, wrap around the far edge instead of dying there. `[51:03 → 52:16]`
 
-### Where the clear-screen escape comes from `[38:16 → 38:53]`
+## Where the clear-screen escape comes from `[38:16 → 38:53]`
 
 That `"\x1b[2J\x1b[H"` isn't memorised - Salvatore recovers it by piping the `clear` command through `xxd` to read the raw bytes it emits:
 
@@ -82,9 +94,48 @@ clear | xxd
 
 `1b` is the ESC byte (`\x1b`); `[H` homes the cursor, `[2J` clears the screen, and `[3J` clears the scrollback. Copy the two you need into a `printf` and the terminal becomes a tiny canvas.
 
-### A runnable slice
+## How a 2-D grid lives in a 1-D array
 
-The full simulator is too big to embed, but the neighbour count *is* its heart. Below, a 3×3 board with the centre `(1,1)` surrounded by four live cells:
+The whole board is one contiguous run of bytes; "rows" and "columns" exist only in the arithmetic `y * COLS + x`. Row `y` starts at offset `y * COLS`, and adding `x` steps along that row. So the grid is stored *row-major*: all of row 0, then all of row 1, and so on. Here is the mapping made visible - a 5x3 board with one cell set through the formula, then rendered back as a 2-D picture:
+
+```c:run layout.c
+#include <stdio.h>
+
+#define W 5
+#define H 3
+#define ALIVE '*'
+#define DEAD  '.'
+
+char grid[W * H];
+
+int main(void) {
+    for (int i = 0; i < W * H; i++) grid[i] = DEAD;
+
+    int x = 3, y = 2;
+    grid[y * W + x] = ALIVE;            /* one cell via the 2-D -> 1-D formula */
+    printf("cell (%d,%d) -> offset %d\n", x, y, y * W + x);
+
+    for (int row = 0; row < H; row++) {
+        for (int col = 0; col < W; col++)
+            printf("%c", grid[row * W + col]);
+        printf("\n");
+    }
+    return 0;
+}
+```
+
+```output
+cell (3,2) -> offset 13
+.....
+.....
+...*.
+```
+
+`(3, 2)` lands at `2 * 5 + 3 = 13`, the fourth byte of the third row. This is exactly the layout the compiler would pick for a real `char board[H][W]` - the 2-D syntax is sugar over the same `y * W + x` you can write by hand.
+
+## Counting neighbours: bounds-check vs wrap
+
+The full simulator is too big to embed, but `count_living_neighbors` *is* its heart, and it shows the canonical eight-neighbour scan: a double loop over offsets `-1..1`, skipping `(0,0)` so a cell never counts itself. Below, a 3x3 board with the centre `(1,1)` surrounded by four live cells:
 
 ```c:run neighbours.c
 #include <stdio.h>
@@ -117,20 +168,4 @@ int main(void) {
 4
 ```
 
-Bounds-checked rather than wrapped, but the shape matches the full version: flat `char` array, `y * COLS + x` indexing, canonical `-1..1` double loop.
-
-## Try it
-
-1. Flip a `'.'` to `'*'` in `board` and predict the new count for `(1,1)` before re-running.
-2. Apply the rules by hand: with `n = 4`, is the centre alive or dead next tick? (Live cells need 2 or 3; dead cells need exactly 3.)
-3. Call `count_neighbors(board, 0, 0)`. What does the bounds check do at the corner, and how would wrap-around change the answer?
-
-## Cross-reference to K&R
-
-[K&R § 5.7 - Multi-dimensional Arrays](../../kr/lessons/05-07-multi-dimensional-arrays.md) is the formal version of what Salvatore does by hand here: row-major layout and `y * COLS + x` are exactly how the compiler lays out `char board[ROWS][COLS]` under the hood.
-
-## Go deeper
-
-- [Conway's Game of Life - Wikipedia](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) - rules, history, and a zoo of named patterns (glider, blinker, Gosper gun…).
-- [John Conway, a life in games - *Quanta* tribute (2020)](https://www.quantamagazine.org/john-conway-a-life-in-games-20200428/) - short profile of the mathematician.
-- [LifeWiki](https://conwaylife.com/wiki/) - community catalogue of patterns to paste in.
+This version *bounds-checks* and skips off-board neighbours; Salvatore's version instead routes every coordinate through `cell_to_offset`, so an off-board `nx` wraps to the opposite edge rather than being dropped. Either way the loop shape is identical: flat `char` array, `y * COLS + x` indexing, the `-1..1` double scan. Pick bounds-checking for a finite board, wrapping for a toroidal one.
