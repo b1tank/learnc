@@ -9,21 +9,25 @@
 #define TOYFORTH_TYPE_SYMBOL 4
 
 /*================== Data structure ==================*/
-typedef struct tfobj {
+typedef struct tfobj
+{
     int refcount;
     int type;
-    union {
+    union
+    {
         // INT | BOOL
         int val;
 
         // STR | SYMBOL
-        struct {
+        struct
+        {
             char *ptr;
             size_t len;
         } str;
 
         // LIST
-        struct {
+        struct
+        {
             struct tfobj **ele;
             size_t len;
         } list;
@@ -31,9 +35,11 @@ typedef struct tfobj {
 } tfobj;
 
 /*================= Utility library ==================*/
-void* xmalloc(size_t size) {
+void *xmalloc(size_t size)
+{
     void *ptr = malloc(size);
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         fprintf(stderr, "Out of memory\n");
         exit(1);
     }
@@ -41,65 +47,72 @@ void* xmalloc(size_t size) {
 }
 
 /*================= Object lifecycle =================*/
-tfobj* createObject(int type) {
-    tfobj* obj = xmalloc(sizeof(tfobj));
+tfobj *createObject(int type)
+{
+    tfobj *obj = xmalloc(sizeof(tfobj));
     obj->type = type;
     obj->refcount = 1;
     return obj;
 }
 
-tfobj* createINTObject(int val) {
-    tfobj* obj = createObject(TOYFORTH_TYPE_INT);
+tfobj *createINTObject(int val)
+{
+    tfobj *obj = createObject(TOYFORTH_TYPE_INT);
     obj->val = val;
     return obj;
 }
 
-tfobj* createBOOLObject(int val) {
-    tfobj* obj = createINTObject(val);
+tfobj *createBOOLObject(int val)
+{
+    tfobj *obj = createINTObject(val);
     obj->type = TOYFORTH_TYPE_BOOL;
     return obj;
 }
 
-tfobj* createSTRObject(char* ptr) {
-    tfobj* obj = createObject(TOYFORTH_TYPE_STR);
+tfobj *createSTRObject(char *ptr)
+{
+    tfobj *obj = createObject(TOYFORTH_TYPE_STR);
     obj->str.ptr = ptr;
     obj->str.len = strlen(ptr);
     return obj;
 }
 
-tfobj* createSYMBOLObject(char* ptr) {
-    tfobj* obj = createSTRObject(ptr);
+tfobj *createSYMBOLObject(char *ptr)
+{
+    tfobj *obj = createSTRObject(ptr);
     obj->type = TOYFORTH_TYPE_SYMBOL;
     return obj;
 }
 
-tfobj* createLISTObject() {
-    tfobj* obj = createObject(TOYFORTH_TYPE_LIST);
+tfobj *createLISTObject()
+{
+    tfobj *obj = createObject(TOYFORTH_TYPE_LIST);
     obj->list.ele = NULL;
     obj->list.len = 0;
     return obj;
 }
 
-int main(int argc, char **argv) {
-    if (argc < 2) {
+int main(int argc, char **argv)
+{
+    if (argc < 2)
+    {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
         exit(1);
     }
 
     printf("Input file: %s\n", argv[1]);
 
-    // tests of object lifecycle
-    tfobj* obj_int = createINTObject(5);
-    printf("obj_int: %d\n", obj_int->val);
-    tfobj* obj_bool_true = createBOOLObject(1);
-    printf("obj_bool_true: %s\n", obj_bool_true->val ? "true" : "false");
-    tfobj* obj_bool_false = createBOOLObject(0);
-    printf("obj_bool_false: %s\n", obj_bool_false->val ? "true" : "false");
-    tfobj* obj_str = createSTRObject("hello world");
-    printf("obj_str: %s (length: %zu)\n", obj_str->str.ptr, obj_str->str.len);
-    tfobj* obj_symbol = createSYMBOLObject("DUP");
-    printf("obj_symbol: %s (type: %d, length: %zu)\n", obj_symbol->str.ptr, obj_symbol->type, obj_symbol->str.len);
-    
+    // get program length via file IO
+    FILE *fp = fopen(argv[1], "r"); // open a file
+    fseek(fp, 0, SEEK_END);         // seek to the end
+    long len = ftell(fp);           // save current location
+    rewind(fp);                     // back to the beginning
+
+    // read file into the buffer
+    char *buf = xmalloc(len + 1); // +1 reserves a position to \0
+    fread(buf, 1, len, fp);
+
+    printf("Program (length %ld): %s\n", len, buf);
+
     return 0;
 }
-
