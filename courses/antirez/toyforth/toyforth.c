@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define TOYFORTH_TYPE_INT 0
 #define TOYFORTH_TYPE_STR 1
@@ -11,7 +12,7 @@
 /*================== Data structure ==================*/
 typedef struct tfobj
 {
-    int refcount;
+    int ref_count;
     int type;
     union
     {
@@ -46,30 +47,41 @@ void *xmalloc(size_t size)
     return ptr;
 }
 
+void *xrealloc(void *ptr, size_t size)
+{
+    ptr = realloc(ptr, size);
+    if (ptr == NULL)
+    {
+        fprintf(stderr, "Out of memory\n");
+        exit(1);
+    }
+    return ptr;
+}
+
 /*================= Object lifecycle =================*/
 tfobj *createObject(int type)
 {
     tfobj *obj = xmalloc(sizeof(tfobj));
     obj->type = type;
-    obj->refcount = 1;
+    obj->ref_count = 1;
     return obj;
 }
 
-tfobj *createINTObject(int val)
+tfobj *createIntObject(int val)
 {
     tfobj *obj = createObject(TOYFORTH_TYPE_INT);
     obj->val = val;
     return obj;
 }
 
-tfobj *createBOOLObject(int val)
+tfobj *createBoolObject(int val)
 {
-    tfobj *obj = createINTObject(val);
+    tfobj *obj = createIntObject(val);
     obj->type = TOYFORTH_TYPE_BOOL;
     return obj;
 }
 
-tfobj *createSTRObject(char *ptr)
+tfobj *createStrObject(char *ptr)
 {
     tfobj *obj = createObject(TOYFORTH_TYPE_STR);
     obj->str.ptr = ptr;
@@ -77,20 +89,131 @@ tfobj *createSTRObject(char *ptr)
     return obj;
 }
 
-tfobj *createSYMBOLObject(char *ptr)
+tfobj *createSymbolObject(char *ptr)
 {
-    tfobj *obj = createSTRObject(ptr);
+    tfobj *obj = createStrObject(ptr);
     obj->type = TOYFORTH_TYPE_SYMBOL;
     return obj;
 }
 
-tfobj *createLISTObject()
+tfobj *createListObject()
 {
     tfobj *obj = createObject(TOYFORTH_TYPE_LIST);
     obj->list.ele = NULL;
     obj->list.len = 0;
     return obj;
 }
+
+void release(tfobj *o) {
+    o->ref_count--;
+    if (!o->ref_count) {
+        switch (o->type) {
+            case TOYFORTH_TYPE_STR:
+            case TOYFORTH_TYPE_SYMBOL:
+                free(o->str.ptr);
+                break;
+            case TOYFORTH_TYPE_LIST:
+                release(o->list);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void retain(tfobj *o) {
+    o->ref_count++;
+}
+
+/* ================ Parse Library ============== */
+
+#define MAX_WORD_LEN 128
+
+tfobj* parseObject(char *cur, int type) {
+    char *buf = xmalloc(MAX_WORD_LEN);
+    int count = 0;
+    while (cur && !isspace(*cur)) {
+        if (count >= MAX_WORD_LEN) {
+            perror("Word out of range\n");
+            exit(1);
+        }
+        buf[count] = *cur;
+        cur++;
+        count++;
+    }
+    switch (type) {
+        case TOYFORTH_TYPE_INT:
+            return createIntObject(atoi(buf));
+        case TOYFORTH_TYPE_BOOL:
+            return createBoolObject(atoi(buf));
+        case TOYFORTH_TYPE_SYMBOL:
+            return createSymbolObject(buf);
+        case TOYFORTH_TYPE_Str:
+            if (buf[0] != ''' || buf[count-1] != ''') {
+                perror("Syntax error: str must be wrapped by single quote!\n");
+                exit(1);
+            }
+            char *buf_unquoted = xmalloc(sizeof(count-2));
+            memcpy(buf_unquoted, buf[1], count-2);
+            return createStrObject(buf_unquoted);
+        default:
+            perror("Unsupported word type!\n");
+            exit(1);
+    }
+}
+
+tfobj* parseListObject(char *cur) {
+    tfobj *list = xmalloc(sizeof(tfobj*));
+    while (cur) {
+        if (isspace(cur)) {
+            cur++;
+            continue;
+        }
+        switch (cur) {
+            case (*cur == '['):
+                listPush(list, parseListObject(cur));
+                break;
+            case (isdigit(*cur) || (*cur == '-' && isdigit(*(cur+1)))):
+                listPush(list, parseObject(cur, TOYFORTH_TYPE_INT));
+                break;
+            case (isalpha(*cur)):
+                listPush(list, parseObject(cur, TOYFORTH_TYPE_SYMBOL));
+                break;
+            case (*cur == ''' || *cur == '"'):
+                listPush(list, parseObject(cur, TOYFORTH_TYPE_STR));
+                break;
+            default:
+                break;
+        }
+    }
+    return list;
+}
+
+tfobj *listPop(tfobj *l) {
+    tfobj *popped = l->list.ele[l->list.len-1];
+    // release(popped); // intentionally commented out for ownership transfer to the list
+    return popped;
+}
+
+void listPush(tfobj *l, tfobj* o) {
+    l = xrealloc(l, l->list.len+1);
+    *(l->list.ele+1) = o;
+    // retain(o); // intentionally commented out for ownership transfer to the list
+    l.len++;
+}
+
+typedef struct parser {
+    tfobj *parsed;
+    tfobj *cur;
+} parser;
+
+void parse(parser *par, char *buf) {
+    char *cur = buf;
+    tfobj *root_list = parseListObject(cur);
+    listPush(par->parsed, root_list);
+    return;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -107,12 +230,20 @@ int main(int argc, char **argv)
     fseek(fp, 0, SEEK_END);         // seek to the end
     long len = ftell(fp);           // save current location
     rewind(fp);                     // back to the beginning
-
     // read file into the buffer
     char *buf = xmalloc(len + 1); // +1 reserves a position to \0
     fread(buf, 1, len, fp);
-
     printf("Program (length %ld): %s\n", len, buf);
+    fclose(fp);
+
+    // parse the objects
+    parser *prog = xmalloc(sizeof(parser*));
+    parse(prog, buf);
+    
+    //exec(prog);
+
+    // final cleanup
+    free(buf);
 
     return 0;
 }
