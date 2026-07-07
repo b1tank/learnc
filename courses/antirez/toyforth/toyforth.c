@@ -104,21 +104,26 @@ tfobj *createListObject()
     return obj;
 }
 
+void freeObject(tfobj *o) {
+    switch (o->type) {
+        case TOYFORTH_TYPE_STR:
+        case TOYFORTH_TYPE_SYMBOL:
+            free(o->str.ptr);
+            break;
+        case TOYFORTH_TYPE_LIST:
+            for (size_t i=0; i<o->list.len; i++) {
+                freeObject(o->list.ele[i]);
+            }
+            free(o->list.ele);
+            break;
+        default:
+            break;
+    }
+}
+
 void release(tfobj *o) {
     o->ref_count--;
-    if (!o->ref_count) {
-        switch (o->type) {
-            case TOYFORTH_TYPE_STR:
-            case TOYFORTH_TYPE_SYMBOL:
-                free(o->str.ptr);
-                break;
-            case TOYFORTH_TYPE_LIST:
-                release(o->list);
-                break;
-            default:
-                break;
-        }
-    }
+    if (!o->ref_count) freeObject(o);
 }
 
 void retain(tfobj *o) {
@@ -148,45 +153,19 @@ tfobj* parseObject(char *cur, int type) {
             return createBoolObject(atoi(buf));
         case TOYFORTH_TYPE_SYMBOL:
             return createSymbolObject(buf);
-        case TOYFORTH_TYPE_Str:
-            if (buf[0] != ''' || buf[count-1] != ''') {
+        case TOYFORTH_TYPE_STR: {
+            if (buf[0] != '\'' || buf[count-1] != '\'') {
                 perror("Syntax error: str must be wrapped by single quote!\n");
                 exit(1);
             }
             char *buf_unquoted = xmalloc(sizeof(count-2));
-            memcpy(buf_unquoted, buf[1], count-2);
+            memcpy(buf_unquoted, buf+1, count-2);
             return createStrObject(buf_unquoted);
+        }
         default:
             perror("Unsupported word type!\n");
             exit(1);
     }
-}
-
-tfobj* parseListObject(char *cur) {
-    tfobj *list = xmalloc(sizeof(tfobj*));
-    while (cur) {
-        if (isspace(cur)) {
-            cur++;
-            continue;
-        }
-        switch (cur) {
-            case (*cur == '['):
-                listPush(list, parseListObject(cur));
-                break;
-            case (isdigit(*cur) || (*cur == '-' && isdigit(*(cur+1)))):
-                listPush(list, parseObject(cur, TOYFORTH_TYPE_INT));
-                break;
-            case (isalpha(*cur)):
-                listPush(list, parseObject(cur, TOYFORTH_TYPE_SYMBOL));
-                break;
-            case (*cur == ''' || *cur == '"'):
-                listPush(list, parseObject(cur, TOYFORTH_TYPE_STR));
-                break;
-            default:
-                break;
-        }
-    }
-    return list;
 }
 
 tfobj *listPop(tfobj *l) {
@@ -199,7 +178,27 @@ void listPush(tfobj *l, tfobj* o) {
     l = xrealloc(l, l->list.len+1);
     *(l->list.ele+1) = o;
     // retain(o); // intentionally commented out for ownership transfer to the list
-    l.len++;
+    l->list.len++;
+}
+
+tfobj* parseListObject(char *cur) {
+    tfobj *list = xmalloc(sizeof(tfobj*));
+    while (cur) {
+        if (isspace(*cur)) {
+            cur++;
+            continue;
+        }
+        if (*cur == '[') {
+            listPush(list, parseListObject(cur));
+        } else if (isdigit(*cur) || (*cur == '-' && isdigit(*(cur+1)))) {
+            listPush(list, parseObject(cur, TOYFORTH_TYPE_INT));
+        } else if (isalpha(*cur)) {
+            listPush(list, parseObject(cur, TOYFORTH_TYPE_SYMBOL));
+        } else if (*cur == '\'' || *cur == '"') {
+            listPush(list, parseObject(cur, TOYFORTH_TYPE_STR));
+        }
+    }
+    return list;
 }
 
 typedef struct parser {
