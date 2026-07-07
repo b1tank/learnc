@@ -68,3 +68,8 @@ playground/
 # antirez course transcripts (regenerable from YouTube via bin/fetch-antirez-transcripts)
 youtube-transcript/
 courses/antirez/transcripts/
+
+# Vim swap files
+*.swp
+*.swo
+*.swn
