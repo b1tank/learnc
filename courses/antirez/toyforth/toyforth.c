@@ -140,7 +140,7 @@ tfobj* parseObject(char *cur, int type) {
     while (cur && !isspace(*cur)) {
         if (count >= MAX_WORD_LEN) {
             perror("Word out of range\n");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         buf[count] = *cur;
         cur++;
@@ -156,15 +156,16 @@ tfobj* parseObject(char *cur, int type) {
         case TOYFORTH_TYPE_STR: {
             if (buf[0] != '\'' || buf[count-1] != '\'') {
                 perror("Syntax error: str must be wrapped by single quote!\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
-            char *buf_unquoted = xmalloc(sizeof(count-2));
+            char *buf_unquoted = xmalloc(count-1); // +1 reserves a position to \0
             memcpy(buf_unquoted, buf+1, count-2);
+            buf_unquoted[count-2] = '\0';
             return createStrObject(buf_unquoted);
         }
         default:
             perror("Unsupported word type!\n");
-            exit(1);
+            exit(EXIT_FAILURE);
     }
 }
 
@@ -175,14 +176,14 @@ tfobj *listPop(tfobj *l) {
 }
 
 void listPush(tfobj *l, tfobj* o) {
-    l = xrealloc(l, l->list.len+1);
-    *(l->list.ele+1) = o;
+    l = xrealloc(l, sizeof(tfobj) + (l->list.len+1) * sizeof(tfobj*));
+    *(l->list.ele + l->list.len) = o;
     // retain(o); // intentionally commented out for ownership transfer to the list
     l->list.len++;
 }
 
 tfobj* parseListObject(char *cur) {
-    tfobj *list = xmalloc(sizeof(tfobj*));
+    tfobj *list = xmalloc(sizeof(tfobj));
     while (cur) {
         if (isspace(*cur)) {
             cur++;
@@ -219,7 +220,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     printf("Input file: %s\n", argv[1]);
@@ -227,16 +228,20 @@ int main(int argc, char **argv)
     // get program length via file IO
     FILE *fp = fopen(argv[1], "r"); // open a file
     fseek(fp, 0, SEEK_END);         // seek to the end
-    long len = ftell(fp);           // save current location
+    size_t len = ftell(fp);           // save current location
     rewind(fp);                     // back to the beginning
     // read file into the buffer
     char *buf = xmalloc(len + 1); // +1 reserves a position to \0
-    fread(buf, 1, len, fp);
-    printf("Program (length %ld): %s\n", len, buf);
+    size_t ret = fread(buf, 1, len, fp);
+    if (ret != len) {
+        fprintf(stderr, "Error reading file: %s\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+    printf("Program (length %zu): %s\n", len, buf);
     fclose(fp);
 
     // parse the objects
-    parser *prog = xmalloc(sizeof(parser*));
+    parser *prog = xmalloc(sizeof(parser));
     parse(prog, buf);
     
     //exec(prog);
