@@ -132,34 +132,43 @@ void retain(tfobj *o) {
 
 /* ================ Parse Library ============== */
 
-#define MAX_WORD_LEN 128
+#define MAX_WORD_LEN 28
 
-tfobj* parseObject(char *cur, int type) {
-    char *buf = xmalloc(MAX_WORD_LEN);
+typedef struct parser {
+    tfobj *parsed;
+    char *cur;
+} parser;
+
+tfobj* parseObject(parser *par, char *buf, int type) {
+    printf("Parsing object of type %d starting at %p\n", type, par->cur);
+    char *buf_tmp = xmalloc(MAX_WORD_LEN);
     int count = 0;
-    while (cur && !isspace(*cur)) {
+    while (par->cur != NULL && *par->cur != '\0' && !isspace(*par->cur)) {
+        printf("Parsing char: %c\n", *par->cur);
         if (count >= MAX_WORD_LEN) {
             perror("Word out of range\n");
             exit(EXIT_FAILURE);
         }
-        buf[count] = *cur;
-        cur++;
+        buf_tmp[count] = *par->cur;
+        par->cur++;
         count++;
     }
+    buf_tmp[count] = '\0';
+    printf("Parsed word: %s\n", buf_tmp);
     switch (type) {
         case TOYFORTH_TYPE_INT:
-            return createIntObject(atoi(buf));
+            return createIntObject(atoi(buf_tmp));
         case TOYFORTH_TYPE_BOOL:
-            return createBoolObject(atoi(buf));
+            return createBoolObject(atoi(buf_tmp));
         case TOYFORTH_TYPE_SYMBOL:
-            return createSymbolObject(buf);
+            return createSymbolObject(buf_tmp);
         case TOYFORTH_TYPE_STR: {
-            if (buf[0] != '\'' || buf[count-1] != '\'') {
+            if (buf_tmp[0] != '\'' || buf_tmp[count-1] != '\'') {
                 perror("Syntax error: str must be wrapped by single quote!\n");
                 exit(EXIT_FAILURE);
             }
             char *buf_unquoted = xmalloc(count-1); // +1 reserves a position to \0
-            memcpy(buf_unquoted, buf+1, count-2);
+            memcpy(buf_unquoted, buf_tmp+1, count-2);
             buf_unquoted[count-2] = '\0';
             return createStrObject(buf_unquoted);
         }
@@ -176,41 +185,80 @@ tfobj *listPop(tfobj *l) {
 }
 
 void listPush(tfobj *l, tfobj* o) {
-    l = xrealloc(l, sizeof(tfobj) + (l->list.len+1) * sizeof(tfobj*));
-    *(l->list.ele + l->list.len) = o;
+    l->list.ele = xrealloc(l->list.ele, sizeof(tfobj*) * (l->list.len+1));
+    l->list.ele[l->list.len] = o;
     // retain(o); // intentionally commented out for ownership transfer to the list
     l->list.len++;
 }
 
-tfobj* parseListObject(char *cur) {
-    tfobj *list = xmalloc(sizeof(tfobj));
-    while (cur) {
-        if (isspace(*cur)) {
-            cur++;
+void listPrint(tfobj *l) {
+    printf("[");
+    for (size_t i=0; i<l->list.len; i++) {
+        tfobj *o = l->list.ele[i];
+        switch (o->type) {
+            case TOYFORTH_TYPE_INT:
+                printf("%d", o->val);
+                break;
+            case TOYFORTH_TYPE_BOOL:
+                printf("%s", o->val ? "true" : "false");
+                break;
+            case TOYFORTH_TYPE_STR:
+                printf("'%s'", o->str.ptr);
+                break;
+            case TOYFORTH_TYPE_SYMBOL:
+                printf("%s", o->str.ptr);
+                break;
+            case TOYFORTH_TYPE_LIST:
+                listPrint(o);
+                break;
+            default:
+                perror("Unsupported object type!\n");
+                exit(EXIT_FAILURE);
+        }
+        if (i != l->list.len-1) {
+            printf(", ");
+        }
+    }
+    printf("]\n");
+}
+
+tfobj* parseListObject(parser *par, char *buf) {
+    printf("Parsing list object: %s\n", buf);
+    tfobj *list = createListObject();
+    while (par->cur) {
+        if (*par->cur == '\0') {
+            break;
+        }
+        if (*par->cur == ']') {
+            par->cur++;
+            break;
+        }
+        if (isspace(*par->cur)) {
+            par->cur++;
             continue;
         }
-        if (*cur == '[') {
-            listPush(list, parseListObject(cur));
-        } else if (isdigit(*cur) || (*cur == '-' && isdigit(*(cur+1)))) {
-            listPush(list, parseObject(cur, TOYFORTH_TYPE_INT));
-        } else if (isalpha(*cur)) {
-            listPush(list, parseObject(cur, TOYFORTH_TYPE_SYMBOL));
-        } else if (*cur == '\'' || *cur == '"') {
-            listPush(list, parseObject(cur, TOYFORTH_TYPE_STR));
+        if (*par->cur == '[') {
+            par->cur++;
+            listPush(list, parseListObject(par, buf));
+        } else if (isdigit(*par->cur) || (*par->cur == '-' && isdigit(*(par->cur+1)))) {
+            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_INT));
+        } else if (isalpha(*par->cur) || strchr("+-*/%", *par->cur)) {
+            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_SYMBOL));
+        } else if (*par->cur == '\'' || *par->cur == '"') {
+            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_STR));
         }
+        printf("cur: %p\n", par->cur);
+        listPrint(list);
     }
     return list;
 }
 
-typedef struct parser {
-    tfobj *parsed;
-    tfobj *cur;
-} parser;
-
 void parse(parser *par, char *buf) {
-    char *cur = buf;
-    tfobj *root_list = parseListObject(cur);
-    listPush(par->parsed, root_list);
+    printf("Start parsing: %s\n", buf);
+    par->cur = buf;
+    par->parsed = parseListObject(par, buf);
+    listPrint(par->parsed);
+    printf("Parsing finished.\n");
     return;
 }
 
@@ -237,6 +285,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error reading file: %s\n", argv[1]);
         exit(EXIT_FAILURE);
     }
+    buf[len] = '\0'; // null-terminate the buffer
     printf("Program (length %zu): %s\n", len, buf);
     fclose(fp);
 
