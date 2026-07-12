@@ -1,1 +1,1 @@
-5 5 + 'hello' print
+5 5 + [ 4 3 -] 'hello' print

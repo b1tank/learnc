@@ -139,12 +139,10 @@ typedef struct parser {
     char *cur;
 } parser;
 
-tfobj* parseObject(parser *par, char *buf, int type) {
-    printf("Parsing object of type %d starting at %p\n", type, par->cur);
+tfobj* parseObject(parser *par, int type) {
     char *buf_tmp = xmalloc(MAX_WORD_LEN);
     int count = 0;
     while (par->cur != NULL && *par->cur != '\0' && !isspace(*par->cur)) {
-        printf("Parsing char: %c\n", *par->cur);
         if (count >= MAX_WORD_LEN) {
             perror("Word out of range\n");
             exit(EXIT_FAILURE);
@@ -154,7 +152,7 @@ tfobj* parseObject(parser *par, char *buf, int type) {
         count++;
     }
     buf_tmp[count] = '\0';
-    printf("Parsed word: %s\n", buf_tmp);
+    printf("Parsing word: %s\n", buf_tmp);
     switch (type) {
         case TOYFORTH_TYPE_INT:
             return createIntObject(atoi(buf_tmp));
@@ -223,7 +221,7 @@ void listPrint(tfobj *l) {
 }
 
 tfobj* parseListObject(parser *par, char *buf) {
-    printf("Parsing list object: %s\n", buf);
+    printf("Parsing list object: %s\n", par->cur);
     tfobj *list = createListObject();
     while (par->cur) {
         if (*par->cur == '\0') {
@@ -241,24 +239,22 @@ tfobj* parseListObject(parser *par, char *buf) {
             par->cur++;
             listPush(list, parseListObject(par, buf));
         } else if (isdigit(*par->cur) || (*par->cur == '-' && isdigit(*(par->cur+1)))) {
-            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_INT));
+            listPush(list, parseObject(par, TOYFORTH_TYPE_INT));
         } else if (isalpha(*par->cur) || strchr("+-*/%", *par->cur)) {
-            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_SYMBOL));
+            listPush(list, parseObject(par, TOYFORTH_TYPE_SYMBOL));
         } else if (*par->cur == '\'' || *par->cur == '"') {
-            listPush(list, parseObject(par, buf, TOYFORTH_TYPE_STR));
+            listPush(list, parseObject(par, TOYFORTH_TYPE_STR));
         }
-        printf("cur: %p\n", par->cur);
         listPrint(list);
     }
     return list;
 }
 
 void parse(parser *par, char *buf) {
-    printf("Start parsing: %s\n", buf);
+    printf("---------- Parser starts ----------\n");
     par->cur = buf;
     par->parsed = parseListObject(par, buf);
-    listPrint(par->parsed);
-    printf("Parsing finished.\n");
+    printf("---------- Parser ends   ----------\n");
     return;
 }
 
@@ -271,7 +267,8 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    printf("Input file: %s\n", argv[1]);
+    printf("========== Program starts ==========\n");
+    printf("Program file: %s\n", argv[1]);
 
     // get program length via file IO
     FILE *fp = fopen(argv[1], "r"); // open a file
@@ -286,7 +283,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     buf[len] = '\0'; // null-terminate the buffer
-    printf("Program (length %zu): %s\n", len, buf);
+    printf("Program body (length %zu): %s\n", len, buf);
     fclose(fp);
 
     // parse the objects
@@ -297,6 +294,8 @@ int main(int argc, char **argv)
 
     // final cleanup
     free(buf);
+
+    printf("========== Program ends   ==========\n");
 
     return 0;
 }
