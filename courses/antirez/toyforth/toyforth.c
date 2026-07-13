@@ -167,6 +167,7 @@ tfobj* parseObject(parser *par, int type) {
             }
             char *buf_unquoted = xmalloc(count-1); // +1 reserves a position to \0
             memcpy(buf_unquoted, buf_tmp+1, count-2);
+            free(buf_tmp);
             buf_unquoted[count-2] = '\0';
             return createStrObject(buf_unquoted);
         }
@@ -294,6 +295,7 @@ int main(int argc, char **argv)
 
     // final cleanup
     free(buf);
+    free(prog);
 
     printf("========== Program ends   ==========\n");
 
