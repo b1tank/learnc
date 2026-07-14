@@ -140,6 +140,11 @@ typedef struct parser {
     char *cur;
 } parser;
 
+void freeParser(parser *par) {
+    freeObject(par->parsed);
+    free(par);
+}
+
 tfobj* parseObject(parser *par, int type) {
     char *buf_tmp = xmalloc(MAX_WORD_LEN);
     int count = 0;
@@ -296,7 +301,7 @@ int main(int argc, char **argv)
 
     // final cleanup
     free(buf);
-    free(prog);
+    freeParser(prog);
 
     printf("========== Program ends   ==========\n");
 
