@@ -161,9 +161,17 @@ tfobj* parseObject(parser *par, int type) {
     printf("Parsing word: %s\n", buf_tmp);
     switch (type) {
         case TOYFORTH_TYPE_INT:
-            return createIntObject(atoi(buf_tmp));
+            {
+                int val = atoi(buf_tmp);
+                free(buf_tmp);
+                return createIntObject(val);
+            }
         case TOYFORTH_TYPE_BOOL:
-            return createBoolObject(atoi(buf_tmp));
+            {
+                int val = atoi(buf_tmp);
+                free(buf_tmp);
+                return createBoolObject(val);
+            }
         case TOYFORTH_TYPE_SYMBOL:
             return createSymbolObject(buf_tmp);
         case TOYFORTH_TYPE_STR: {
