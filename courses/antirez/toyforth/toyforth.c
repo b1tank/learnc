@@ -119,6 +119,7 @@ void freeObject(tfobj *o) {
         default:
             break;
     }
+    free(o);
 }
 
 void release(tfobj *o) {
